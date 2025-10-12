@@ -21,58 +21,70 @@
   </div>
 </div>
 
+<!-- 전기요금 -->
 <div style="margin-top:24px;background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
   <h2 style="margin-bottom:12px;">⚡ 전기요금 계산</h2>
   <form id="electricForm">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <div class="grid grid-4">
+    <input type="hidden" name="month_count" id="month_count" value="0">
+
+    <div class="grid grid-3">
       <div class="form-group">
-        <label>정산월</label>
-        <input type="month" name="billing_month" required>
+        <label>정산월 (시작월)</label>
+        <input type="month" name="billing_month" id="billing_month" required>
       </div>
       <div class="form-group">
         <label>층</label>
         <select name="floor_id" id="electric_floor_id" required></select>
       </div>
       <div class="form-group">
-        <label>전기 총액</label>
-        <input type="number" name="total_amount" min="0" required>
-      </div>
-      <div class="form-group">
-        <label>복지 할인 총액</label>
-        <input type="number" name="welfare_discount" min="0" value="0" required>
-      </div>
-      <div class="form-group">
-        <label>바우처 할인 총액</label>
-        <input type="number" name="voucher_discount" min="0" value="0" required>
-      </div>
-      <div class="form-group">
-        <label>정산 개월수</label>
-        <input type="number" name="billing_months_count" min="1" max="12" value="1" required>
-        <small style="color:#64748b;">N개월 묶음 정산시 입력</small>
-      </div>
-      <div class="form-group">
         <label>TV 수신료 배분</label>
-        <select name="tv_distribution_mode">
+        <select name="tv_distribution_mode" id="tv_mode">
           <option value="INDIVIDUAL">개별 부과 (TV 보유 세대만)</option>
           <option value="EQUAL">균등 분배 (재실 세대 전체)</option>
         </select>
       </div>
-      <div class="form-group" style="align-self:end;">
-        <label style="visibility:hidden;">중복 처리</label>
-        <label class="checkbox-wrapper"><input type="checkbox" name="overwrite"><span>기존 정산 덮어쓰기</span></label>
+    </div>
+
+    <!-- 월별 상세 입력 -->
+    <div style="margin-top:20px; background:#f0f4f8; padding:15px; border-radius:8px;">
+      <h4>월별 고지 내역 입력</h4>
+      <div id="monthlyBillsContainer"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button type="button" class="btn btn-secondary" onclick="addMonthRow()">+ 월 추가</button>
+        <button type="button" class="btn" onclick="addConsecutiveMonths(3)">+ 3개월</button>
+        <button type="button" class="btn" onclick="addConsecutiveMonths(6)">+ 6개월</button>
+        <button type="button" class="btn" onclick="clearMonthRows()">행 지우기</button>
       </div>
+      <div style="margin-top:15px; padding:10px; background:#e7f3ff; border-radius:5px;">
+        <strong>합계:</strong>
+        총액 <span id="totalAmount">0</span>원 |
+        복지할인 <span id="totalWelfare">0</span>원 |
+        바우처할인 <span id="totalVoucher">0</span>원 |
+        TV수신료 <span id="totalTvFee">0</span>원
+      </div>
+      <small style="color:#64748b;display:block;margin-top:8px;">
+        TV수신료는 월별로 직접 입력할 수 있습니다. 입력하지 않으면, 필요 시 백엔드에서 "TV대수 × 설정된 세대당 TV 수신료"로 산정됩니다.
+      </small>
+    </div>
+
+    <div class="form-group" style="margin-top:10px;">
+      <label class="checkbox-wrapper">
+        <input type="checkbox" name="overwrite">
+        <span>기존 정산 덮어쓰기</span>
+      </label>
     </div>
 
     <div id="readingTableWrap" style="margin-top:16px;"></div>
 
-    <div style="margin-top:12px;display:flex;gap:12px;">
+    <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;">
       <button type="button" class="btn" onclick="loadPrevReadings()">이전 정산 현월값 불러오기</button>
       <button type="submit" class="btn btn-primary">전기요금 계산 저장</button>
     </div>
   </form>
 </div>
 
+<!-- 수도요금 -->
 <div style="margin-top:24px;background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
   <h2 style="margin-bottom:12px;">💧 수도요금 계산</h2>
   <form id="waterForm">
@@ -101,6 +113,7 @@
   </form>
 </div>
 
+<!-- 공동 공과금 -->
 <div style="margin-top:24px;background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
   <h2 style="margin-bottom:12px;">🏘️ 공동 공과금</h2>
   <form id="commonForm">
@@ -139,12 +152,87 @@
 const FLOORS = {{ (floors_json|default([]))|tojson }};
 const UNITS = {{ (units_json|default([]))|tojson }};
 
+let monthRowCount = 0;
+
 function renderFloorOptions(){
   const sel1 = document.getElementById('floorSelect');
   const sel2 = document.getElementById('electric_floor_id');
   [sel1, sel2].forEach(sel => {
     sel.innerHTML = '<option value="">선택</option>' + FLOORS.map(f => `<option value="${f.id}">${f.name || (f.floor_number < 0 ? 'B' + (-f.floor_number) + '층' : f.floor_number + '층')}</option>`).join('');
   });
+}
+
+function monthValuePlus(baseYYYYMM, offset){
+  const [y,m] = baseYYYYMM.split('-').map(Number);
+  const d = new Date(y, m - 1 + offset, 1);
+  return d.toISOString().slice(0,7);
+}
+
+function addMonthRow(){
+  const container = document.getElementById('monthlyBillsContainer');
+  const base = document.getElementById('billing_month').value;
+  if(!base){ alert('먼저 정산월(시작월)을 선택해주세요.'); return; }
+
+  const rowIndex = monthRowCount;
+  const targetMonth = monthValuePlus(base, rowIndex);
+
+  const row = document.createElement('div');
+  row.className = 'month-row';
+  row.style.cssText = 'display:grid; grid-template-columns: 1fr 2fr 2fr 2fr 2fr 1.5fr 1fr; gap:10px; margin-bottom:10px; padding:10px; background:white; border-radius:5px;';
+  row.innerHTML = `
+    <input type="month" name="month_${rowIndex}" value="${targetMonth}" readonly style="background:#f0f0f0;">
+    <input type="number" name="amount_${rowIndex}" placeholder="전기요금" min="0" step="0.01" onchange="calculateTotals()">
+    <input type="number" name="welfare_${rowIndex}" placeholder="복지할인" min="0" step="0.01" onchange="calculateTotals()">
+    <input type="number" name="voucher_${rowIndex}" placeholder="바우처할인" min="0" step="0.01" onchange="calculateTotals()">
+    <input type="number" name="tv_fee_${rowIndex}" placeholder="TV수신료" min="0" step="0.01" onchange="calculateTotals()">
+    <input type="number" name="tv_units_${rowIndex}" placeholder="TV대수" min="0" value="0">
+    <button type="button" class="btn btn-danger" onclick="removeMonthRow(this)">삭제</button>
+  `;
+  container.appendChild(row);
+
+  monthRowCount++;
+  document.getElementById('month_count').value = monthRowCount;
+  calculateTotals();
+}
+
+function addConsecutiveMonths(n){
+  for(let i=0;i<n;i++){ addMonthRow(); }
+}
+
+function clearMonthRows(){
+  document.getElementById('monthlyBillsContainer').innerHTML='';
+  monthRowCount = 0;
+  document.getElementById('month_count').value = 0;
+  calculateTotals();
+}
+
+function removeMonthRow(btn){
+  btn.parentElement.remove();
+  // reindex
+  const rows = document.querySelectorAll('#monthlyBillsContainer .month-row');
+  rows.forEach((row, idx) => {
+    row.querySelectorAll('input').forEach(input => {
+      const [key, oldIdx] = input.name.split('_');
+      input.name = key + '_' + idx;
+    });
+  });
+  monthRowCount = rows.length;
+  document.getElementById('month_count').value = monthRowCount;
+  calculateTotals();
+}
+
+function calculateTotals(){
+  let totalAmount = 0, totalWelfare = 0, totalVoucher = 0, totalTv = 0;
+  for(let i=0;i<monthRowCount;i++){
+    totalAmount += parseFloat(document.querySelector(`[name="amount_${i}"]`)?.value || 0);
+    totalWelfare += parseFloat(document.querySelector(`[name="welfare_${i}"]`)?.value || 0);
+    totalVoucher += parseFloat(document.querySelector(`[name="voucher_${i}"]`)?.value || 0);
+    totalTv += parseFloat(document.querySelector(`[name="tv_fee_${i}"]`)?.value || 0);
+  }
+  document.getElementById('totalAmount').textContent = totalAmount.toLocaleString();
+  document.getElementById('totalWelfare').textContent = totalWelfare.toLocaleString();
+  document.getElementById('totalVoucher').textContent = totalVoucher.toLocaleString();
+  document.getElementById('totalTvFee').textContent = totalTv.toLocaleString();
 }
 
 function renderReadingTable(floorId){
@@ -173,20 +261,26 @@ function calcUsage(unitId){
   document.getElementById(`usage_${unitId}`).textContent = (curr - prev).toFixed(2);
 }
 
+// Floor selectors sync
 document.getElementById('floorSelect').addEventListener('change', (e)=>{
   const id = e.target.value;
   document.getElementById('electric_floor_id').value = id;
   if(id){ renderReadingTable(id); }
 });
-
 document.getElementById('electric_floor_id').addEventListener('change', (e)=>{
   const id = e.target.value;
   document.getElementById('floorSelect').value = id;
   if(id){ renderReadingTable(id); }
 });
 
+// 정산월 변경시 월별 입력 초기화 후 첫 달 자동 추가
+document.getElementById('billing_month').addEventListener('change', (e)=>{
+  clearMonthRows();
+  if(e.target.value) addMonthRow();
+});
+
 function loadPrevReadings(){
-  const monthInput = document.querySelector('#electricForm [name="billing_month"]');
+  const monthInput = document.getElementById('billing_month');
   const floorId = document.getElementById('electric_floor_id').value;
   if(!monthInput.value || !floorId){ alert('정산월과 층을 먼저 선택하세요.'); return; }
   fetch(`/get_previous_readings/${floorId}/${monthInput.value}`)
@@ -204,6 +298,7 @@ function loadPrevReadings(){
     }).catch(()=> alert('통신 오류가 발생했습니다.'));
 }
 
+// Submit handlers
 document.getElementById('electricForm').addEventListener('submit', async (e)=>{
   e.preventDefault();
   const fd = new FormData(e.target);
