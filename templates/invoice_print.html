@@ -89,6 +89,12 @@
             font-weight: bold;
         }
 
+        .sub-item {
+            padding-left: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+
         .total-row {
             background: #fff3cd;
             font-size: 18px;
@@ -140,6 +146,26 @@
         .print-button:hover {
             background: #5a67d8;
         }
+
+        .items-summary {
+            margin: 15px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+
+        .items-summary h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .items-summary ul {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 13px;
+            color: #666;
+        }
     </style>
 </head>
 <body>
@@ -156,6 +182,24 @@
 
             <div class="unit-info">
                 <div class="unit-name">{{ invoice.unit.unit_name }}</div>
+            </div>
+
+            <!-- 포함된 항목 요약 -->
+            <div class="items-summary">
+                <h4>📋 청구 항목 안내</h4>
+                <ul>
+                    {% for item in combination.items %}
+                        <li>
+                            {% if item.item_type == 'ELECTRIC' %}
+                                ⚡ {{ item.billing_month.strftime('%Y년 %m월') }} 전기요금
+                            {% elif item.item_type == 'WATER' %}
+                                💧 {{ item.billing_month.strftime('%Y년 %m월') }} 수도요금
+                            {% elif item.item_type == 'COMMON' %}
+                                🏘️ {{ item.billing_month.strftime('%Y년 %m월') }} - {{ item.item_description|default('공동 공과금') }}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
             </div>
 
             <table class="bill-table">
@@ -181,10 +225,19 @@
                     {% endif %}
 
                     {% if invoice.common_amount > 0 %}
-                    <tr>
-                        <td>공동 공과금</td>
-                        <td class="amount">{{ "{:,.0f}".format(invoice.common_amount) }}원</td>
-                    </tr>
+                        {% if invoice.common_details %}
+                            {% for common_item in invoice.common_details %}
+                            <tr>
+                                <td class="sub-item">공동 공과금 - {{ common_item.description }}</td>
+                                <td class="amount">{{ "{:,.0f}".format(common_item.amount) }}원</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td>공동 공과금</td>
+                                <td class="amount">{{ "{:,.0f}".format(invoice.common_amount) }}원</td>
+                            </tr>
+                        {% endif %}
                     {% endif %}
 
                     <tr class="total-row">
@@ -203,6 +256,7 @@
 
             <div class="footer">
                 <p>* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.</p>
+                <p>* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다.</p>
             </div>
         </div>
         {% endfor %}

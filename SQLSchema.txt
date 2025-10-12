@@ -1,5 +1,5 @@
--- BillCalculator Mk2 - Full Schema Reset
--- Safely drops all tables and recreates them for a clean start.
+-- BillCalculator Improved Schema
+-- 개선사항: N개월 묶음 정산, TV 배분 모드, 공동 공과금 상세 저장
 -- Target DB: bill_calculator (MySQL 5.7+/8.0+, InnoDB, utf8mb4)
 
 -- =======================================
@@ -77,18 +77,20 @@ CREATE TABLE settings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =======================================
--- 3) Electric billing
+-- 3) Electric billing (개선: TV 배분 모드, N개월 묶음)
 -- =======================================
 CREATE TABLE electric_bills (
-  id                INT AUTO_INCREMENT PRIMARY KEY,
-  billing_month     DATE NOT NULL,               -- always 1st of month
-  floor_id          INT NOT NULL,
-  total_amount      DECIMAL(12,2) NOT NULL,
-  welfare_discount  DECIMAL(10,2) DEFAULT 0,
-  voucher_discount  DECIMAL(10,2) DEFAULT 0,
-  tv_fee_total      DECIMAL(10,2) DEFAULT 0,
-  created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
-  updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  id                    INT AUTO_INCREMENT PRIMARY KEY,
+  billing_month         DATE NOT NULL,               -- always 1st of month
+  floor_id              INT NOT NULL,
+  total_amount          DECIMAL(12,2) NOT NULL,
+  welfare_discount      DECIMAL(10,2) DEFAULT 0,
+  voucher_discount      DECIMAL(10,2) DEFAULT 0,
+  tv_fee_total          DECIMAL(10,2) DEFAULT 0,
+  tv_distribution_mode  VARCHAR(20) DEFAULT 'INDIVIDUAL',  -- INDIVIDUAL or EQUAL
+  billing_months_count  INT DEFAULT 1,                     -- N개월 묶음 정산
+  created_at            DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at            DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   CONSTRAINT fk_electric_bills_floor FOREIGN KEY (floor_id) REFERENCES floors(id)
     ON UPDATE CASCADE ON DELETE CASCADE,
   INDEX idx_electric_bills_month (billing_month),
@@ -175,7 +177,8 @@ CREATE TABLE common_bills (
   distribution_method   ENUM('BY_RESIDENTS','BY_UNITS') DEFAULT 'BY_RESIDENTS',
   created_at            DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at            DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  INDEX idx_common_bills_month (billing_month)
+  INDEX idx_common_bills_month (billing_month),
+  INDEX idx_common_bills_desc (description)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE common_bill_details (
@@ -195,7 +198,7 @@ CREATE TABLE common_bill_details (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =======================================
--- 6) Invoice combinations (조합) & Final invoices
+-- 6) Invoice combinations (개선: 항목 설명, 공동 공과금 상세)
 -- =======================================
 CREATE TABLE invoice_combinations (
   id            INT AUTO_INCREMENT PRIMARY KEY,
@@ -207,12 +210,13 @@ CREATE TABLE invoice_combinations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE invoice_combination_items (
-  id              INT AUTO_INCREMENT PRIMARY KEY,
-  combination_id  INT NOT NULL,
-  item_type       ENUM('ELECTRIC','WATER','COMMON') NOT NULL,
-  item_id         INT NOT NULL,
-  billing_month   DATE NOT NULL,
-  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  combination_id    INT NOT NULL,
+  item_type         ENUM('ELECTRIC','WATER','COMMON') NOT NULL,
+  item_id           INT NOT NULL,
+  billing_month     DATE NOT NULL,
+  item_description  VARCHAR(255),  -- 공동 공과금 설명 저장
+  created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_invoice_items_comb FOREIGN KEY (combination_id) REFERENCES invoice_combinations(id)
     ON UPDATE CASCADE ON DELETE CASCADE,
   INDEX idx_invoice_items_comb (combination_id),
@@ -227,6 +231,7 @@ CREATE TABLE final_invoices (
   electric_amount  DECIMAL(10,2) DEFAULT 0,
   water_amount     DECIMAL(10,2) DEFAULT 0,
   common_amount    DECIMAL(10,2) DEFAULT 0,
+  common_details   JSON,  -- 공동 공과금 항목별 상세
   total_amount     DECIMAL(10,2) NOT NULL,
   memo             TEXT,
   created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
@@ -250,10 +255,12 @@ VALUES
 ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
 
 -- =======================================
--- 8) (Optional) User & Grant (uncomment if needed)
+-- 8) Migration for existing data (if needed)
 -- =======================================
--- CREATE USER IF NOT EXISTS 'power_user'@'%' IDENTIFIED BY 'mslee0702';
--- GRANT ALL PRIVILEGES ON bill_calculator.* TO 'power_user'@'%' WITH GRANT OPTION;
--- FLUSH PRIVILEGES;
+-- 기존 테이블에 새 컬럼 추가 (이미 존재하는 경우 무시)
+-- ALTER TABLE electric_bills ADD COLUMN IF NOT EXISTS tv_distribution_mode VARCHAR(20) DEFAULT 'INDIVIDUAL';
+-- ALTER TABLE electric_bills ADD COLUMN IF NOT EXISTS billing_months_count INT DEFAULT 1;
+-- ALTER TABLE invoice_combination_items ADD COLUMN IF NOT EXISTS item_description VARCHAR(255);
+-- ALTER TABLE final_invoices ADD COLUMN IF NOT EXISTS common_details JSON;
 
 -- Done.

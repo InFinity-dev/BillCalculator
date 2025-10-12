@@ -46,6 +46,18 @@
         <label>바우처 할인 총액</label>
         <input type="number" name="voucher_discount" min="0" value="0" required>
       </div>
+      <div class="form-group">
+        <label>정산 개월수</label>
+        <input type="number" name="billing_months_count" min="1" max="12" value="1" required>
+        <small style="color:#64748b;">N개월 묶음 정산시 입력</small>
+      </div>
+      <div class="form-group">
+        <label>TV 수신료 배분</label>
+        <select name="tv_distribution_mode">
+          <option value="INDIVIDUAL">개별 부과 (TV 보유 세대만)</option>
+          <option value="EQUAL">균등 분배 (재실 세대 전체)</option>
+        </select>
+      </div>
       <div class="form-group" style="align-self:end;">
         <label style="visibility:hidden;">중복 처리</label>
         <label class="checkbox-wrapper"><input type="checkbox" name="overwrite"><span>기존 정산 덮어쓰기</span></label>
@@ -55,7 +67,7 @@
     <div id="readingTableWrap" style="margin-top:16px;"></div>
 
     <div style="margin-top:12px;display:flex;gap:12px;">
-      <button type="button" class="btn" onclick="loadPrevReadings()">이전달 현월값 불러오기</button>
+      <button type="button" class="btn" onclick="loadPrevReadings()">이전 정산 현월값 불러오기</button>
       <button type="submit" class="btn btn-primary">전기요금 계산 저장</button>
     </div>
   </form>
@@ -100,7 +112,7 @@
       </div>
       <div class="form-group">
         <label>항목 설명</label>
-        <input type="text" name="description" placeholder="예: 청소비, 엘리베이터 유지보수 등">
+        <input type="text" name="description" placeholder="예: 청소비, 엘리베이터 유지보수 등" required>
       </div>
       <div class="form-group">
         <label>총액</label>
@@ -142,16 +154,23 @@ function renderReadingTable(floorId){
     wrap.innerHTML = '<p style="color:#94a3b8;">해당 층의 재실 세대가 없습니다.</p>';
     return;
   }
-  let html = '<table><thead><tr><th>세대</th><th>전월 검침</th><th>현월 검침</th></tr></thead><tbody>';
+  let html = '<h4>검침 입력</h4><table><thead><tr><th>세대</th><th>전월 검침</th><th>현월 검침</th><th>사용량</th></tr></thead><tbody>';
   units.forEach(u => {
     html += `<tr>
       <td><strong>${u.unit_name}</strong></td>
-      <td><input type="number" name="prev_${u.id}" step="0.01" value="0"></td>
-      <td><input type="number" name="curr_${u.id}" step="0.01" value="0"></td>
+      <td><input type="number" name="prev_${u.id}" step="0.01" value="0" onchange="calcUsage(${u.id})"></td>
+      <td><input type="number" name="curr_${u.id}" step="0.01" value="0" onchange="calcUsage(${u.id})"></td>
+      <td><span id="usage_${u.id}">0</span></td>
     </tr>`;
   });
   html += '</tbody></table>';
   wrap.innerHTML = html;
+}
+
+function calcUsage(unitId){
+  const prev = parseFloat(document.querySelector(`[name="prev_${unitId}"]`).value || 0);
+  const curr = parseFloat(document.querySelector(`[name="curr_${unitId}"]`).value || 0);
+  document.getElementById(`usage_${unitId}`).textContent = (curr - prev).toFixed(2);
 }
 
 document.getElementById('floorSelect').addEventListener('change', (e)=>{
@@ -172,13 +191,16 @@ function loadPrevReadings(){
   if(!monthInput.value || !floorId){ alert('정산월과 층을 먼저 선택하세요.'); return; }
   fetch(`/get_previous_readings/${floorId}/${monthInput.value}`)
     .then(r=>r.json()).then(j=>{
-      if(!j.success){ alert(j.message || '이전달 검침 불러오기에 실패했습니다.'); return; }
+      if(!j.success){ alert(j.message || '이전 정산 검침 불러오기에 실패했습니다.'); return; }
       const map = j.readings || {};
       Object.entries(map).forEach(([uid, val])=>{
         const input = document.querySelector(`#readingTableWrap [name="prev_${uid}"]`);
-        if(input) input.value = val;
+        if(input) {
+          input.value = val;
+          calcUsage(uid);
+        }
       });
-      alert('이전달 현월 검침을 불러왔습니다.');
+      alert('이전 정산의 현월 검침을 불러왔습니다.');
     }).catch(()=> alert('통신 오류가 발생했습니다.'));
 }
 

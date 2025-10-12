@@ -80,6 +80,8 @@ class ElectricBill(db.Model):
     welfare_discount = db.Column(db.Numeric(10, 2), default=0)
     voucher_discount = db.Column(db.Numeric(10, 2), default=0)
     tv_fee_total = db.Column(db.Numeric(10, 2), default=0)
+    tv_distribution_mode = db.Column(db.String(20), default='INDIVIDUAL')  # INDIVIDUAL or EQUAL
+    billing_months_count = db.Column(db.Integer, default=1)  # N개월 묶음 정산
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     floor_ref = db.relationship('Floor', backref='electric_bills')
@@ -183,6 +185,7 @@ class InvoiceCombinationItem(db.Model):
     item_type = db.Column(db.Enum('ELECTRIC', 'WATER', 'COMMON'), nullable=False)
     item_id = db.Column(db.Integer, nullable=False)
     billing_month = db.Column(db.Date, nullable=False)
+    item_description = db.Column(db.String(255))  # 공동 공과금 설명 저장
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -194,6 +197,7 @@ class FinalInvoice(db.Model):
     electric_amount = db.Column(db.Numeric(10, 2), default=0)
     water_amount = db.Column(db.Numeric(10, 2), default=0)
     common_amount = db.Column(db.Numeric(10, 2), default=0)
+    common_details = db.Column(db.JSON)  # 공동 공과금 항목별 상세
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
     memo = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -208,6 +212,7 @@ def generate_csrf_token():
         session['_csrf_token'] = secrets.token_hex(16)
     return session['_csrf_token']
 
+
 app.jinja_env.globals['csrf_token'] = generate_csrf_token
 
 
@@ -221,6 +226,7 @@ def csrf_protect(f):
             if not token or token != req_token:
                 return jsonify({'success': False, 'message': 'CSRF 토큰이 유효하지 않습니다.'}), 403
         return f(*args, **kwargs)
+
     return decorated_function
 
 
@@ -230,9 +236,11 @@ def csrf_protect(f):
 def round_up_to_10(amount):
     return math.ceil(float(amount) / 10) * 10
 
+
 def get_setting(key, default=None):
     s = Setting.query.filter_by(setting_key=key).first()
     return s.setting_value if s else default
+
 
 def set_setting(key, value):
     s = Setting.query.filter_by(setting_key=key).first()
@@ -241,6 +249,7 @@ def set_setting(key, value):
     else:
         s = Setting(setting_key=key, setting_value=str(value))
         db.session.add(s)
+
 
 def create_unit_snapshot(unit):
     return {
@@ -253,12 +262,9 @@ def create_unit_snapshot(unit):
         'is_vacant': unit.is_vacant
     }
 
+
 def first_of_month(d: date) -> date:
     return date(d.year, d.month, 1)
-
-def prev_month_first(d: date) -> date:
-    d0 = first_of_month(d)
-    return first_of_month(d0 - timedelta(days=1))
 
 
 # ======================================================
@@ -270,7 +276,6 @@ def index():
     units_count = Unit.query.count()
     vacant_count = Unit.query.filter_by(is_vacant=True).count()
     occupied_count = units_count - vacant_count
-    # NOTE: index.html should exist in templates
     return render_template('index.html',
                            floors_count=floors_count,
                            units_count=units_count,
@@ -392,7 +397,6 @@ def add_floor():
     try:
         floor_number = int(request.form.get('floor_number'))
         name = request.form.get('name') or (f"B{abs(floor_number)}층" if floor_number < 0 else f"{floor_number}층")
-        # Pre-check for duplicate floor_number to show a friendly message
         if Floor.query.filter_by(floor_number=floor_number).first():
             return jsonify({
                 'success': False,
@@ -411,23 +415,6 @@ def add_floor():
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'층 추가 실패: {e}'})
-
-
-@app.route('/floors/<int:floor_id>/rename', methods=['POST'])
-@csrf_protect
-def rename_floor(floor_id):
-    try:
-        floor = Floor.query.get_or_404(floor_id)
-        new_name = (request.form.get('name') or '').strip()
-        if not new_name:
-            return jsonify({'success': False, 'message': '이름을 입력하세요.'})
-        floor.name = new_name
-        db.session.commit()
-        return jsonify({'success': True, 'message': '층 이름이 수정되었습니다.'})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)})
-
 
 
 @app.route('/floors/<int:floor_id>/update', methods=['POST'])
@@ -461,6 +448,7 @@ def update_floor(floor_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)})
+
 
 @app.route('/floors/<int:floor_id>/delete', methods=['POST'])
 @csrf_protect
@@ -572,6 +560,8 @@ def calculate_electric():
         total_amount = Decimal(request.form.get('total_amount'))
         welfare_discount = Decimal(request.form.get('welfare_discount', 0))
         voucher_discount = Decimal(request.form.get('voucher_discount', 0))
+        tv_distribution_mode = request.form.get('tv_distribution_mode', 'INDIVIDUAL')
+        billing_months_count = int(request.form.get('billing_months_count', 1))
 
         existing = ElectricBill.query.filter_by(billing_month=billing_month, floor_id=floor_id).first()
         if existing and request.form.get('overwrite') != 'true':
@@ -582,7 +572,8 @@ def calculate_electric():
 
         bill = ElectricBill(billing_month=billing_month, floor_id=floor_id,
                             total_amount=total_amount, welfare_discount=welfare_discount,
-                            voucher_discount=voucher_discount)
+                            voucher_discount=voucher_discount, tv_distribution_mode=tv_distribution_mode,
+                            billing_months_count=billing_months_count)
         db.session.add(bill)
         db.session.flush()
 
@@ -600,19 +591,36 @@ def calculate_electric():
             db.session.add(reading)
             readings.append(reading)
 
+        # TV 수신료 계산
         tv_fee = Decimal(get_setting('tv_fee', '2500') or '2500')
-        tv_units = [u for u in units if u.has_tv]
-        bill.tv_fee_total = tv_fee * len(tv_units)
+
+        if tv_distribution_mode == 'EQUAL':
+            # 균등 분배 모드: 공실 제외 모든 세대에 균등 분배
+            tv_units_count = len(units)  # 공실 제외 전체
+            bill.tv_fee_total = tv_fee * len([u for u in units if u.has_tv])  # 실제 납부 금액
+        else:
+            # 개별 부과 모드: TV 보유 세대만
+            tv_units = [u for u in units if u.has_tv]
+            tv_units_count = len(tv_units)
+            bill.tv_fee_total = tv_fee * tv_units_count
 
         net_amount = total_amount - welfare_discount - voucher_discount
 
         for unit, reading in zip(units, readings):
             usage = reading.current_reading - reading.previous_reading
-            base_amount = (usage / total_usage) * net_amount if total_usage > 0 else (net_amount / len(units) if units else Decimal(0))
+            base_amount = (usage / total_usage) * net_amount if total_usage > 0 else (
+                net_amount / len(units) if units else Decimal(0))
 
             unit_welfare = Decimal(get_setting('electric_welfare_amount', '0')) if unit.electric_welfare else Decimal(0)
             unit_voucher = Decimal(get_setting('electric_voucher_amount', '0')) if unit.electric_voucher else Decimal(0)
-            unit_tv_fee = tv_fee if unit.has_tv else Decimal(0)
+
+            # TV 수신료 배분
+            if tv_distribution_mode == 'EQUAL':
+                # 균등 분배
+                unit_tv_fee = (bill.tv_fee_total / len(units)) if units else Decimal(0)
+            else:
+                # 개별 부과
+                unit_tv_fee = tv_fee if unit.has_tv else Decimal(0)
 
             final_amount = base_amount - unit_welfare - unit_voucher + unit_tv_fee
             if final_amount < 0:
@@ -651,7 +659,8 @@ def calculate_water():
             db.session.delete(existing)
             db.session.flush()
 
-        bill = WaterBill(billing_month=billing_month, total_amount=total_amount, welfare_discount_total=welfare_discount_total)
+        bill = WaterBill(billing_month=billing_month, total_amount=total_amount,
+                         welfare_discount_total=welfare_discount_total)
         db.session.add(bill)
         db.session.flush()
 
@@ -660,7 +669,9 @@ def calculate_water():
         net_amount = total_amount - welfare_discount_total
 
         for unit in units:
-            base_amount = (Decimal(unit.residents_count) / Decimal(total_residents) * net_amount) if total_residents > 0 else (net_amount / len(units) if units else Decimal(0))
+            base_amount = (Decimal(unit.residents_count) / Decimal(
+                total_residents) * net_amount) if total_residents > 0 else (
+                net_amount / len(units) if units else Decimal(0))
             unit_welfare = Decimal(get_setting('water_welfare_amount', '0')) if unit.water_welfare else Decimal(0)
             final_amount = base_amount - unit_welfare
             if final_amount < 0:
@@ -700,16 +711,20 @@ def calculate_common():
         if distribution_method == 'BY_RESIDENTS':
             total_residents = sum(u.residents_count for u in units)
             for unit in units:
-                amount = (Decimal(unit.residents_count) / Decimal(total_residents) * total_amount) if total_residents > 0 else (total_amount / len(units) if units else Decimal(0))
+                amount = (Decimal(unit.residents_count) / Decimal(
+                    total_residents) * total_amount) if total_residents > 0 else (
+                    total_amount / len(units) if units else Decimal(0))
                 charged_amount = Decimal(round_up_to_10(amount))
                 db.session.add(CommonBillDetail(common_bill_id=bill.id, unit_id=unit.id, amount=amount,
-                                                charged_amount=charged_amount, unit_snapshot=create_unit_snapshot(unit)))
+                                                charged_amount=charged_amount,
+                                                unit_snapshot=create_unit_snapshot(unit)))
         else:
             amount_per_unit = total_amount / len(units) if units else Decimal(0)
             for unit in units:
                 charged_amount = Decimal(round_up_to_10(amount_per_unit))
                 db.session.add(CommonBillDetail(common_bill_id=bill.id, unit_id=unit.id, amount=amount_per_unit,
-                                                charged_amount=charged_amount, unit_snapshot=create_unit_snapshot(unit)))
+                                                charged_amount=charged_amount,
+                                                unit_snapshot=create_unit_snapshot(unit)))
 
         db.session.commit()
         return jsonify({'success': True, 'message': '공동 공과금이 계산되었습니다.'})
@@ -724,42 +739,57 @@ def calculate_common():
 @app.route('/view')
 def view_bills():
     view_type = request.args.get('view', 'month')
+    selected_month = request.args.get('month')
+    selected_floor = request.args.get('floor')
+    selected_unit = request.args.get('unit')
+
     electric_bills = ElectricBill.query.order_by(ElectricBill.billing_month.desc()).all()
     water_bills = WaterBill.query.order_by(WaterBill.billing_month.desc()).all()
     common_bills = CommonBill.query.order_by(CommonBill.billing_month.desc(), CommonBill.id.desc()).all()
-    electric_bills_json = []
-    for b in electric_bills:
-        electric_bills_json.append({
-            'id': b.id,
-            'billing_month': b.billing_month.isoformat(),
-            'floor_id': b.floor_id,
-            'floor_name': (b.floor_ref.name if b.floor_ref and b.floor_ref.name else (f"B{abs(b.floor_ref.floor_number)}층" if b.floor_ref and b.floor_ref.floor_number < 0 else (f"{b.floor_ref.floor_number}층" if b.floor_ref else ''))),
-            'total_amount': float(b.total_amount),
-            'welfare_discount': float(b.welfare_discount or 0),
-            'voucher_discount': float(b.voucher_discount or 0),
-            'tv_fee_total': float(b.tv_fee_total or 0)
-        })
-    water_bills_json = []
-    for b in water_bills:
-        water_bills_json.append({
-            'id': b.id,
-            'billing_month': b.billing_month.isoformat(),
-            'total_amount': float(b.total_amount),
-            'welfare_discount_total': float(b.welfare_discount_total or 0)
-        })
-    common_bills_json = []
-    for b in common_bills:
-        common_bills_json.append({
-            'id': b.id,
-            'billing_month': b.billing_month.isoformat(),
-            'description': b.description,
-            'total_amount': float(b.total_amount),
-            'distribution_method': b.distribution_method
-        })
-    return render_template('view.html', view_type=view_type,
-                           electric_bills=electric_bills, water_bills=water_bills, common_bills=common_bills,
-                           electric_bills_json=electric_bills_json, water_bills_json=water_bills_json,
-                           common_bills_json=common_bills_json)
+    floors = Floor.query.order_by(Floor.floor_number).all()
+    units = Unit.query.order_by(Unit.floor_id, Unit.unit_name).all()
+
+    return render_template('view.html',
+                           view_type=view_type,
+                           electric_bills=electric_bills,
+                           water_bills=water_bills,
+                           common_bills=common_bills,
+                           floors=floors,
+                           units=units,
+                           selected_month=selected_month,
+                           selected_floor=selected_floor,
+                           selected_unit=selected_unit)
+
+
+@app.route('/view/electric/<int:bill_id>')
+def view_electric_detail(bill_id):
+    bill = ElectricBill.query.get_or_404(bill_id)
+    details = ElectricBillDetail.query.filter_by(electric_bill_id=bill_id).all()
+    readings = ElectricReading.query.filter_by(electric_bill_id=bill_id).all()
+
+    # 검침 정보를 unit_id로 매핑
+    readings_map = {r.unit_id: r for r in readings}
+
+    return render_template('view_electric_detail.html',
+                           bill=bill,
+                           details=details,
+                           readings_map=readings_map)
+
+
+@app.route('/view/water/<int:bill_id>')
+def view_water_detail(bill_id):
+    bill = WaterBill.query.get_or_404(bill_id)
+    details = WaterBillDetail.query.filter_by(water_bill_id=bill_id).all()
+    return render_template('view_water_detail.html', bill=bill, details=details)
+
+
+@app.route('/view/common/<int:bill_id>')
+def view_common_detail(bill_id):
+    bill = CommonBill.query.get_or_404(bill_id)
+    details = CommonBillDetail.query.filter_by(common_bill_id=bill_id).all()
+    return render_template('view_common_detail.html', bill=bill, details=details)
+
+
 @app.route('/bills/delete/<bill_type>/<int:bill_id>', methods=['POST'])
 @csrf_protect
 def delete_bill(bill_type, bill_id):
@@ -804,12 +834,21 @@ def create_invoice():
 
         for item in data.get('items', []):
             month = datetime.strptime(item['month'], '%Y-%m-%d').date()
-            db.session.add(InvoiceCombinationItem(combination_id=combination.id, item_type=item['type'],
-                                                  item_id=item['id'], billing_month=month))
+            db.session.add(InvoiceCombinationItem(
+                combination_id=combination.id,
+                item_type=item['type'],
+                item_id=item['id'],
+                billing_month=month,
+                item_description=item.get('description', '')
+            ))
 
         units = Unit.query.filter_by(is_vacant=False).all()
         for unit in units:
-            electric_total = Decimal(0); water_total = Decimal(0); common_total = Decimal(0)
+            electric_total = Decimal(0)
+            water_total = Decimal(0)
+            common_total = Decimal(0)
+            common_details_list = []
+
             for item in data.get('items', []):
                 if item['type'] == 'ELECTRIC':
                     d = ElectricBillDetail.query.filter_by(electric_bill_id=item['id'], unit_id=unit.id).first()
@@ -819,11 +858,25 @@ def create_invoice():
                     if d: water_total += d.charged_amount
                 elif item['type'] == 'COMMON':
                     d = CommonBillDetail.query.filter_by(common_bill_id=item['id'], unit_id=unit.id).first()
-                    if d: common_total += d.charged_amount
+                    if d:
+                        common_total += d.charged_amount
+                        common_details_list.append({
+                            'description': item.get('description', '공동 공과금'),
+                            'amount': float(d.charged_amount)
+                        })
+
             total = electric_total + water_total + common_total
-            db.session.add(FinalInvoice(combination_id=combination.id, unit_id=unit.id,
-                                        electric_amount=electric_total, water_amount=water_total,
-                                        common_amount=common_total, total_amount=total, memo=data.get('memo', '')))
+            db.session.add(FinalInvoice(
+                combination_id=combination.id,
+                unit_id=unit.id,
+                electric_amount=electric_total,
+                water_amount=water_total,
+                common_amount=common_total,
+                common_details=common_details_list if common_details_list else None,
+                total_amount=total,
+                memo=data.get('memo', '')
+            ))
+
         db.session.commit()
         return jsonify({'success': True, 'message': '청구서가 생성되었습니다.', 'id': combination.id})
     except Exception as e:
@@ -850,11 +903,17 @@ def print_invoice(combination_id):
 # ======================================================
 @app.route('/get_previous_readings/<int:floor_id>/<billing_month>')
 def get_previous_readings(floor_id, billing_month):
-    """Return dict of {unit_id: last_month_current_reading} for given floor."""
+    """Return dict of {unit_id: last_current_reading} for given floor.
+    N개월 묶음 정산 지원: 가장 최근 정산의 현월값을 전월값으로 사용"""
     try:
         current_month = datetime.strptime(billing_month, '%Y-%m').date().replace(day=1)
-        prev_month = prev_month_first(current_month)
-        prev_bill = ElectricBill.query.filter_by(floor_id=floor_id, billing_month=prev_month).first()
+
+        # 해당 층의 가장 최근 정산 찾기 (현재 월보다 이전)
+        prev_bill = ElectricBill.query.filter(
+            ElectricBill.floor_id == floor_id,
+            ElectricBill.billing_month < current_month
+        ).order_by(ElectricBill.billing_month.desc()).first()
+
         readings = {}
         if prev_bill:
             for r in prev_bill.readings:
