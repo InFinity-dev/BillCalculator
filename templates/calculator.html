@@ -30,7 +30,7 @@
 
     <div class="grid grid-3">
       <div class="form-group">
-        <label>정산월 (시작월)</label>
+        <label>정산월</label>
         <input type="month" name="billing_month" id="billing_month" required>
       </div>
       <div class="form-group">
@@ -52,9 +52,6 @@
       <div id="monthlyBillsContainer"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
         <button type="button" class="btn btn-secondary" onclick="addMonthRow()">+ 월 추가</button>
-        <button type="button" class="btn" onclick="addConsecutiveMonths(3)">+ 3개월</button>
-        <button type="button" class="btn" onclick="addConsecutiveMonths(6)">+ 6개월</button>
-        <button type="button" class="btn" onclick="clearMonthRows()">행 지우기</button>
       </div>
       <div style="margin-top:15px; padding:10px; background:#e7f3ff; border-radius:5px;">
         <strong>합계:</strong>
@@ -64,7 +61,7 @@
         TV수신료 <span id="totalTvFee">0</span>원
       </div>
       <small style="color:#64748b;display:block;margin-top:8px;">
-        TV수신료는 월별로 직접 입력할 수 있습니다. 입력하지 않으면, 필요 시 백엔드에서 "TV대수 × 설정된 세대당 TV 수신료"로 산정됩니다.
+        개별 부과 모드에서는 TV 수신료는 설정의 단가 × 개월 수로 보유세대에만 부과됩니다. 이 경우 월별 TV수신료 입력칸은 비활성화됩니다.
       </small>
     </div>
 
@@ -162,58 +159,40 @@ function renderFloorOptions(){
   });
 }
 
-function monthValuePlus(baseYYYYMM, offset){
-  const [y,m] = baseYYYYMM.split('-').map(Number);
-  const d = new Date(y, m - 1 + offset, 1);
-  return d.toISOString().slice(0,7);
-}
-
 function addMonthRow(){
   const container = document.getElementById('monthlyBillsContainer');
-  const base = document.getElementById('billing_month').value;
-  if(!base){ alert('먼저 정산월(시작월)을 선택해주세요.'); return; }
-
   const rowIndex = monthRowCount;
-  const targetMonth = monthValuePlus(base, rowIndex);
 
   const row = document.createElement('div');
   row.className = 'month-row';
-  row.style.cssText = 'display:grid; grid-template-columns: 1fr 2fr 2fr 2fr 2fr 1.5fr 1fr; gap:10px; margin-bottom:10px; padding:10px; background:white; border-radius:5px;';
+  row.style.cssText = 'display:grid; grid-template-columns: 1.2fr 2fr 2fr 2fr 2fr 1fr; gap:10px; margin-bottom:10px; padding:10px; background:white; border-radius:5px;';
   row.innerHTML = `
-    <input type="month" name="month_${rowIndex}" value="${targetMonth}" readonly style="background:#f0f0f0;">
+    <input type="month" name="month_${rowIndex}" placeholder="고지월">
     <input type="number" name="amount_${rowIndex}" placeholder="전기요금" min="0" step="0.01" onchange="calculateTotals()">
     <input type="number" name="welfare_${rowIndex}" placeholder="복지할인" min="0" step="0.01" onchange="calculateTotals()">
     <input type="number" name="voucher_${rowIndex}" placeholder="바우처할인" min="0" step="0.01" onchange="calculateTotals()">
-    <input type="number" name="tv_fee_${rowIndex}" placeholder="TV수신료" min="0" step="0.01" onchange="calculateTotals()">
-    <input type="number" name="tv_units_${rowIndex}" placeholder="TV대수" min="0" value="0">
+    <input type="number" name="tv_fee_${rowIndex}" class="tvfee" placeholder="TV수신료" min="0" step="0.01" onchange="calculateTotals()">
     <button type="button" class="btn btn-danger" onclick="removeMonthRow(this)">삭제</button>
   `;
   container.appendChild(row);
 
   monthRowCount++;
   document.getElementById('month_count').value = monthRowCount;
-  calculateTotals();
-}
-
-function addConsecutiveMonths(n){
-  for(let i=0;i<n;i++){ addMonthRow(); }
-}
-
-function clearMonthRows(){
-  document.getElementById('monthlyBillsContainer').innerHTML='';
-  monthRowCount = 0;
-  document.getElementById('month_count').value = 0;
+  syncTvFeeInputs(); // 모드에 따라 비활성화 처리
   calculateTotals();
 }
 
 function removeMonthRow(btn){
   btn.parentElement.remove();
-  // reindex
+  // reindex names to be continuous (0..n-1)
   const rows = document.querySelectorAll('#monthlyBillsContainer .month-row');
   rows.forEach((row, idx) => {
     row.querySelectorAll('input').forEach(input => {
-      const [key, oldIdx] = input.name.split('_');
-      input.name = key + '_' + idx;
+      const parts = input.name.split('_');
+      if(parts.length > 1){
+        parts[parts.length-1] = String(idx);
+        input.name = parts.join('_');
+      }
     });
   });
   monthRowCount = rows.length;
@@ -273,12 +252,17 @@ document.getElementById('electric_floor_id').addEventListener('change', (e)=>{
   if(id){ renderReadingTable(id); }
 });
 
-// 정산월 변경시 월별 입력 초기화 후 첫 달 자동 추가
-document.getElementById('billing_month').addEventListener('change', (e)=>{
-  clearMonthRows();
-  if(e.target.value) addMonthRow();
-});
+// TV 분배 모드에 따라 월별 TV 수신료 입력칸 활성/비활성
+document.getElementById('tv_mode').addEventListener('change', syncTvFeeInputs);
+function syncTvFeeInputs(){
+  const isIndividual = document.getElementById('tv_mode').value === 'INDIVIDUAL';
+  document.querySelectorAll('#monthlyBillsContainer .tvfee').forEach(inp => {
+    inp.disabled = isIndividual;
+    if(isIndividual){ inp.value = ''; } // 개별부과 모드에서 값 미사용
+  });
+}
 
+// 이전 정산 현월값을 전월값으로 채우기
 function loadPrevReadings(){
   const monthInput = document.getElementById('billing_month');
   const floorId = document.getElementById('electric_floor_id').value;
@@ -345,5 +329,6 @@ document.getElementById('commonForm').addEventListener('submit', async (e)=>{
 
 // init
 renderFloorOptions();
+syncTvFeeInputs();
 </script>
 {% endblock %}

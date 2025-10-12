@@ -264,3 +264,75 @@ ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
 -- ALTER TABLE final_invoices ADD COLUMN IF NOT EXISTS common_details JSON;
 
 -- Done.
+
+-- Migration: add columns required by app.py (N개월 전기 정산 + 월별 상세 + TV 대수)
+-- Target DB: bill_calculator
+-- Safe to run multiple times; ignore 'Duplicate column name' errors if they appear.
+
+-- 1) Ensure database is selected
+USE bill_calculator;
+
+-- 2) Add missing columns to electric_bills
+-- tv_units_count: 총 TV 대수(월별 합)
+-- monthly_details: 월별 세부 내역 JSON [{month, amount, welfare, voucher, tv_fee, tv_units}, ...]
+
+-- Check tv_units_count
+SELECT IF(
+  EXISTS(
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'electric_bills'
+      AND COLUMN_NAME = 'tv_units_count'
+  ),
+  'tv_units_count exists',
+  'ALTER NEEDED: tv_units_count'
+) AS tv_units_count_status;
+
+-- Add tv_units_count if missing
+SET @stmt := (
+  SELECT IF(
+    EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'electric_bills'
+        AND COLUMN_NAME = 'tv_units_count'
+    ),
+    'SELECT "SKIP add tv_units_count";',
+    'ALTER TABLE electric_bills ADD COLUMN tv_units_count INT NOT NULL DEFAULT 0 AFTER tv_distribution_mode;'
+  )
+);
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- Check monthly_details
+SELECT IF(
+  EXISTS(
+    SELECT 1 FROM information_schema.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'electric_bills'
+      AND COLUMN_NAME = 'monthly_details'
+  ),
+  'monthly_details exists',
+  'ALTER NEEDED: monthly_details'
+) AS monthly_details_status;
+
+-- Add monthly_details if missing
+SET @stmt := (
+  SELECT IF(
+    EXISTS(
+      SELECT 1 FROM information_schema.COLUMNS
+      WHERE TABLE_SCHEMA = DATABASE()
+        AND TABLE_NAME = 'electric_bills'
+        AND COLUMN_NAME = 'monthly_details'
+    ),
+    'SELECT "SKIP add monthly_details";',
+    'ALTER TABLE electric_bills ADD COLUMN monthly_details JSON NULL AFTER billing_months_count;'
+  )
+);
+PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
+
+-- 3) Optional: helpful indexes
+-- (No-op if they already exist; MySQL will error on duplicate names, which can be ignored or renamed)
+-- ALTER TABLE electric_bills ADD INDEX idx_electric_bills_created (created_at);
+-- ALTER TABLE electric_bills ADD INDEX idx_electric_bills_updated (updated_at);
+
+-- Done.

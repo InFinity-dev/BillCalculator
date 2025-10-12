@@ -9,6 +9,21 @@ import mysql.connector
 from mysql.connector import Error
 from sqlalchemy.exc import IntegrityError
 
+############## 전기 고지 입력 디버깅
+from decimal import Decimal
+from flask.json.provider import DefaultJSONProvider
+
+class CustomJSONProvider(DefaultJSONProvider):
+    def default(self, o):
+        if isinstance(o, Decimal):
+            # 정수면 int, 아니면 float로 직렬화
+            if o == o.to_integral_value():
+                return int(o)
+            return float(o)
+        return super().default(o)
+
+##################################################
+
 # ======================================================
 # Flask / DB bootstrap
 # ======================================================
@@ -977,3 +992,7 @@ if __name__ == '__main__':
             print(f"[bootstrap] Database initialization error: {e}")
 
     app.run(debug=True, host='0.0.0.0', port=5000)
+############## 전기 고지 입력 디버깅
+    # app = Flask(__name__) 바로 다음 줄 근처
+    app.json = CustomJSONProvider(app)
+##################################################
