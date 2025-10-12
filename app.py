@@ -81,7 +81,9 @@ class ElectricBill(db.Model):
     voucher_discount = db.Column(db.Numeric(10, 2), default=0)
     tv_fee_total = db.Column(db.Numeric(10, 2), default=0)
     tv_distribution_mode = db.Column(db.String(20), default='INDIVIDUAL')  # INDIVIDUAL or EQUAL
+    tv_units_count = db.Column(db.Integer, default=0)  # TV 수신료 납부 세대수
     billing_months_count = db.Column(db.Integer, default=1)  # N개월 묶음 정산
+    monthly_details = db.Column(db.JSON)  # 월별 상세 내역 저장
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     floor_ref = db.relationship('Floor', backref='electric_bills')
@@ -557,11 +559,33 @@ def calculate_electric():
     try:
         billing_month = datetime.strptime(request.form.get('billing_month'), '%Y-%m').date().replace(day=1)
         floor_id = int(request.form.get('floor_id'))
-        total_amount = Decimal(request.form.get('total_amount'))
-        welfare_discount = Decimal(request.form.get('welfare_discount', 0))
-        voucher_discount = Decimal(request.form.get('voucher_discount', 0))
         tv_distribution_mode = request.form.get('tv_distribution_mode', 'INDIVIDUAL')
-        billing_months_count = int(request.form.get('billing_months_count', 1))
+
+        # 월별 상세 데이터 수집
+        monthly_details = []
+        total_amount = Decimal(0)
+        welfare_discount = Decimal(0)
+        voucher_discount = Decimal(0)
+        tv_fee_total = Decimal(0)
+        tv_units_count = 0
+
+        # 동적으로 추가된 월별 데이터 처리
+        month_count = int(request.form.get('month_count', 1))
+        for i in range(month_count):
+            month_data = {
+                'month': request.form.get(f'month_{i}'),
+                'amount': Decimal(request.form.get(f'amount_{i}', 0)),
+                'welfare': Decimal(request.form.get(f'welfare_{i}', 0)),
+                'voucher': Decimal(request.form.get(f'voucher_{i}', 0)),
+                'tv_fee': Decimal(request.form.get(f'tv_fee_{i}', 0)),
+                'tv_units': int(request.form.get(f'tv_units_{i}', 0))
+            }
+            monthly_details.append(month_data)
+            total_amount += month_data['amount']
+            welfare_discount += month_data['welfare']
+            voucher_discount += month_data['voucher']
+            tv_fee_total += month_data['tv_fee']
+            tv_units_count = max(tv_units_count, month_data['tv_units'])  # 최대값 사용
 
         existing = ElectricBill.query.filter_by(billing_month=billing_month, floor_id=floor_id).first()
         if existing and request.form.get('overwrite') != 'true':
@@ -570,10 +594,18 @@ def calculate_electric():
             db.session.delete(existing)
             db.session.flush()
 
-        bill = ElectricBill(billing_month=billing_month, floor_id=floor_id,
-                            total_amount=total_amount, welfare_discount=welfare_discount,
-                            voucher_discount=voucher_discount, tv_distribution_mode=tv_distribution_mode,
-                            billing_months_count=billing_months_count)
+        bill = ElectricBill(
+            billing_month=billing_month,
+            floor_id=floor_id,
+            total_amount=total_amount,
+            welfare_discount=welfare_discount,
+            voucher_discount=voucher_discount,
+            tv_fee_total=tv_fee_total,
+            tv_distribution_mode=tv_distribution_mode,
+            tv_units_count=tv_units_count,
+            billing_months_count=month_count,
+            monthly_details=monthly_details
+        )
         db.session.add(bill)
         db.session.flush()
 
@@ -596,13 +628,11 @@ def calculate_electric():
 
         if tv_distribution_mode == 'EQUAL':
             # 균등 분배 모드: 공실 제외 모든 세대에 균등 분배
-            tv_units_count = len(units)  # 공실 제외 전체
-            bill.tv_fee_total = tv_fee * len([u for u in units if u.has_tv])  # 실제 납부 금액
+            # tv_units_count만큼의 TV 수신료를 전체 세대에 분배
+            tv_fee_per_unit = (tv_fee_total / len(units)) if units else Decimal(0)
         else:
             # 개별 부과 모드: TV 보유 세대만
-            tv_units = [u for u in units if u.has_tv]
-            tv_units_count = len(tv_units)
-            bill.tv_fee_total = tv_fee * tv_units_count
+            tv_fee_per_unit = tv_fee * month_count  # 개월수만큼 곱해서 부과
 
         net_amount = total_amount - welfare_discount - voucher_discount
 
@@ -611,16 +641,18 @@ def calculate_electric():
             base_amount = (usage / total_usage) * net_amount if total_usage > 0 else (
                 net_amount / len(units) if units else Decimal(0))
 
-            unit_welfare = Decimal(get_setting('electric_welfare_amount', '0')) if unit.electric_welfare else Decimal(0)
-            unit_voucher = Decimal(get_setting('electric_voucher_amount', '0')) if unit.electric_voucher else Decimal(0)
+            unit_welfare = Decimal(
+                get_setting('electric_welfare_amount', '0')) * month_count if unit.electric_welfare else Decimal(0)
+            unit_voucher = Decimal(
+                get_setting('electric_voucher_amount', '0')) * month_count if unit.electric_voucher else Decimal(0)
 
             # TV 수신료 배분
             if tv_distribution_mode == 'EQUAL':
                 # 균등 분배
-                unit_tv_fee = (bill.tv_fee_total / len(units)) if units else Decimal(0)
+                unit_tv_fee = tv_fee_per_unit
             else:
                 # 개별 부과
-                unit_tv_fee = tv_fee if unit.has_tv else Decimal(0)
+                unit_tv_fee = tv_fee_per_unit if unit.has_tv else Decimal(0)
 
             final_amount = base_amount - unit_welfare - unit_voucher + unit_tv_fee
             if final_amount < 0:
