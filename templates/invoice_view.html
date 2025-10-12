@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}정산서 조회 - 공과금 정산 시스템{% endblock %}
+
+{% block content %}
+<h1>📄 {{ combination.invoice_name }}</h1>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div>
+        <p style="color: #64748b;">생성일: {{ combination.created_at.strftime('%Y년 %m월 %d일 %H:%M') }}</p>
+        {% if combination.memo %}
+        <p style="color: #64748b;">메모: {{ combination.memo }}</p>
+        {% endif %}
+    </div>
+    <div>
+        <a href="{{ url_for('print_invoice', combination_id=combination.id) }}" target="_blank" class="btn btn-primary">🖨️ 인쇄용 보기</a>
+        <a href="{{ url_for('invoice_combination') }}" class="btn btn-secondary">목록으로</a>
+    </div>
+</div>
+
+<!-- 포함된 항목 -->
+<div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+    <h3>포함된 청구 항목</h3>
+    <ul style="line-height: 2;">
+        {% for item in combination.items %}
+        <li>
+            {% if item.item_type == 'ELECTRIC' %}
+                ⚡ {{ item.billing_month.strftime('%Y년 %m월') }} 전기요금
+            {% elif item.item_type == 'WATER' %}
+                💧 {{ item.billing_month.strftime('%Y년 %m월') }} 수도요금
+            {% elif item.item_type == 'COMMON' %}
+                🏘️ {{ item.billing_month.strftime('%Y년 %m월') }} 공동 공과금
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+<!-- 세대별 청구 내역 -->
+<h2>세대별 청구 내역</h2>
+<table>
+    <thead>
+        <tr>
+            <th>세대</th>
+            <th>전기요금</th>
+            <th>수도요금</th>
+            <th>공동공과금</th>
+            <th style="background: #fef3c7;">최종 청구금액</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for invoice in invoices %}
+        <tr>
+            <td><strong>{{ invoice.unit.unit_name }}</strong></td>
+            <td>
+                {% if invoice.electric_amount > 0 %}
+                    {{ "{:,.0f}".format(invoice.electric_amount) }}원
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if invoice.water_amount > 0 %}
+                    {{ "{:,.0f}".format(invoice.water_amount) }}원
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>
+                {% if invoice.common_amount > 0 %}
+                    {{ "{:,.0f}".format(invoice.common_amount) }}원
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td style="background: #fef3c7; font-weight: bold; font-size: 1.1em;">
+                {{ "{:,.0f}".format(invoice.total_amount) }}원
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr style="background: #e2e8f0; font-weight: bold;">
+            <td>합계</td>
+            <td>{{ "{:,.0f}".format(invoices|sum(attribute='electric_amount')) }}원</td>
+            <td>{{ "{:,.0f}".format(invoices|sum(attribute='water_amount')) }}원</td>
+            <td>{{ "{:,.0f}".format(invoices|sum(attribute='common_amount')) }}원</td>
+            <td style="background: #fbbf24; font-size: 1.2em;">
+                {{ "{:,.0f}".format(invoices|sum(attribute='total_amount')) }}원
+            </td>
+        </tr>
+    </tfoot>
+</table>
+
+<div style="margin-top: 30px; padding: 20px; background: #dbeafe; border-radius: 12px;">
+    <p style="color: #1e40af;">
+        💡 <strong>안내:</strong> 
+        각 항목별 금액은 10원 단위로 올림 처리되어 있습니다.
+        인쇄용 보기에서는 세대별로 잘라서 배부할 수 있는 형식으로 출력됩니다.
+    </p>
+</div>
+
+{% endblock %}

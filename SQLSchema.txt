@@ -1,0 +1,259 @@
+-- BillCalculator Mk2 - Full Schema Reset
+-- Safely drops all tables and recreates them for a clean start.
+-- Target DB: bill_calculator (MySQL 5.7+/8.0+, InnoDB, utf8mb4)
+
+-- =======================================
+-- 0) Create database (idempotent) & select
+-- =======================================
+CREATE DATABASE IF NOT EXISTS bill_calculator
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+USE bill_calculator;
+
+-- =======================================
+-- 1) Drop all tables (FK-safe order off)
+-- =======================================
+SET FOREIGN_KEY_CHECKS=0;
+
+DROP TABLE IF EXISTS final_invoices;
+DROP TABLE IF EXISTS invoice_combination_items;
+DROP TABLE IF EXISTS invoice_combinations;
+
+DROP TABLE IF EXISTS common_bill_details;
+DROP TABLE IF EXISTS common_bills;
+
+DROP TABLE IF EXISTS water_bill_details;
+DROP TABLE IF EXISTS water_bills;
+
+DROP TABLE IF EXISTS electric_bill_details;
+DROP TABLE IF EXISTS electric_readings;
+DROP TABLE IF EXISTS electric_bills;
+
+DROP TABLE IF EXISTS units;
+DROP TABLE IF EXISTS floors;
+
+DROP TABLE IF EXISTS settings;
+
+SET FOREIGN_KEY_CHECKS=1;
+
+-- =======================================
+-- 2) Core master tables
+-- =======================================
+CREATE TABLE floors (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  floor_number  INT NOT NULL,
+  name          VARCHAR(50),
+  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT uq_floors_floor_number UNIQUE (floor_number)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE units (
+  id                 INT AUTO_INCREMENT PRIMARY KEY,
+  floor_id           INT NOT NULL,
+  unit_name          VARCHAR(50) NOT NULL,
+  memo               TEXT,
+  electric_welfare   TINYINT(1) DEFAULT 0,
+  electric_voucher   TINYINT(1) DEFAULT 0,
+  has_tv             TINYINT(1) DEFAULT 1,
+  water_welfare      TINYINT(1) DEFAULT 0,
+  residents_count    INT DEFAULT 1,
+  is_vacant          TINYINT(1) DEFAULT 0,
+  created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at         DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_units_floor FOREIGN KEY (floor_id) REFERENCES floors(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  INDEX idx_units_floor (floor_id),
+  INDEX idx_units_name (unit_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE settings (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  setting_key   VARCHAR(50) NOT NULL UNIQUE,
+  setting_value VARCHAR(255),
+  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_settings_key (setting_key)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =======================================
+-- 3) Electric billing
+-- =======================================
+CREATE TABLE electric_bills (
+  id                INT AUTO_INCREMENT PRIMARY KEY,
+  billing_month     DATE NOT NULL,               -- always 1st of month
+  floor_id          INT NOT NULL,
+  total_amount      DECIMAL(12,2) NOT NULL,
+  welfare_discount  DECIMAL(10,2) DEFAULT 0,
+  voucher_discount  DECIMAL(10,2) DEFAULT 0,
+  tv_fee_total      DECIMAL(10,2) DEFAULT 0,
+  created_at        DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at        DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_electric_bills_floor FOREIGN KEY (floor_id) REFERENCES floors(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  INDEX idx_electric_bills_month (billing_month),
+  INDEX idx_electric_bills_floor_month (floor_id, billing_month),
+  UNIQUE KEY uq_electric_bills_floor_month (floor_id, billing_month)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE electric_readings (
+  id                 INT AUTO_INCREMENT PRIMARY KEY,
+  electric_bill_id   INT NOT NULL,
+  unit_id            INT NOT NULL,
+  previous_reading   DECIMAL(10,2) NOT NULL,
+  current_reading    DECIMAL(10,2) NOT NULL,
+  created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at         DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_electric_readings_bill FOREIGN KEY (electric_bill_id) REFERENCES electric_bills(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_electric_readings_unit FOREIGN KEY (unit_id) REFERENCES units(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  INDEX idx_electric_readings_bill (electric_bill_id),
+  INDEX idx_electric_readings_unit (unit_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE electric_bill_details (
+  id                 INT AUTO_INCREMENT PRIMARY KEY,
+  electric_bill_id   INT NOT NULL,
+  unit_id            INT NOT NULL,
+  usage_amount       DECIMAL(10,2) NOT NULL,
+  base_amount        DECIMAL(10,2) NOT NULL,
+  welfare_discount   DECIMAL(10,2) DEFAULT 0,
+  voucher_discount   DECIMAL(10,2) DEFAULT 0,
+  tv_fee             DECIMAL(10,2) DEFAULT 0,
+  final_amount       DECIMAL(10,2) NOT NULL,
+  charged_amount     DECIMAL(10,2) NOT NULL,
+  unit_snapshot      JSON,
+  created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_electric_details_bill FOREIGN KEY (electric_bill_id) REFERENCES electric_bills(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_electric_details_unit FOREIGN KEY (unit_id) REFERENCES units(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  INDEX idx_electric_details_bill (electric_bill_id),
+  INDEX idx_electric_details_unit (unit_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =======================================
+-- 4) Water billing
+-- =======================================
+CREATE TABLE water_bills (
+  id                      INT AUTO_INCREMENT PRIMARY KEY,
+  billing_month           DATE NOT NULL UNIQUE,  -- always 1st of month
+  total_amount            DECIMAL(12,2) NOT NULL,
+  welfare_discount_total  DECIMAL(10,2) DEFAULT 0,
+  created_at              DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at              DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_water_bills_month (billing_month)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE water_bill_details (
+  id                 INT AUTO_INCREMENT PRIMARY KEY,
+  water_bill_id      INT NOT NULL,
+  unit_id            INT NOT NULL,
+  base_amount        DECIMAL(10,2) NOT NULL,
+  welfare_discount   DECIMAL(10,2) DEFAULT 0,
+  final_amount       DECIMAL(10,2) NOT NULL,
+  charged_amount     DECIMAL(10,2) NOT NULL,
+  unit_snapshot      JSON,
+  created_at         DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_water_details_bill FOREIGN KEY (water_bill_id) REFERENCES water_bills(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_water_details_unit FOREIGN KEY (unit_id) REFERENCES units(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  INDEX idx_water_details_bill (water_bill_id),
+  INDEX idx_water_details_unit (unit_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =======================================
+-- 5) Common (shared) bills
+-- =======================================
+CREATE TABLE common_bills (
+  id                    INT AUTO_INCREMENT PRIMARY KEY,
+  billing_month         DATE NOT NULL,
+  description           VARCHAR(255),
+  total_amount          DECIMAL(12,2) NOT NULL,
+  distribution_method   ENUM('BY_RESIDENTS','BY_UNITS') DEFAULT 'BY_RESIDENTS',
+  created_at            DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at            DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_common_bills_month (billing_month)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE common_bill_details (
+  id               INT AUTO_INCREMENT PRIMARY KEY,
+  common_bill_id   INT NOT NULL,
+  unit_id          INT NOT NULL,
+  amount           DECIMAL(10,2) NOT NULL,
+  charged_amount   DECIMAL(10,2) NOT NULL,
+  unit_snapshot    JSON,
+  created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_common_details_bill FOREIGN KEY (common_bill_id) REFERENCES common_bills(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_common_details_unit FOREIGN KEY (unit_id) REFERENCES units(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  INDEX idx_common_details_bill (common_bill_id),
+  INDEX idx_common_details_unit (unit_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =======================================
+-- 6) Invoice combinations (조합) & Final invoices
+-- =======================================
+CREATE TABLE invoice_combinations (
+  id            INT AUTO_INCREMENT PRIMARY KEY,
+  invoice_name  VARCHAR(255) NOT NULL,
+  memo          TEXT,
+  created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_invoice_combinations_created (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE invoice_combination_items (
+  id              INT AUTO_INCREMENT PRIMARY KEY,
+  combination_id  INT NOT NULL,
+  item_type       ENUM('ELECTRIC','WATER','COMMON') NOT NULL,
+  item_id         INT NOT NULL,
+  billing_month   DATE NOT NULL,
+  created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_invoice_items_comb FOREIGN KEY (combination_id) REFERENCES invoice_combinations(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  INDEX idx_invoice_items_comb (combination_id),
+  INDEX idx_invoice_items_type (item_type),
+  INDEX idx_invoice_items_month (billing_month)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE final_invoices (
+  id               INT AUTO_INCREMENT PRIMARY KEY,
+  combination_id   INT NOT NULL,
+  unit_id          INT NOT NULL,
+  electric_amount  DECIMAL(10,2) DEFAULT 0,
+  water_amount     DECIMAL(10,2) DEFAULT 0,
+  common_amount    DECIMAL(10,2) DEFAULT 0,
+  total_amount     DECIMAL(10,2) NOT NULL,
+  memo             TEXT,
+  created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_final_invoices_comb FOREIGN KEY (combination_id) REFERENCES invoice_combinations(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_final_invoices_unit FOREIGN KEY (unit_id) REFERENCES units(id)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  INDEX idx_final_invoices_comb (combination_id),
+  INDEX idx_final_invoices_unit (unit_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =======================================
+-- 7) Seed defaults (idempotent upserts)
+-- =======================================
+INSERT INTO settings (setting_key, setting_value)
+VALUES
+  ('tv_fee', '2500'),
+  ('electric_welfare_amount', '0'),
+  ('electric_voucher_amount', '0'),
+  ('water_welfare_amount', '0')
+ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value);
+
+-- =======================================
+-- 8) (Optional) User & Grant (uncomment if needed)
+-- =======================================
+-- CREATE USER IF NOT EXISTS 'power_user'@'%' IDENTIFIED BY 'mslee0702';
+-- GRANT ALL PRIVILEGES ON bill_calculator.* TO 'power_user'@'%' WITH GRANT OPTION;
+-- FLUSH PRIVILEGES;
+
+-- Done.

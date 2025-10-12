@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+{% block title %}설정 - 공과금 정산 시스템{% endblock %}
+{% block content %}
+<h1>⚙️ 시스템 설정</h1>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('floors-tab', event)">층/세대 관리</button>
+  <button class="tab" onclick="showTab('settings-tab', event)">요금 설정</button>
+  <button class="tab" onclick="showTab('import-export-tab', event)">가져오기/내보내기</button>
+</div>
+
+<!-- 층/세대 관리 -->
+<div id="floors-tab" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h2>층 및 세대 관리</h2>
+    <button class="btn btn-primary" data-open-modal="addFloorModal">+ 층 추가</button>
+  </div>
+
+  {% for floor in floors %}
+  <div style="background:#f8fafc;padding:20px;border-radius:12px;margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+      <h3>
+        {% set label = ('B' ~ (0 - floor.floor_number) ~ '층') if floor.floor_number < 0 else (floor.floor_number ~ '층') %}
+        {{ label }}{% if floor.name %} ({{ floor.name }}){% endif %}
+      </h3>
+      <div>
+        <button class="btn btn-secondary" data-open-add-unit data-floor-id="{{ floor.id }}">+ 세대 추가</button>
+        <button class="btn" data-open-rename-floor data-floor-id="{{ floor.id }}" data-floor-number="{{ floor.floor_number }}" data-floor-name="{{ floor.name|default('') }}">이름 수정</button>
+        <button class="btn btn-danger" data-delete-floor data-floor-id="{{ floor.id }}">층 삭제</button>
+      </div>
+    </div>
+
+    {% if floor.units %}
+    <table>
+      <thead>
+      <tr>
+        <th>세대명</th><th>거주인원</th><th>전기복지</th><th>전기바우처</th><th>TV보유</th><th>수도복지</th><th>공실</th><th>비고</th><th>작업</th>
+      </tr>
+      </thead>
+      <tbody>
+      {% for unit in floor.units %}
+      <tr>
+        <td><strong>{{ unit.unit_name }}</strong></td>
+        <td>{{ unit.residents_count }}명</td>
+        <td>{% if unit.electric_welfare %}<span class="badge badge-success">적용</span>{% else %}<span class="badge badge-warning">미적용</span>{% endif %}</td>
+        <td>{% if unit.electric_voucher %}<span class="badge badge-success">적용</span>{% else %}<span class="badge badge-warning">미적용</span>{% endif %}</td>
+        <td>{% if unit.has_tv %}<span class="badge badge-primary">보유</span>{% else %}<span class="badge badge-warning">미보유</span>{% endif %}</td>
+        <td>{% if unit.water_welfare %}<span class="badge badge-success">적용</span>{% else %}<span class="badge badge-warning">미적용</span>{% endif %}</td>
+        <td>{% if unit.is_vacant %}<span class="badge badge-danger">공실</span>{% else %}<span class="badge badge-success">재실</span>{% endif %}</td>
+        <td>{{ unit.memo or '-' }}</td>
+        <td>
+          <button class="btn btn-secondary" style="padding:5px 10px;"
+            data-edit-unit
+            data-unit-id="{{ unit.id }}"
+            data-unit='{{ {
+              "unit_name": unit.unit_name,
+              "residents_count": unit.residents_count or 0,
+              "electric_welfare": unit.electric_welfare,
+              "electric_voucher": unit.electric_voucher,
+              "has_tv": unit.has_tv,
+              "water_welfare": unit.water_welfare,
+              "is_vacant": unit.is_vacant,
+              "memo": unit.memo or ""
+            } | tojson | e }}'
+          >수정</button>
+          <button class="btn btn-danger" style="padding:5px 10px;" data-delete-unit data-unit-id="{{ unit.id }}">삭제</button>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p style="color:#94a3b8;text-align:center;padding:20px;">세대가 없습니다. 세대를 추가해주세요.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  {% if not floors %}
+  <div style="text-align:center;padding:40px;color:#94a3b8;">
+    <p>등록된 층이 없습니다.</p>
+    <button class="btn btn-primary" style="margin-top:20px;" data-open-modal="addFloorModal">첫 층 추가하기</button>
+  </div>
+  {% endif %}
+</div>
+
+<!-- 요금 설정 -->
+<div id="settings-tab" class="tab-content" style="display:none;">
+  <h2>요금 설정</h2>
+  <form action="{{ url_for('save_settings') }}" method="POST">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <div class="grid grid-2">
+      <div class="form-group">
+        <label>TV 수신료 (세대당)</label>
+        <input type="number" name="tv_fee" value="{{ tv_fee }}" required>
+        <small style="color:#94a3b8;">기본값: 2,500원</small>
+      </div>
+      <div class="form-group">
+        <label>전기 복지 할인 금액</label>
+        <input type="number" name="electric_welfare_amount" value="{{ electric_welfare_amount }}" required>
+        <small style="color:#94a3b8;">기본값: 0원</small>
+      </div>
+      <div class="form-group">
+        <label>전기 바우처 할인 금액</label>
+        <input type="number" name="electric_voucher_amount" value="{{ electric_voucher_amount }}" required>
+        <small style="color:#94a3b8;">기본값: 0원</small>
+      </div>
+      <div class="form-group">
+        <label>수도 복지 할인 금액</label>
+        <input type="number" name="water_welfare_amount" value="{{ water_welfare_amount }}" required>
+        <small style="color:#94a3b8;">기본값: 0원</small>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary">설정 저장</button>
+  </form>
+</div>
+
+<!-- 가져오기/내보내기 -->
+<div id="import-export-tab" class="tab-content" style="display:none;">
+  <h2>데이터 가져오기/내보내기</h2>
+  <div class="grid grid-2">
+    <div style="background:#f8fafc;padding:20px;border-radius:12px;">
+      <h3>📤 내보내기</h3>
+      <p style="color:#64748b;margin:15px 0;">현재 층/세대 설정을 JSON 파일로 내보냅니다.</p>
+      <button class="btn btn-primary" id="exportBtn">설정 내보내기</button>
+    </div>
+    <div style="background:#f8fafc;padding:20px;border-radius:12px;">
+      <h3>📥 가져오기</h3>
+      <p style="color:#64748b;margin:15px 0;">JSON 파일에서 층/세대 설정을 가져옵니다.</p>
+      <input type="file" id="importFile" accept=".json" style="margin-bottom:15px;">
+      <button class="btn btn-success" id="importBtn">설정 가져오기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 층 추가 모달 -->
+<div id="addFloorModal" class="modal">
+  <div class="modal-content">
+    <h2>층 추가</h2>
+    <form id="addFloorForm">
+      <div class="form-group">
+        <label>층 번호</label>
+        <input type="number" name="floor_number" required>
+      </div>
+      <div class="form-group">
+        <label>층 이름 (선택)</label>
+        <input type="text" name="name" placeholder="예: 1층">
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary">추가</button>
+        <button type="button" class="btn btn-secondary" data-close-modal="addFloorModal">취소</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 세대 추가 모달 -->
+<div id="addUnitModal" class="modal">
+  <div class="modal-content">
+    <h2>세대 추가</h2>
+    <form id="addUnitForm">
+      <input type="hidden" name="floor_id" id="unit_floor_id">
+      <div class="form-group">
+        <label>세대명</label>
+        <input type="text" name="unit_name" required>
+      </div>
+      <div class="form-group">
+        <label>거주 인원</label>
+        <input type="number" name="residents_count" value="1" min="0" required>
+      </div>
+      <div class="grid grid-2">
+        <div class="checkbox-wrapper"><input type="checkbox" name="electric_welfare" id="electric_welfare"><label for="electric_welfare">전기 복지 대상</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" name="electric_voucher" id="electric_voucher"><label for="electric_voucher">전기 바우처 대상</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" name="has_tv" id="has_tv" checked><label for="has_tv">TV 보유</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" name="water_welfare" id="water_welfare"><label for="water_welfare">수도 복지 대상</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" name="is_vacant" id="is_vacant"><label for="is_vacant">공실</label></div>
+      </div>
+      <div class="form-group">
+        <label>비고</label>
+        <textarea name="memo" rows="2"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary">추가</button>
+        <button type="button" class="btn btn-secondary" data-close-modal="addUnitModal">취소</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 세대 수정 모달 -->
+<div id="editUnitModal" class="modal">
+  <div class="modal-content">
+    <h2>세대 수정</h2>
+    <form id="editUnitForm">
+      <input type="hidden" name="unit_id" id="edit_unit_id">
+      <div class="form-group">
+        <label>세대명</label>
+        <input type="text" name="unit_name" id="edit_unit_name" required>
+      </div>
+      <div class="form-group">
+        <label>거주 인원</label>
+        <input type="number" name="residents_count" id="edit_residents_count" value="1" min="0" required>
+      </div>
+      <div class="grid grid-2">
+        <div class="checkbox-wrapper"><input type="checkbox" name="electric_welfare" id="edit_electric_welfare"><label for="edit_electric_welfare">전기 복지 대상</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" name="electric_voucher" id="edit_electric_voucher"><label for="edit_electric_voucher">전기 바우처 대상</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" name="has_tv" id="edit_has_tv"><label for="edit_has_tv">TV 보유</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" name="water_welfare" id="edit_water_welfare"><label for="edit_water_welfare">수도 복지 대상</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" name="is_vacant" id="edit_is_vacant"><label for="edit_is_vacant">공실</label></div>
+      </div>
+      <div class="form-group">
+        <label>비고</label>
+        <textarea name="memo" id="edit_memo" rows="2"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary">수정</button>
+        <button type="button" class="btn btn-secondary" data-close-modal="editUnitModal">취소</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- 층 이름 수정 모달 -->
+<div id="renameFloorModal" class="modal">
+  <div class="modal-content">
+    <h2>층 이름 수정</h2>
+    <form id="renameFloorForm">
+      <input type="hidden" name="floor_id" id="rename_floor_id">
+      <div class="form-group">
+        <label>층 번호</label>
+        <input type="number" name="floor_number" id="rename_floor_number" required>
+      </div>
+      <div class="form-group">
+        <label>새 이름</label>
+        <input type="text" name="name" id="rename_floor_name" placeholder="예: B1층" required>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn btn-primary">저장</button>
+        <button type="button" class="btn btn-secondary" data-close-modal="renameFloorModal">취소</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showTab(tabId, ev){
+  document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+  document.getElementById(tabId).style.display='block';
+  if(ev && ev.target) ev.target.classList.add('active');
+}
+
+// Modal helpers
+document.addEventListener('click', (e)=>{
+  const open = e.target.closest('[data-open-modal]');
+  if(open){ openModal(open.getAttribute('data-open-modal')); }
+
+  const close = e.target.closest('[data-close-modal]');
+  if(close){ closeModal(close.getAttribute('data-close-modal')); }
+
+  const addUnitBtn = e.target.closest('[data-open-add-unit]');
+  if(addUnitBtn){
+    document.getElementById('unit_floor_id').value = addUnitBtn.getAttribute('data-floor-id');
+    openModal('addUnitModal');
+  }
+
+  const renameBtn = e.target.closest('[data-open-rename-floor]');
+  if(renameBtn){
+    document.getElementById('rename_floor_id').value = renameBtn.getAttribute('data-floor-id');
+    document.getElementById('rename_floor_name').value = renameBtn.getAttribute('data-floor-name') || '';
+    document.getElementById('rename_floor_number').value = renameBtn.getAttribute('data-floor-number') || '';
+    openModal('renameFloorModal');
+  }
+
+  const editBtn = e.target.closest('[data-edit-unit]');
+  if(editBtn){
+    const unitId = editBtn.getAttribute('data-unit-id');
+    const data = editBtn.getAttribute('data-unit');
+    try{
+      const unit = JSON.parse(data);
+      document.getElementById('edit_unit_id').value = unitId;
+      document.getElementById('edit_unit_name').value = unit.unit_name || '';
+      document.getElementById('edit_residents_count').value = unit.residents_count ?? 0;
+      document.getElementById('edit_electric_welfare').checked = !!unit.electric_welfare;
+      document.getElementById('edit_electric_voucher').checked = !!unit.electric_voucher;
+      document.getElementById('edit_has_tv').checked = !!unit.has_tv;
+      document.getElementById('edit_water_welfare').checked = !!unit.water_welfare;
+      document.getElementById('edit_is_vacant').checked = !!unit.is_vacant;
+      document.getElementById('edit_memo').value = unit.memo || '';
+      openModal('editUnitModal');
+    }catch(err){
+      alert('수정 데이터를 읽는 중 오류가 발생했습니다.');
+      console.error(err);
+    }
+  }
+
+  const deleteUnitBtn = e.target.closest('[data-delete-unit]');
+  if(deleteUnitBtn){ deleteUnit(deleteUnitBtn.getAttribute('data-unit-id')); }
+
+  const deleteFloorBtn = e.target.closest('[data-delete-floor]');
+  if(deleteFloorBtn){ deleteFloor(deleteFloorBtn.getAttribute('data-floor-id')); }
+});
+
+// Forms
+const addFloorForm = document.getElementById('addFloorForm');
+if(addFloorForm){
+  addFloorForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const fd = new FormData(e.target); fd.append('_csrf_token', getCsrfToken());
+    const res = await fetch('/floors/add',{method:'POST',body:fd}); const j=await res.json();
+    if(j.success) location.reload(); else alert(j.message || '추가 실패');
+  });
+}
+
+const addUnitForm = document.getElementById('addUnitForm');
+if(addUnitForm){
+  addUnitForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const fd = new FormData(e.target); fd.append('_csrf_token', getCsrfToken());
+    fd.set('electric_welfare', fd.has('electric_welfare') ? 'true' : 'false');
+    fd.set('electric_voucher', fd.has('electric_voucher') ? 'true' : 'false');
+    fd.set('has_tv', fd.has('has_tv') ? 'true' : 'false');
+    fd.set('water_welfare', fd.has('water_welfare') ? 'true' : 'false');
+    fd.set('is_vacant', fd.has('is_vacant') ? 'true' : 'false');
+    const res = await fetch('/units/add',{method:'POST',body:fd}); const j=await res.json();
+    if(j.success) location.reload(); else alert(j.message || '추가 실패');
+  });
+}
+
+const editUnitForm = document.getElementById('editUnitForm');
+if(editUnitForm){
+  editUnitForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const id = document.getElementById('edit_unit_id').value;
+    const fd = new FormData(e.target); fd.append('_csrf_token', getCsrfToken());
+    fd.set('electric_welfare', fd.has('electric_welfare') ? 'true' : 'false');
+    fd.set('electric_voucher', fd.has('electric_voucher') ? 'true' : 'false');
+    fd.set('has_tv', fd.has('has_tv') ? 'true' : 'false');
+    fd.set('water_welfare', fd.has('water_welfare') ? 'true' : 'false');
+    fd.set('is_vacant', fd.has('is_vacant') ? 'true' : 'false');
+    const res = await fetch(`/units/${id}/update`, {method:'POST', body:fd}); const j=await res.json();
+    if(j.success) location.reload(); else alert(j.message || '수정 실패');
+  });
+}
+
+const renameFloorForm = document.getElementById('renameFloorForm');
+if(renameFloorForm){
+  renameFloorForm.addEventListener('submit', async (e)=>{
+    e.preventDefault();
+    const id = document.getElementById('rename_floor_id').value;
+    const fd = new FormData(e.target); fd.append('_csrf_token', getCsrfToken());
+    const res = await fetch(`/floors/${id}/update`, {method:'POST', body: fd}); const j = await res.json();
+    if(j.success){ location.reload(); } else { alert(j.message || '수정 실패'); }
+  });
+}
+
+// Delete helpers
+async function deleteUnit(unitId){
+  if(!confirm('정말 이 세대를 삭제하시겠습니까?')) return;
+  const fd = new FormData(); fd.append('_csrf_token', getCsrfToken());
+  const res = await fetch(`/units/${unitId}/delete`, {method:'POST', body:fd}); const j=await res.json();
+  if(j.success) location.reload(); else alert(j.message || '삭제 실패');
+}
+
+async function deleteFloor(floorId){
+  if(!confirm('정말 이 층을 삭제하시겠습니까? 모든 세대 정보도 함께 삭제됩니다.')) return;
+  const fd = new FormData(); fd.append('_csrf_token', getCsrfToken());
+  const res = await fetch(`/floors/${floorId}/delete`, {method:'POST', body:fd}); const j=await res.json();
+  if(j.success) location.reload(); else alert(j.message || '삭제 실패');
+}
+
+// Export / Import
+const exportBtn = document.getElementById('exportBtn');
+if(exportBtn){
+  exportBtn.addEventListener('click', async ()=>{
+    const res = await fetch('/settings/export'); const data = await res.json();
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=`settings_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  });
+}
+
+const importBtn = document.getElementById('importBtn');
+if(importBtn){
+  importBtn.addEventListener('click', async ()=>{
+    const f = document.getElementById('importFile').files[0];
+    if(!f){ alert('파일을 선택해주세요.'); return; }
+    const text = await f.text();
+    try{
+      const data = JSON.parse(text);
+      if(!confirm('기존 설정을 모두 삭제하고 새로운 설정을 가져오시겠습니까?')) return;
+      data._csrf_token = getCsrfToken();
+      const res = await fetch('/settings/import', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
+      const j = await res.json();
+      if(j.success){ alert('설정을 성공적으로 가져왔습니다.'); location.reload(); } else { alert(j.message || '가져오기 실패'); }
+    }catch(e){ alert('파일 형식이 올바르지 않습니다.'); }
+  });
+}
+</script>
+{% endblock %}

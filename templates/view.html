@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}전체 조회 - 공과금 정산 시스템{% endblock %}
+{% block content %}
+<h1>📊 전체 조회</h1>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('tab-electric', event)">전기</button>
+  <button class="tab" onclick="showTab('tab-water', event)">수도</button>
+  <button class="tab" onclick="showTab('tab-common', event)">공동 공과금</button>
+</div>
+
+<div id="tab-electric" class="tab-content">
+  <h2>⚡ 전기요금</h2>
+  <div id="electricList"></div>
+</div>
+
+<div id="tab-water" class="tab-content" style="display:none;">
+  <h2>💧 수도요금</h2>
+  <div id="waterList"></div>
+</div>
+
+<div id="tab-common" class="tab-content" style="display:none;">
+  <h2>🏘️ 공동 공과금</h2>
+  <div id="commonList"></div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function showTab(id, ev){
+  document.querySelectorAll('.tab-content').forEach(x=>x.style.display='none');
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById(id).style.display='block';
+  if(ev && ev.target) ev.target.classList.add('active');
+}
+
+const electricBills = {{ (electric_bills_json|default([]))|tojson }};
+const waterBills = {{ (water_bills_json|default([]))|tojson }};
+const commonBills = {{ (common_bills_json|default([]))|tojson }};
+
+function renderElectric(){
+  const el = document.getElementById('electricList');
+  if(!electricBills.length){ el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>'; return; }
+  el.innerHTML = '<table><thead><tr><th>월</th><th>층</th><th>총액</th><th>복지</th><th>바우처</th><th>TV</th></tr></thead><tbody>' +
+    electricBills.map(b=>`<tr>
+      <td>${b.billing_month.slice(0,7)}</td>
+      <td>${b.floor_name || ''}</td>
+      <td style="text-align:right">${Number(b.total_amount).toLocaleString()}</td>
+      <td style="text-align:right">${Number(b.welfare_discount||0).toLocaleString()}</td>
+      <td style="text-align:right">${Number(b.voucher_discount||0).toLocaleString()}</td>
+      <td style="text-align:right">${Number(b.tv_fee_total||0).toLocaleString()}</td>
+    </tr>`).join('') + '</tbody></table>';
+}
+function renderWater(){
+  const el = document.getElementById('waterList');
+  if(!waterBills.length){ el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>'; return; }
+  el.innerHTML = '<table><thead><tr><th>월</th><th>총액</th><th>복지합계</th></tr></thead><tbody>' +
+    waterBills.map(b=>`<tr>
+      <td>${b.billing_month.slice(0,7)}</td>
+      <td style="text-align:right">${Number(b.total_amount).toLocaleString()}</td>
+      <td style="text-align:right">${Number(b.welfare_discount_total||0).toLocaleString()}</td>
+    </tr>`).join('') + '</tbody></table>';
+}
+function renderCommon(){
+  const el = document.getElementById('commonList');
+  if(!commonBills.length){ el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>'; return; }
+  el.innerHTML = '<table><thead><tr><th>월</th><th>설명</th><th>총액</th><th>분배 방식</th></tr></thead><tbody>' +
+    commonBills.map(b=>`<tr>
+      <td>${b.billing_month.slice(0,7)}</td>
+      <td>${b.description||''}</td>
+      <td style="text-align:right">${Number(b.total_amount).toLocaleString()}</td>
+      <td>${b.distribution_method}</td>
+    </tr>`).join('') + '</tbody></table>';
+}
+
+renderElectric(); renderWater(); renderCommon();
+</script>
+{% endblock %}

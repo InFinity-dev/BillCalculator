@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>청구서 인쇄 - {{ combination.invoice_name }}</title>
+    <style>
+        @media print {
+            .page-break {
+                page-break-after: always;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+
+        body {
+            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+        }
+
+        .invoice-container {
+            max-width: 210mm;
+            margin: 0 auto;
+        }
+
+        .invoice {
+            border: 2px solid #333;
+            padding: 30px;
+            margin-bottom: 30px;
+            min-height: 250mm;
+            position: relative;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #333;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .header p {
+            margin: 5px 0;
+            color: #666;
+        }
+
+        .unit-info {
+            background: #f8f8f8;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+
+        .unit-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .bill-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        .bill-table th,
+        .bill-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .bill-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+
+        .bill-table td.amount {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .total-row {
+            background: #fff3cd;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .total-row td {
+            padding: 15px 12px;
+        }
+
+        .memo-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .memo-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .footer {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            right: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+        }
+
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .print-button:hover {
+            background: #5a67d8;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">🖨️ 인쇄하기</button>
+
+    <div class="invoice-container">
+        {% for invoice in invoices %}
+        <div class="invoice {% if not loop.last %}page-break{% endif %}">
+            <div class="header">
+                <h1>공과금 청구서</h1>
+                <p>{{ combination.invoice_name }}</p>
+                <p>발행일: {{ combination.created_at.strftime('%Y년 %m월 %d일') }}</p>
+            </div>
+
+            <div class="unit-info">
+                <div class="unit-name">{{ invoice.unit.unit_name }}</div>
+            </div>
+
+            <table class="bill-table">
+                <thead>
+                    <tr>
+                        <th width="70%">청구 항목</th>
+                        <th width="30%">금액</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if invoice.electric_amount > 0 %}
+                    <tr>
+                        <td>전기요금</td>
+                        <td class="amount">{{ "{:,.0f}".format(invoice.electric_amount) }}원</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if invoice.water_amount > 0 %}
+                    <tr>
+                        <td>수도요금</td>
+                        <td class="amount">{{ "{:,.0f}".format(invoice.water_amount) }}원</td>
+                    </tr>
+                    {% endif %}
+
+                    {% if invoice.common_amount > 0 %}
+                    <tr>
+                        <td>공동 공과금</td>
+                        <td class="amount">{{ "{:,.0f}".format(invoice.common_amount) }}원</td>
+                    </tr>
+                    {% endif %}
+
+                    <tr class="total-row">
+                        <td>총 청구금액</td>
+                        <td class="amount">{{ "{:,.0f}".format(invoice.total_amount) }}원</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            {% if combination.memo %}
+            <div class="memo-section">
+                <h3>안내사항</h3>
+                <p>{{ combination.memo }}</p>
+            </div>
+            {% endif %}
+
+            <div class="footer">
+                <p>* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</body>
+</html>
