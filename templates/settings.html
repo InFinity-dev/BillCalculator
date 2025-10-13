@@ -89,6 +89,10 @@
   <h2>요금 설정</h2>
   <form action="{{ url_for('save_settings') }}" method="POST">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <!-- 정산서 설정값도 함께 전송 -->
+    <input type="hidden" name="invoice_default_memo" value="{{ invoice_default_memo }}">
+    <input type="hidden" name="invoice_footer" value="{{ invoice_footer }}">
+
     <div class="grid grid-2">
       <div class="form-group">
         <label>TV 수신료 (세대당)</label>
@@ -119,11 +123,11 @@
 <div id="invoice-settings-tab" class="tab-content" style="display:none;">
   <h2>📄 정산서 설정</h2>
   <p style="color:#64748b;margin-bottom:20px;">
-    정산서에 항상 포함될 고정 메모를 설정할 수 있습니다. (예: 입금 계좌 안내, 납부 기한 등)
+    정산서에 항상 포함될 고정 메모와 인쇄 시 하단에 표시될 안내문을 설정할 수 있습니다.
   </p>
   <form action="{{ url_for('save_settings') }}" method="POST">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <!-- 기존 요금 설정값도 함께 전송 -->
+    <!-- 요금 설정값도 함께 전송 -->
     <input type="hidden" name="tv_fee" value="{{ tv_fee }}">
     <input type="hidden" name="electric_welfare_amount" value="{{ electric_welfare_amount }}">
     <input type="hidden" name="electric_voucher_amount" value="{{ electric_voucher_amount }}">
@@ -141,6 +145,21 @@
       <h4 style="margin:0 0 10px 0;color:#1e40af;">💡 미리보기</h4>
       <div style="background:white;padding:15px;border-radius:5px;white-space:pre-wrap;font-family:monospace;font-size:13px;color:#334155;">
         {{ invoice_default_memo if invoice_default_memo else '(아직 설정된 고정 메모가 없습니다)' }}
+      </div>
+    </div>
+
+    <div class="form-group" style="margin-top:30px;">
+      <label>인쇄용 하단 안내문 (Footer)</label>
+      <textarea name="invoice_footer" rows="4" placeholder="예:&#10;* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.&#10;* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다." style="font-family: monospace;">{{ invoice_footer }}</textarea>
+      <small style="color:#94a3b8;">
+        정산서 인쇄 시 각 페이지 하단에 표시될 안내문입니다. 납부 안내, 문의처 등을 입력하세요.
+      </small>
+    </div>
+
+    <div style="background:#fef3c7;padding:15px;border-radius:8px;margin-bottom:20px;">
+      <h4 style="margin:0 0 10px 0;color:#92400e;">📋 Footer 미리보기</h4>
+      <div style="background:white;padding:15px;border-radius:5px;white-space:pre-wrap;font-family:monospace;font-size:12px;color:#334155;text-align:center;border-top:1px solid #ddd;padding-top:10px;">
+        {{ invoice_footer if invoice_footer else '(아직 설정된 Footer가 없습니다)' }}
       </div>
     </div>
 

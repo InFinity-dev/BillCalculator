@@ -26,6 +26,69 @@
     font-size: 13px;
     line-height: 1.6;
   }
+
+  /* 개선된 테이블 스타일 */
+  table th {
+    background: #f1f5f9 !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    border-bottom: 2px solid #cbd5e1 !important;
+    white-space: nowrap;
+  }
+
+  /* 금액 컬럼 헤더도 우측 정렬 */
+  table th.text-right {
+    text-align: right !important;
+  }
+
+  /* 금액 데이터 우측 정렬 */
+  table td.text-right {
+    text-align: right !important;
+    font-weight: 500;
+  }
+
+  /* 테이블 호버 효과 개선 */
+  table tbody tr:hover {
+    background: #f8fafc !important;
+    transition: background 0.2s ease;
+  }
+
+  /* 할인 금액 스타일 */
+  .discount-amount {
+    color: #059669;
+    font-weight: 500;
+  }
+
+  /* TV 수신료 스타일 */
+  .tv-fee-amount {
+    color: #dc2626;
+    font-weight: 500;
+  }
+
+  /* 작업 버튼 컨테이너 */
+  .action-buttons {
+    white-space: nowrap;
+    display: flex;
+    gap: 4px;
+  }
+
+  /* 고지월 정보 셀 스타일 */
+  td .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  /* 월 목록 래퍼 */
+  .month-list-wrapper {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
 </style>
 {% endblock %}
 
@@ -118,7 +181,7 @@ function prepareElectricChartData() {
   }
 
   // 층별로 그룹화
-  const floorDataMap = new Map(); // key: floor_id, value: { floor_name, monthlyData: Map }
+  const floorDataMap = new Map();
 
   electricBills.forEach(bill => {
     const floorId = bill.floor_id;
@@ -127,20 +190,18 @@ function prepareElectricChartData() {
     if (!floorDataMap.has(floorId)) {
       floorDataMap.set(floorId, {
         floor_name: floorName,
-        monthlyData: new Map() // key: 'YYYY-MM', value: amount
+        monthlyData: new Map()
       });
     }
 
     const floorData = floorDataMap.get(floorId);
 
-    // 해당 층의 고지월별 데이터 추출
     if (bill.monthly_details && Array.isArray(bill.monthly_details)) {
       bill.monthly_details.forEach(detail => {
         if (detail.month) {
           const monthKey = detail.month.substring(0, 7);
           const amount = parseFloat(detail.amount || 0);
 
-          // 동일 고지월이 여러 정산에 포함된 경우 합산
           if (floorData.monthlyData.has(monthKey)) {
             floorData.monthlyData.set(monthKey, floorData.monthlyData.get(monthKey) + amount);
           } else {
@@ -151,7 +212,6 @@ function prepareElectricChartData() {
     }
   });
 
-  // 모든 고지월 수집 및 정렬
   const allMonths = new Set();
   floorDataMap.forEach(floorData => {
     floorData.monthlyData.forEach((amount, month) => {
@@ -164,7 +224,6 @@ function prepareElectricChartData() {
     return { labels: [], datasets: [] };
   }
 
-  // 층별 데이터셋 생성
   const datasets = [];
   let colorIndex = 0;
 
@@ -232,7 +291,6 @@ function updateElectricChart() {
   const ctx = document.getElementById('electricChart').getContext('2d');
   const data = prepareElectricChartData();
 
-  // 기존 차트 파괴
   if (electricChart) {
     electricChart.destroy();
   }
@@ -252,12 +310,10 @@ function updateElectricChart() {
           display: true,
           position: 'top',
           onClick: function(e, legendItem, legend) {
-            // 기본 레전드 클릭 동작 사용
             const index = legendItem.datasetIndex;
             const chart = legend.chart;
             const meta = chart.getDatasetMeta(index);
 
-            // 데이터셋 표시/숨김 토글
             meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
 
             chart.update();
@@ -354,30 +410,40 @@ function renderElectric(){
       <thead>
         <tr>
           <th>정산월</th>
-          <th>고지월 정보</th>
+          <th style="min-width:220px;">고지월 정보</th>
           <th>층</th>
-          <th>총액</th>
-          <th>복지</th>
-          <th>바우처</th>
-          <th>TV</th>
+          <th class="text-right">이액</th>
+          <th class="text-right">복지할인</th>
+          <th class="text-right">바우처할인</th>
+          <th class="text-right">TV수신료</th>
+          <th>세대수</th>
           <th>작업</th>
         </tr>
       </thead>
       <tbody>
         ${electricBills.map(b => `
           <tr>
-            <td>${b.billing_month.slice(0,7)}</td>
-            <td style="min-width:200px;" title="${b.monthly_details ? b.monthly_details.map(m => m.month ? m.month.substring(0, 7) : '-').join(', ') : ''}">
+            <td><strong>${b.billing_month.slice(0,7)}</strong></td>
+            <td style="min-width:220px;">
               ${formatMonthlyDetails(b)}
             </td>
             <td>${b.floor_name || ''}</td>
-            <td style="text-align:right">${Number(b.total_amount).toLocaleString()}원</td>
-            <td style="text-align:right">${Number(b.welfare_discount||0).toLocaleString()}원</td>
-            <td style="text-align:right">${Number(b.voucher_discount||0).toLocaleString()}원</td>
-            <td style="text-align:right">${Number(b.tv_fee_total||0).toLocaleString()}원</td>
-            <td style="white-space:nowrap;">
-              <a href="/view/electric/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
-              <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('electric', ${b.id})">삭제</button>
+            <td class="text-right">${Number(b.total_amount).toLocaleString()}원</td>
+            <td class="text-right discount-amount">
+              ${Number(b.welfare_discount||0) > 0 ? '-' + Number(b.welfare_discount).toLocaleString() + '원' : '-'}
+            </td>
+            <td class="text-right discount-amount">
+              ${Number(b.voucher_discount||0) > 0 ? '-' + Number(b.voucher_discount).toLocaleString() + '원' : '-'}
+            </td>
+            <td class="text-right tv-fee-amount">
+              ${Number(b.tv_fee_total||0) > 0 ? '+' + Number(b.tv_fee_total).toLocaleString() + '원' : '-'}
+            </td>
+            <td>${b.details.length}세대</td>
+            <td>
+              <div class="action-buttons">
+                <a href="/view/electric/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
+                <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('electric', ${b.id})">삭제</button>
+              </div>
             </td>
           </tr>
         `).join('')}
@@ -393,16 +459,37 @@ function renderWater(){
     el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
     return;
   }
-  el.innerHTML = '<table><thead><tr><th>월</th><th>총액</th><th>복지합계</th><th>작업</th></tr></thead><tbody>' +
-    waterBills.map(b=>`<tr>
-      <td>${b.billing_month.slice(0,7)}</td>
-      <td style="text-align:right">${Number(b.total_amount).toLocaleString()}원</td>
-      <td style="text-align:right">${Number(b.welfare_discount_total||0).toLocaleString()}원</td>
-      <td>
-        <a href="/view/water/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
-        <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('water', ${b.id})">삭제</button>
-      </td>
-    </tr>`).join('') + '</tbody></table>';
+  el.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>정산월</th>
+          <th class="text-right">이액</th>
+          <th class="text-right">복지할인합계</th>
+          <th>세대수</th>
+          <th>작업</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${waterBills.map(b=>`
+          <tr>
+            <td>${b.billing_month.slice(0,7)}</td>
+            <td class="text-right">${Number(b.total_amount).toLocaleString()}원</td>
+            <td class="text-right discount-amount">
+              ${Number(b.welfare_discount_total||0) > 0 ? '-' + Number(b.welfare_discount_total).toLocaleString() + '원' : '-'}
+            </td>
+            <td>${b.unit_count || 0}세대</td>
+            <td>
+              <div class="action-buttons">
+                <a href="/view/water/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
+                <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('water', ${b.id})">삭제</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
 // 공동 공과금 목록 렌더링
@@ -412,17 +499,37 @@ function renderCommon(){
     el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
     return;
   }
-  el.innerHTML = '<table><thead><tr><th>월</th><th>설명</th><th>총액</th><th>분배 방식</th><th>작업</th></tr></thead><tbody>' +
-    commonBills.map(b=>`<tr>
-      <td>${b.billing_month.slice(0,7)}</td>
-      <td>${b.description||''}</td>
-      <td style="text-align:right">${Number(b.total_amount).toLocaleString()}원</td>
-      <td>${b.distribution_method === 'BY_RESIDENTS' ? '인원수 비례' : '세대 균등'}</td>
-      <td>
-        <a href="/view/common/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
-        <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('common', ${b.id})">삭제</button>
-      </td>
-    </tr>`).join('') + '</tbody></table>';
+  el.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>정산월</th>
+          <th>항목</th>
+          <th class="text-right">이액</th>
+          <th>분배 방식</th>
+          <th>세대수</th>
+          <th>작업</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${commonBills.map(b=>`
+          <tr>
+            <td>${b.billing_month.slice(0,7)}</td>
+            <td>${b.description||''}</td>
+            <td class="text-right">${Number(b.total_amount).toLocaleString()}원</td>
+            <td>${b.distribution_method === 'BY_RESIDENTS' ? '인원수 비례' : '세대 균등'}</td>
+            <td>${b.unit_count || 0}세대</td>
+            <td>
+              <div class="action-buttons">
+                <a href="/view/common/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
+                <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('common', ${b.id})">삭제</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
 }
 
 // 월별 정보 포맷팅
@@ -440,15 +547,17 @@ function formatMonthlyDetails(bill) {
   }
 
   if (months.length === 1) {
-    return `<span style="color:#334155;">${months[0]}</span>`;
+    return `<span style="color:#64748b;">단일 월</span>`;
   }
 
-  return `<div style="display:flex;align-items:center;gap:8px;">
-    <span style="color:#667eea;font-weight:600;">${months.length}개월 묶음</span>
-    <div style="font-size:12px;color:#64748b;">
-      ${months.join(', ')}
+  return `
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <span class="badge badge-primary" style="font-size:13px;">${months.length}개월 묶음</span>
+      <div style="font-size:12px;color:#64748b;line-height:1.5;">
+        ${months.join(', ')}
+      </div>
     </div>
-  </div>`;
+  `;
 }
 
 // 삭제 함수

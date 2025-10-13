@@ -47,11 +47,12 @@
     <thead>
         <tr>
             <th>세대</th>
-            <th>전기요금</th>
-            <th>수도요금</th>
-            <th>공동공과금</th>
-            <th>기타</th>
-            <th style="background: #fef3c7;">최종 청구금액</th>
+            <th>세대 비고</th>
+            <th class="text-right">전기요금</th>
+            <th class="text-right">수도요금</th>
+            <th class="text-right">공동공과금</th>
+            <th class="text-right">기타</th>
+            <th class="text-right" style="background: #fef3c7;">최종 청구금액</th>
             <th>세대 메모</th>
         </tr>
     </thead>
@@ -59,42 +60,53 @@
         {% for invoice in invoices %}
         <tr>
             <td><strong>{{ invoice.unit.unit_name }}</strong></td>
-            <td style="text-align:right;">
+            <td>
+                {% if invoice.unit.memo %}
+                    {{ invoice.unit.memo }}
+                {% else %}
+                    <span style="color:#94a3b8;">-</span>
+                {% endif %}
+            </td>
+            <td class="text-right">
                 {% if invoice.electric_amount > 0 %}
                     {{ "{:,.0f}".format(invoice.electric_amount) }}원
                 {% else %}
                     -
                 {% endif %}
             </td>
-            <td style="text-align:right;">
+            <td class="text-right">
                 {% if invoice.water_amount > 0 %}
                     {{ "{:,.0f}".format(invoice.water_amount) }}원
                 {% else %}
                     -
                 {% endif %}
             </td>
-            <td style="text-align:right;">
+            <td class="text-right">
                 {% if invoice.common_amount > 0 %}
                     {{ "{:,.0f}".format(invoice.common_amount) }}원
                 {% else %}
                     -
                 {% endif %}
             </td>
-            <td style="text-align:right;">
+            <td class="text-right">
                 {% if invoice.additional_charges %}
                     {% set additional_total = invoice.additional_charges|sum(attribute='amount') %}
-                    <span style="color:#dc2626;font-weight:600;">+{{ "{:,.0f}".format(additional_total) }}원</span>
+                    <span style="color:{{ '#dc2626' if additional_total > 0 else '#059669' }};font-weight:600;">
+                        {{ "+" if additional_total > 0 else "" }}{{ "{:,.0f}".format(additional_total) }}원
+                    </span>
                     <details style="font-size:12px;margin-top:4px;">
                         <summary style="cursor:pointer;color:#64748b;">상세보기</summary>
                         {% for charge in invoice.additional_charges %}
-                            <div>• {{ charge.description }}: {{ "{:,.0f}".format(charge.amount) }}원</div>
+                            <div style="color:{{ '#059669' if charge.amount < 0 else '#dc2626' }};">
+                                • {{ charge.description }}: {{ "{:,.0f}".format(charge.amount) }}원
+                            </div>
                         {% endfor %}
                     </details>
                 {% else %}
                     -
                 {% endif %}
             </td>
-            <td style="background: #fef3c7; font-weight: bold; font-size: 1.1em; text-align:right;">
+            <td class="text-right" style="background: #fef3c7; font-weight: bold; font-size: 1.1em;">
                 {{ "{:,.0f}".format(invoice.total_amount) }}원
             </td>
             <td style="max-width:200px;">
@@ -115,23 +127,26 @@
     <tfoot>
         <tr style="background: #e2e8f0; font-weight: bold;">
             <td>합계</td>
-            <td style="text-align:right;">{{ "{:,.0f}".format(invoices|sum(attribute='electric_amount')) }}원</td>
-            <td style="text-align:right;">{{ "{:,.0f}".format(invoices|sum(attribute='water_amount')) }}원</td>
-            <td style="text-align:right;">{{ "{:,.0f}".format(invoices|sum(attribute='common_amount')) }}원</td>
-            <td style="text-align:right;color:#dc2626;">
+            <td>-</td>
+            <td class="text-right">{{ "{:,.0f}".format(invoices|sum(attribute='electric_amount')) }}원</td>
+            <td class="text-right">{{ "{:,.0f}".format(invoices|sum(attribute='water_amount')) }}원</td>
+            <td class="text-right">{{ "{:,.0f}".format(invoices|sum(attribute='common_amount')) }}원</td>
+            <td class="text-right">
                 {% set total_additional = namespace(value=0) %}
                 {% for inv in invoices %}
                     {% if inv.additional_charges %}
                         {% set total_additional.value = total_additional.value + (inv.additional_charges|sum(attribute='amount')) %}
                     {% endif %}
                 {% endfor %}
-                {% if total_additional.value > 0 %}
-                    +{{ "{:,.0f}".format(total_additional.value) }}원
+                {% if total_additional.value != 0 %}
+                    <span style="color:{{ '#dc2626' if total_additional.value > 0 else '#059669' }};">
+                        {{ "+" if total_additional.value > 0 else "" }}{{ "{:,.0f}".format(total_additional.value) }}원
+                    </span>
                 {% else %}
                     -
                 {% endif %}
             </td>
-            <td style="background: #fbbf24; font-size: 1.2em; text-align:right;">
+            <td class="text-right" style="background: #fbbf24; font-size: 1.2em;">
                 {{ "{:,.0f}".format(invoices|sum(attribute='total_amount')) }}원
             </td>
             <td>-</td>
@@ -148,4 +163,19 @@
     </p>
 </div>
 
+{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* 금액 컬럼 헤더 우측 정렬 */
+  table th.text-right {
+    text-align: right !important;
+  }
+
+  /* 금액 데이터 우측 정렬 */
+  table td.text-right {
+    text-align: right !important;
+    font-weight: 500;
+  }
+</style>
 {% endblock %}

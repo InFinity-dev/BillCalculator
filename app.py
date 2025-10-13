@@ -287,10 +287,10 @@ class FinalInvoice(db.Model):
     water_amount = db.Column(db.Numeric(10, 2), default=0)
     common_amount = db.Column(db.Numeric(10, 2), default=0)
     common_details = db.Column(db.JSON)
-    additional_charges = db.Column(db.JSON)  # 세대별 특별 추가금
+    additional_charges = db.Column(db.JSON)
     total_amount = db.Column(db.Numeric(10, 2), nullable=False)
     memo = db.Column(db.Text)
-    unit_memo = db.Column(db.Text)  # 세대별 개별 메모
+    unit_memo = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     unit = db.relationship('Unit', backref='final_invoices')
 
@@ -383,6 +383,7 @@ def settings_page():
         'electric_voucher_amount': get_setting('electric_voucher_amount', '0'),
         'water_welfare_amount': get_setting('water_welfare_amount', '0'),
         'invoice_default_memo': get_setting('invoice_default_memo', ''),
+        'invoice_footer': get_setting('invoice_footer', '* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.\n* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다.'),
     }
     return render_template('settings.html', **ctx)
 
@@ -396,6 +397,7 @@ def save_settings():
         set_setting('electric_voucher_amount', request.form.get('electric_voucher_amount', '0'))
         set_setting('water_welfare_amount', request.form.get('water_welfare_amount', '0'))
         set_setting('invoice_default_memo', request.form.get('invoice_default_memo', ''))
+        set_setting('invoice_footer', request.form.get('invoice_footer', ''))
         db.session.commit()
         flash('설정이 저장되었습니다.', 'success')
         return redirect(url_for('settings'))
@@ -415,6 +417,7 @@ def export_settings():
             'electric_voucher_amount': get_setting('electric_voucher_amount', '0'),
             'water_welfare_amount': get_setting('water_welfare_amount', '0'),
             'invoice_default_memo': get_setting('invoice_default_memo', ''),
+            'invoice_footer': get_setting('invoice_footer', ''),
         },
         'floors': []
     }
@@ -451,6 +454,7 @@ def import_settings():
         set_setting('electric_voucher_amount', s.get('electric_voucher_amount', '0'))
         set_setting('water_welfare_amount', s.get('water_welfare_amount', '0'))
         set_setting('invoice_default_memo', s.get('invoice_default_memo', ''))
+        set_setting('invoice_footer', s.get('invoice_footer', ''))
 
         for f in data.get('floors', []):
             floor = Floor(
@@ -610,7 +614,7 @@ def delete_unit(unit_id):
 
 
 # ======================================================
-# Calculator
+# Calculator (전기/수도/공동 계산)
 # ======================================================
 @app.route('/calculator')
 def calculator():
@@ -653,8 +657,8 @@ def calculate_electric():
 
         monthly_details = []
         total_amount = dec(0)
-        welfare_discount_input = dec(0)  # 고지서의 복지할인 총액
-        voucher_discount_input = dec(0)  # 고지서의 바우처할인 총액
+        welfare_discount_input = dec(0)
+        voucher_discount_input = dec(0)
         tv_fee_total = dec(0)
 
         month_count = to_int(request.form.get('month_count', '1'), 1)
@@ -683,8 +687,8 @@ def calculate_electric():
             billing_month=billing_month,
             floor_id=floor_id,
             total_amount=total_amount,
-            welfare_discount=dec(0),  # 나중에 실제 적용값으로 업데이트
-            voucher_discount=dec(0),  # 나중에 실제 적용값으로 업데이트
+            welfare_discount=dec(0),
+            voucher_discount=dec(0),
             tv_fee_total=tv_fee_total,
             tv_distribution_mode=tv_distribution_mode,
             tv_units_count=0,
@@ -715,17 +719,13 @@ def calculate_electric():
         else:
             tv_fee_per_unit = tv_fee * month_count
 
-        # 복지/바우처 대상 세대 확인
         welfare_units = [u for u in units if u.electric_welfare]
         voucher_units = [u for u in units if u.electric_voucher]
 
-        # 🔧 1단계: 실제로 적용될 세대당 할인액 계산
         if welfare_discount_input > 0 and welfare_units:
-            # 입력값이 있으면 해당 세대들에게 균등 분배
             welfare_per_unit = welfare_discount_input / len(welfare_units)
             total_welfare_to_apply = welfare_discount_input
         elif welfare_units:
-            # 입력값이 없으면 설정값 사용
             welfare_per_unit = dec(get_setting('electric_welfare_amount', '0')) * month_count
             total_welfare_to_apply = welfare_per_unit * len(welfare_units)
         else:
@@ -733,41 +733,31 @@ def calculate_electric():
             total_welfare_to_apply = dec(0)
 
         if voucher_discount_input > 0 and voucher_units:
-            # 입력값이 있으면 해당 세대들에게 균등 분배
             voucher_per_unit = voucher_discount_input / len(voucher_units)
             total_voucher_to_apply = voucher_discount_input
         elif voucher_units:
-            # 입력값이 없으면 설정값 사용
             voucher_per_unit = dec(get_setting('electric_voucher_amount', '0')) * month_count
             total_voucher_to_apply = voucher_per_unit * len(voucher_units)
         else:
             voucher_per_unit = dec(0)
             total_voucher_to_apply = dec(0)
 
-        # 🔧 2단계: 할인 전 원래 금액 계산 (실제 적용될 할인액 사용)
-        # 고지액 = 원래금액 - 실제적용할인
-        # 따라서: 원래금액 = 고지액 + 실제적용할인
         original_amount = total_amount + total_welfare_to_apply + total_voucher_to_apply
 
-        # 🔧 3단계: 사용량 비례 분배 및 세대별 할인 적용
         for unit, reading in zip(units, readings):
             usage = reading.current_reading - reading.previous_reading
 
-            # 할인 전 원래 금액을 사용량 비례로 분배
             base_amount = (usage / total_usage) * original_amount if total_usage > 0 else (
                 original_amount / len(units) if units else dec(0))
 
-            # 해당 세대의 복지/바우처 할인액
             unit_welfare = welfare_per_unit if unit.electric_welfare else dec(0)
             unit_voucher = voucher_per_unit if unit.electric_voucher else dec(0)
 
-            # TV 수신료
             if tv_distribution_mode == 'EQUAL':
                 unit_tv_fee = tv_fee_per_unit
             else:
                 unit_tv_fee = tv_fee_per_unit if unit.has_tv else dec(0)
 
-            # 최종 금액 = 기본 분배액 - 복지할인 - 바우처할인 + TV수신료
             final_amount = base_amount - unit_welfare - unit_voucher + unit_tv_fee
             if final_amount < 0:
                 final_amount = dec(0)
@@ -783,7 +773,6 @@ def calculate_electric():
             )
             db.session.add(detail)
 
-        # 🔧 4단계: bill에 실제 적용된 총 할인액 저장
         bill.welfare_discount = total_welfare_to_apply
         bill.voucher_discount = total_voucher_to_apply
 
@@ -812,7 +801,7 @@ def calculate_water():
         bill = WaterBill(
             billing_month=billing_month,
             total_amount=total_amount,
-            welfare_discount_total=dec(0)  # 나중에 실제 적용값으로 업데이트
+            welfare_discount_total=dec(0)
         )
         db.session.add(bill)
         db.session.flush()
@@ -820,38 +809,27 @@ def calculate_water():
         units = Unit.query.filter_by(is_vacant=False).all()
         total_residents = sum(u.residents_count for u in units)
 
-        # 복지 대상 세대 확인
         welfare_units = [u for u in units if u.water_welfare]
 
-        # 🔧 1단계: 실제로 적용될 세대당 복지 할인액 계산
         if welfare_discount_input > 0 and welfare_units:
-            # 입력된 복지 할인을 복지 대상 세대에게 균등 분배
             welfare_per_unit = welfare_discount_input / len(welfare_units)
             total_welfare_to_apply = welfare_discount_input
         elif welfare_units:
-            # 입력값이 없으면 설정값 사용
             welfare_per_unit = dec(get_setting('water_welfare_amount', '0'))
             total_welfare_to_apply = welfare_per_unit * len(welfare_units)
         else:
             welfare_per_unit = dec(0)
             total_welfare_to_apply = dec(0)
 
-        # 🔧 2단계: 할인 전 원래 금액 계산 (실제 적용될 할인액 사용)
-        # 고지액 = 원래금액 - 실제적용할인
-        # 따라서: 원래금액 = 고지액 + 실제적용할인
         original_amount = total_amount + total_welfare_to_apply
 
-        # 🔧 3단계: 인원수 비례 분배 및 세대별 할인 적용
         for unit in units:
-            # 할인 전 원래 금액을 인원수 비례로 분배
             base_amount = (dec(unit.residents_count) / dec(
                 total_residents) * original_amount) if total_residents > 0 else (
                 original_amount / len(units) if units else dec(0))
 
-            # 해당 세대의 복지 할인액
             unit_welfare = welfare_per_unit if unit.water_welfare else dec(0)
 
-            # 최종 금액 = 기본 분배액 - 복지할인
             final_amount = base_amount - unit_welfare
             if final_amount < 0:
                 final_amount = dec(0)
@@ -864,7 +842,6 @@ def calculate_water():
             )
             db.session.add(detail)
 
-        # 🔧 4단계: bill에 실제 적용된 총 할인액 저장
         bill.welfare_discount_total = total_welfare_to_apply
 
         db.session.commit()
@@ -917,8 +894,6 @@ def calculate_common():
 # ======================================================
 # Views / Delete
 # ======================================================
-# app.py의 view_bills 라우트를 다음과 같이 수정하세요
-
 @app.route('/view')
 def view_bills():
     view_type = request.args.get('view', 'month')
@@ -932,7 +907,7 @@ def view_bills():
     floors = Floor.query.order_by(Floor.floor_number).all()
     units = Unit.query.order_by(Unit.floor_id, Unit.unit_name).all()
 
-    # 전기요금 데이터 - 상세 정보 포함
+    # 전기요금 JSON (기존 그대로)
     electric_bills_json = []
     for b in electric_bills:
         bill_data = {
@@ -962,20 +937,30 @@ def view_bills():
         }
         electric_bills_json.append(bill_data)
 
-    water_bills_json = [{
-        'id': b.id,
-        'billing_month': b.billing_month.isoformat(),
-        'total_amount': float(b.total_amount),
-        'welfare_discount_total': float(b.welfare_discount_total or 0)
-    } for b in water_bills]
+    # 수도요금 JSON (세대수 정보 추가)
+    water_bills_json = []
+    for b in water_bills:
+        water_bill_data = {
+            'id': b.id,
+            'billing_month': b.billing_month.isoformat(),
+            'total_amount': float(b.total_amount),
+            'welfare_discount_total': float(b.welfare_discount_total or 0),
+            'unit_count': len(b.details)  # 세대수 추가
+        }
+        water_bills_json.append(water_bill_data)
 
-    common_bills_json = [{
-        'id': b.id,
-        'billing_month': b.billing_month.isoformat(),
-        'description': b.description or '',
-        'total_amount': float(b.total_amount),
-        'distribution_method': b.distribution_method
-    } for b in common_bills]
+    # 공동공과금 JSON (세대수 정보 추가)
+    common_bills_json = []
+    for b in common_bills:
+        common_bill_data = {
+            'id': b.id,
+            'billing_month': b.billing_month.isoformat(),
+            'description': b.description or '',
+            'total_amount': float(b.total_amount),
+            'distribution_method': b.distribution_method,
+            'unit_count': len(b.details)  # 세대수 추가
+        }
+        common_bills_json.append(common_bill_data)
 
     return render_template('view.html',
                            view_type=view_type,
@@ -1048,13 +1033,13 @@ def invoice_combination():
     common_bills = CommonBill.query.order_by(CommonBill.billing_month.desc(), CommonBill.id.desc()).all()
     combinations = InvoiceCombination.query.order_by(InvoiceCombination.created_at.desc()).all()
     units = Unit.query.filter_by(is_vacant=False).order_by(Unit.floor_id, Unit.unit_name).all()
-    floors = Floor.query.order_by(Floor.floor_number).all()  # 층 정보 추가
+    floors = Floor.query.order_by(Floor.floor_number).all()
 
     units_json = [{
         'id': u.id,
         'floor_id': u.floor_id,
         'unit_name': u.unit_name,
-        'memo': u.memo or '',  # 세대 비고 추가
+        'memo': u.memo or '',
         'is_vacant': u.is_vacant
     } for u in units]
 
@@ -1079,7 +1064,6 @@ def create_invoice():
     try:
         data = request.get_json() or {}
 
-        # 고정 메모를 메모 앞에 추가
         default_memo = get_setting('invoice_default_memo', '')
         user_memo = data.get('memo', '')
 
@@ -1104,7 +1088,6 @@ def create_invoice():
                 item_description=item.get('description', '')
             ))
 
-        # 세대별 추가금 및 메모 정보 받기
         unit_additional_data = data.get('unit_additional_data', {})
 
         units = Unit.query.filter_by(is_vacant=False).all()
@@ -1130,7 +1113,6 @@ def create_invoice():
                             'amount': float(d.charged_amount)
                         })
 
-            # 세대별 추가금 처리
             unit_key = str(unit.id)
             additional_charges = []
             additional_total = dec(0)
@@ -1145,10 +1127,8 @@ def create_invoice():
                     })
                     additional_total += charge_amount
 
-            # 최종 금액 계산 (기존 금액 + 추가금)
             total = electric_total + water_total + common_total + additional_total
 
-            # 세대별 메모
             unit_memo = ''
             if unit_key in unit_additional_data:
                 unit_memo = unit_additional_data[unit_key].get('memo', '')
@@ -1184,7 +1164,8 @@ def view_invoice(combination_id):
 def print_invoice(combination_id):
     combination = InvoiceCombination.query.get_or_404(combination_id)
     invoices = FinalInvoice.query.filter_by(combination_id=combination_id).all()
-    return render_template('invoice_print.html', combination=combination, invoices=invoices)
+    invoice_footer = get_setting('invoice_footer', '* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.\n* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다.')
+    return render_template('invoice_print.html', combination=combination, invoices=invoices, invoice_footer=invoice_footer)
 
 
 @app.route('/invoice/delete/<int:combination_id>', methods=['POST'])
@@ -1232,6 +1213,7 @@ if __name__ == '__main__':
                 'electric_voucher_amount': '0',
                 'water_welfare_amount': '0',
                 'invoice_default_memo': '',
+                'invoice_footer': '* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.\n* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다.',
             }
             for k, v in defaults.items():
                 if not Setting.query.filter_by(setting_key=k).first():

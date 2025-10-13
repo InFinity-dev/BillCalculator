@@ -44,7 +44,7 @@
       </div>
       <small style="color:#64748b;display:block;margin-top:8px;">
         <strong>개별 부과 모드:</strong> TV 보유 세대만 설정의 TV 단가 × 개월수가 부과됩니다. TV수신료 입력칸은 비활성화됩니다.<br>
-        <strong>균등 분배 모드:</strong> TV수신료 입력칸에 월별 총 TV 수신료를 입력하면, 공실을 제외한 모든 재실 세대가 균등 분담합니다.
+        <strong>균등 분배 모드:</strong> TV수신료 입력칸에 월별 이 TV 수신료를 입력하면, 공실을 제외한 모든 재실 세대가 균등 분담합니다.
       </small>
     </div>
 
@@ -142,12 +142,15 @@ const UNITS = {{ (units_json|default([]))|tojson }};
 
 let monthRowCounter = 0;
 
-// 층 옵션 렌더링
+// 층 옵션 렌더링 (층 번호 + 이름)
 function renderFloorOptions(){
   const sel2 = document.getElementById('electric_floor_id');
   const options = '<option value="">선택</option>' + FLOORS.map(f => {
-    const label = f.name || (f.floor_number < 0 ? 'B' + (-f.floor_number) + '층' : f.floor_number + '층');
-    return `<option value="${f.id}">${label}</option>`;
+    // 기본 층 번호 라벨
+    const floorLabel = f.floor_number < 0 ? 'B' + (-f.floor_number) + '층' : f.floor_number + '층';
+    // 층 이름이 있으면 함께 표시
+    const displayLabel = f.name ? `${floorLabel} (${f.name})` : floorLabel;
+    return `<option value="${f.id}">${displayLabel}</option>`;
   }).join('');
   sel2.innerHTML = options;
 }
@@ -250,8 +253,22 @@ function renderUnitsInfoCards(floorId){
     return;
   }
 
-  let html = '<div style="background:#e0e7ff;padding:16px;border-radius:12px;margin-bottom:16px;border-left:4px solid #667eea;">';
-  html += '<h4 style="margin-top:0;color:#4338ca;">👥 선택된 층 세대 정보</h4>';
+  // 선택된 층 정보 가져오기
+  const selectedFloor = FLOORS.find(f => f.id == floorId);
+  const floorLabel = selectedFloor ?
+    (selectedFloor.floor_number < 0 ? 'B' + (-selectedFloor.floor_number) + '층' : selectedFloor.floor_number + '층') : '';
+  const floorName = selectedFloor && selectedFloor.name ? selectedFloor.name : '';
+
+  let html = '<div style="background:#e0e7ff;padding:20px;border-radius:12px;margin-bottom:16px;border-left:4px solid #667eea;">';
+  html += '<div style="margin-bottom:20px;">';
+  html += '<h4 style="margin:0 0 8px 0;color:#4338ca;font-size:16px;">👥 선택된 층 세대 정보</h4>';
+  if(floorName) {
+    html += `<div style="color:#5b21b6;font-size:14px;font-weight:500;">${floorLabel} <span style="color:#7c3aed;">(${floorName})</span></div>`;
+  } else {
+    html += `<div style="color:#5b21b6;font-size:14px;font-weight:500;">${floorLabel}</div>`;
+  }
+  html += '</div>';
+
   html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">';
 
   units.forEach(u => {
@@ -293,7 +310,13 @@ function renderReadingTable(floorId){
     return;
   }
 
-  let html = '<h4>검침 입력</h4><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f0f4f8;"><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">세대</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">속성</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">전월 검침</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">현월 검침</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">사용량</th></tr></thead><tbody>';
+  // 선택된 층 정보 가져오기
+  const selectedFloor = FLOORS.find(f => f.id == floorId);
+  const floorLabel = selectedFloor ?
+    (selectedFloor.floor_number < 0 ? 'B' + (-selectedFloor.floor_number) + '층' : selectedFloor.floor_number + '층') : '';
+  const floorName = selectedFloor && selectedFloor.name ? ` (${selectedFloor.name})` : '';
+
+  let html = `<h4>검침 입력 - ${floorLabel}${floorName}</h4><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f0f4f8;"><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">세대</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">속성</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">전월 검침</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">현월 검침</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">사용량</th></tr></thead><tbody>`;
 
   units.forEach(u => {
     const badges = [];
@@ -336,7 +359,7 @@ function renderWaterSummary(){
       <div style="font-size:18px;font-weight:bold;color:#0284c7;">${occupiedUnits.length}세대</div>
     </div>
     <div style="background:white;padding:12px;border-radius:8px;">
-      <div style="font-size:12px;color:#64748b;">총 거주 인원</div>
+      <div style="font-size:12px;color:#64748b;">이 거주 인원</div>
       <div style="font-size:18px;font-weight:bold;color:#0284c7;">${totalResidents}명</div>
     </div>
     <div style="background:white;padding:12px;border-radius:8px;">
@@ -347,16 +370,34 @@ function renderWaterSummary(){
 
   html += '</div>';
 
-  // 세대별 상세 정보
-  html += '<details style="background:white;padding:12px;border-radius:8px;border:1px solid #cbd5e1;"><summary style="cursor:pointer;font-weight:600;color:#0284c7;">세대별 상세 정보 보기</summary>';
-  html += '<table style="width:100%;font-size:12px;border-collapse:collapse;margin-top:12px;"><thead><tr style="background:#f0f4f8;"><th style="padding:8px;text-align:left;border-bottom:1px solid #cbd5e1;">세대</th><th style="padding:8px;text-align:center;border-bottom:1px solid #cbd5e1;">인원수</th><th style="padding:8px;text-align:center;border-bottom:1px solid #cbd5e1;">수도복지</th><th style="padding:8px;text-align:center;border-bottom:1px solid #cbd5e1;">상태</th></tr></thead><tbody>';
+// 세대별 상세 정보 - 카드 그리드 형식
+  html += '<details style="background:white;padding:12px;border-radius:8px;border:1px solid #cbd5e1;"><summary style="cursor:pointer;font-weight:600;color:#0284c7;padding:8px;">세대별 상세 정보 보기</summary>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:16px;">';
 
   occupiedUnits.forEach(u => {
-    const welfare = u.water_welfare ? '✓' : '-';
-    html += `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px;"><strong>${u.unit_name}</strong></td><td style="padding:8px;text-align:center;">${u.residents_count}명</td><td style="padding:8px;text-align:center;color:${u.water_welfare ? '#059669' : '#94a3b8'};">${welfare}</td><td style="padding:8px;text-align:center;"><span class="badge ${u.water_welfare ? 'badge-success' : 'badge-warning'}">${u.water_welfare ? '할인대상' : '일반'}</span></td></tr>`;
+    const borderColor = u.water_welfare ? '#10b981' : '#e2e8f0';
+    const bgColor = u.water_welfare ? '#d1fae5' : '#f8fafc';
+    const badgeBg = u.water_welfare ? '#059669' : '#94a3b8';
+    const badgeText = u.water_welfare ? '복지할인' : '일반';
+
+    html += `
+      <div style="background:${bgColor};border:2px solid ${borderColor};border-radius:8px;padding:14px;transition:all 0.2s;">
+        <div style="font-weight:bold;font-size:15px;margin-bottom:10px;color:#1e293b;">${u.unit_name}</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:12px;color:#64748b;">거주인원</span>
+            <span style="font-weight:600;color:#0284c7;font-size:14px;">${u.residents_count}명</span>
+          </div>
+          <div style="margin-top:4px;">
+            <span style="display:inline-block;background:${badgeBg};color:white;font-size:11px;padding:4px 10px;border-radius:4px;font-weight:500;">${badgeText}</span>
+          </div>
+        </div>
+      </div>
+    `;
   });
 
-  html += '</tbody></table></details></div>';
+  html += '</div></details></div>';
+
   container.innerHTML = html;
 }
 

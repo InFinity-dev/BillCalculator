@@ -31,8 +31,8 @@
             border: 2px solid #333;
             padding: 30px;
             margin-bottom: 30px;
-            min-height: 250mm;
             position: relative;
+            page-break-inside: avoid;
         }
 
         .header {
@@ -70,6 +70,7 @@
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
+            font-size: 14px;
         }
 
         .bill-table th,
@@ -98,6 +99,13 @@
         .additional-item {
             padding-left: 20px;
             font-size: 14px;
+        }
+
+        .refund-item {
+            color: #059669;
+        }
+
+        .charge-item {
             color: #c53030;
         }
 
@@ -137,15 +145,13 @@
         }
 
         .footer {
-            position: absolute;
-            bottom: 30px;
-            left: 30px;
-            right: 30px;
+            margin-top: 30px;
             text-align: center;
             color: #666;
-            font-size: 12px;
+            font-size: 11px;
             border-top: 1px solid #ddd;
             padding-top: 10px;
+            white-space: pre-wrap;
         }
 
         .print-button {
@@ -262,14 +268,19 @@
                     {% if invoice.additional_charges %}
                         {% for charge in invoice.additional_charges %}
                         <tr>
-                            <td class="additional-item">기타 - {{ charge.description }}</td>
-                            <td class="amount" style="color:#c53030;">{{ "{:,.0f}".format(charge.amount) }}원</td>
+                            {% set is_refund = charge.amount < 0 %}
+                            <td class="additional-item {{ 'refund-item' if is_refund else 'charge-item' }}">
+                                {{ '환급' if is_refund else '기타' }} - {{ charge.description }}
+                            </td>
+                            <td class="amount" style="color:{{ '#059669' if is_refund else '#c53030' }};">
+                                {{ "-" if is_refund else "+" }}{{ "{:,.0f}".format(charge.amount|abs) }}원
+                            </td>
                         </tr>
                         {% endfor %}
                     {% endif %}
 
                     <tr class="total-row">
-                        <td>총 청구금액</td>
+                        <td>이 청구금액</td>
                         <td class="amount">{{ "{:,.0f}".format(invoice.total_amount) }}원</td>
                     </tr>
                 </tbody>
@@ -289,10 +300,7 @@
             </div>
             {% endif %}
 
-            <div class="footer">
-                <p>* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.</p>
-                <p>* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다.</p>
-            </div>
+            <div class="footer">{{ invoice_footer|default('* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.\n* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다.') }}</div>
         </div>
         {% endfor %}
     </div>

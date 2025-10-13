@@ -78,18 +78,19 @@
   color: #1e293b;
 }
 
-.unit-memo-badge {
+.unit-memo-tag {
   font-size: 13px;
   color: #64748b;
-  background: #f8fafc;
+  background: #f1f5f9;
   padding: 4px 12px;
   border-radius: 12px;
   font-weight: 500;
+  margin-left: 8px;
 }
 
 .additional-charge-row {
   display: grid;
-  grid-template-columns: 1fr 150px 80px;
+  grid-template-columns: 100px 1fr 150px 80px;
   gap: 10px;
   margin-bottom: 10px;
   align-items: center;
@@ -103,6 +104,99 @@
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.confirm-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-left: 4px solid #667eea;
+}
+
+.confirm-section h3 {
+  color: #334155;
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 16px;
+}
+
+.confirm-item {
+  background: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.confirm-item-icon {
+  font-size: 18px;
+}
+
+.confirm-item-text {
+  flex: 1;
+  font-size: 14px;
+  color: #475569;
+}
+
+.unit-summary-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.unit-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.unit-summary-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.unit-summary-memo {
+  font-size: 12px;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 3px 10px;
+  border-radius: 10px;
+}
+
+.unit-summary-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  font-size: 13px;
+}
+
+.unit-summary-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  color: #64748b;
+}
+
+.unit-summary-row strong {
+  color: #334155;
+}
+
+/* 테이블 스타일 개선 */
+table th.text-right {
+  text-align: right !important;
+}
+
+table td.text-right {
+  text-align: right !important;
+  font-weight: 500;
 }
 </style>
 {% endblock %}
@@ -160,7 +254,10 @@
                         <th>정산월</th>
                         <th>포함 고지월</th>
                         <th>층</th>
-                        <th>총액</th>
+                        <th class="text-right">이액</th>
+                        <th class="text-right">복지할인</th>
+                        <th class="text-right">바우처할인</th>
+                        <th class="text-right">TV수신료</th>
                         <th>세대수</th>
                     </tr>
                 </thead>
@@ -196,7 +293,28 @@
                             {% endif %}
                         </td>
                         <td>{{ bill.floor_ref.name }}</td>
-                        <td style="text-align:right;">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                        <td class="text-right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                        <td class="text-right" style="color:#059669;">
+                            {% if bill.welfare_discount > 0 %}
+                                -{{ "{:,.0f}".format(bill.welfare_discount) }}원
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-right" style="color:#059669;">
+                            {% if bill.voucher_discount > 0 %}
+                                -{{ "{:,.0f}".format(bill.voucher_discount) }}원
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="text-right" style="color:#dc2626;">
+                            {% if bill.tv_fee_total > 0 %}
+                                +{{ "{:,.0f}".format(bill.tv_fee_total) }}원
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>{{ bill.details|length }}세대</td>
                     </tr>
                     {% endfor %}
@@ -216,7 +334,8 @@
                     <tr>
                         <th width="50">선택</th>
                         <th>정산월</th>
-                        <th>총액</th>
+                        <th class="text-right">이액</th>
+                        <th class="text-right">복지할인합계</th>
                         <th>세대수</th>
                     </tr>
                 </thead>
@@ -230,7 +349,14 @@
                                    data-desc="{{ bill.billing_month.strftime('%Y년 %m월') }} 수도요금">
                         </td>
                         <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
-                        <td style="text-align:right;">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                        <td class="text-right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                        <td class="text-right" style="color:#059669;">
+                            {% if bill.welfare_discount_total > 0 %}
+                                -{{ "{:,.0f}".format(bill.welfare_discount_total) }}원
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
                         <td>{{ bill.details|length }}세대</td>
                     </tr>
                     {% endfor %}
@@ -251,8 +377,9 @@
                         <th width="50">선택</th>
                         <th>정산월</th>
                         <th>항목</th>
-                        <th>총액</th>
+                        <th class="text-right">이액</th>
                         <th>분배방식</th>
+                        <th>세대수</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -266,7 +393,7 @@
                         </td>
                         <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
                         <td>{{ bill.description }}</td>
-                        <td style="text-align:right;">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                        <td class="text-right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
                         <td>
                             {% if bill.distribution_method == 'BY_RESIDENTS' %}
                                 인원수 비례
@@ -274,6 +401,7 @@
                                 세대 균등
                             {% endif %}
                         </td>
+                        <td>{{ bill.details|length }}세대</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -292,7 +420,7 @@
     <div id="step2" class="step-content" style="display:none;">
         <h2>Step 2: 세대별 기타금액 및 메모</h2>
         <p style="color:#64748b;margin-bottom:20px;">
-            💡 특정 세대에만 부과되는 기타 항목(미납금, 수리비 등)과 세대별 특별 안내사항을 입력하세요.
+            💡 특정 세대에만 부과되는 기타 항목(미납금, 수리비 등) 또는 환급액과 세대별 특별 안내사항을 입력하세요.
         </p>
 
         <div id="unitsAdditionalContainer"></div>
@@ -468,25 +596,23 @@ function renderStep2() {
         return (floorA?.floor_number || 0) - (floorB?.floor_number || 0);
     }).forEach(floorId => {
         const group = floorGroups[floorId];
-        const floor = FLOORS.find(f => f.id == floorId);
-        const floorMemo = floor && floor.name ? floor.name : '';
 
         html += `<h3 style="margin-top:30px;margin-bottom:16px;color:#334155;font-size:18px;">${group.floor_name}</h3>`;
 
         group.units.forEach(unit => {
-            const unitMemo = unit.memo ? `(${unit.memo})` : '';
+            const unitMemo = unit.memo ? `<span class="unit-memo-tag">${unit.memo}</span>` : '';
 
             html += `
                 <div class="unit-card">
                     <div class="unit-card-header">
                         <div>
                             <span class="unit-name">${unit.unit_name}</span>
-                            ${unitMemo ? `<span class="unit-memo-badge">${unitMemo}</span>` : ''}
+                            ${unitMemo}
                         </div>
                     </div>
 
                     <div style="margin-bottom:16px;">
-                        <div class="section-title">💰 기타 항목</div>
+                        <div class="section-title">💰 기타 항목 (부과 / 환급)</div>
                         <div id="charges-${unit.id}"></div>
                         <button type="button" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;margin-top:8px;"
                                 onclick="addChargeRow(${unit.id})">+ 항목 추가</button>
@@ -515,6 +641,10 @@ function addChargeRow(unitId) {
     row.className = 'additional-charge-row';
     row.id = rowId;
     row.innerHTML = `
+        <select class="charge-type" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
+            <option value="charge">부과 (+)</option>
+            <option value="refund">환급 (-)</option>
+        </select>
         <input type="text" placeholder="항목명 (예: 전월 미납금)" class="charge-desc" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
         <input type="number" placeholder="금액" class="charge-amount" min="0" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
         <button type="button" class="btn btn-danger" style="padding:6px 12px;font-size:12px;"
@@ -539,10 +669,15 @@ function goToStep3() {
 
         if(chargesContainer) {
             chargesContainer.querySelectorAll('.additional-charge-row').forEach(row => {
+                const type = row.querySelector('.charge-type').value;
                 const desc = row.querySelector('.charge-desc').value;
-                const amount = parseFloat(row.querySelector('.charge-amount').value) || 0;
+                let amount = parseFloat(row.querySelector('.charge-amount').value) || 0;
 
                 if(desc && amount > 0) {
+                    // 환급인 경우 음수로 변환
+                    if(type === 'refund') {
+                        amount = -Math.abs(amount);
+                    }
                     charges.push({ description: desc, amount: amount });
                 }
             });
@@ -562,39 +697,93 @@ function goToStep3() {
 function renderStep3() {
     const container = document.getElementById('finalConfirmation');
 
-    let html = '<h3>선택한 항목</h3><ul>';
+    let html = '<div class="confirm-section">';
+    html += '<h3>📋 선택한 항목</h3>';
+
     selectedItems.forEach(item => {
-        html += `<li>${item.description}</li>`;
+        html += `
+            <div class="confirm-item">
+                <span class="confirm-item-icon">
+                    ${item.type === 'ELECTRIC' ? '⚡' : item.type === 'WATER' ? '💧' : '🏘️'}
+                </span>
+                <span class="confirm-item-text">${item.description}</span>
+            </div>
+        `;
     });
-    html += '</ul>';
+    html += '</div>';
 
-    // 기타금액이 있는 세대만 표시
-    const unitsWithAdditional = Object.keys(unitAdditionalData);
-    if(unitsWithAdditional.length > 0) {
-        html += '<h3 style="margin-top:30px;">기타금액 및 메모 설정</h3>';
-        html += '<table><thead><tr><th>세대</th><th>기타 항목</th><th>세대 메모</th></tr></thead><tbody>';
+    // 기타금액/메모가 있는 세대 또는 설정 비고가 있는 세대 찾기
+    const occupiedUnits = UNITS.filter(u => !u.is_vacant);
+    const unitsToShow = occupiedUnits.filter(unit => {
+        const hasAdditional = unitAdditionalData[unit.id];
+        const hasSettingMemo = unit.memo && unit.memo.trim() !== '';
+        return hasAdditional || hasSettingMemo;
+    });
 
-        unitsWithAdditional.forEach(unitId => {
-            const unit = UNITS.find(u => u.id == unitId);
-            const data = unitAdditionalData[unitId];
+    if(unitsToShow.length > 0) {
+        html += '<div class="confirm-section">';
+        html += '<h3>💰 기타금액 및 메모 설정</h3>';
 
-            let chargesText = '-';
-            if(data.charges && data.charges.length > 0) {
-                chargesText = data.charges.map(c => `${c.description}: ${c.amount.toLocaleString()}원`).join('<br>');
+        unitsToShow.forEach(unit => {
+            const data = unitAdditionalData[unit.id] || { charges: [], memo: '' };
+
+            html += '<div class="unit-summary-card">';
+            html += '<div class="unit-summary-header">';
+            html += `<span class="unit-summary-name">${unit.unit_name}</span>`;
+
+            // 세대 설정 비고 표시 (unit.memo)
+            if(unit.memo) {
+                html += `<span class="unit-summary-memo">${unit.memo}</span>`;
             }
 
-            html += `
-                <tr>
-                    <td><strong>${unit.unit_name}</strong></td>
-                    <td>${chargesText}</td>
-                    <td>${data.memo || '-'}</td>
-                </tr>
-            `;
+            html += '</div>';
+
+            html += '<div class="unit-summary-details">';
+
+            // 기타 항목
+            if(data.charges && data.charges.length > 0) {
+                html += '<div style="grid-column: 1 / -1;">';
+                html += '<div style="font-size:12px;color:#64748b;margin-bottom:4px;">기타 항목:</div>';
+                data.charges.forEach(c => {
+                    const isRefund = c.amount < 0;
+                    const displayAmount = Math.abs(c.amount).toLocaleString();
+                    const color = isRefund ? '#059669' : '#dc2626';
+                    const prefix = isRefund ? '환급 -' : '부과 +';
+
+                    html += `
+                        <div style="padding:6px 12px;background:#f8fafc;border-radius:6px;margin-bottom:4px;">
+                            <span style="color:#475569;">${c.description}</span>
+                            <span style="color:${color};font-weight:600;margin-left:8px;">${prefix}${displayAmount}원</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            // 세대 메모
+            if(data.memo) {
+                html += '<div style="grid-column: 1 / -1;">';
+                html += '<div style="font-size:12px;color:#64748b;margin-bottom:4px;">세대 메모:</div>';
+                html += `<div style="padding:8px 12px;background:#fff3cd;border-radius:6px;color:#78350f;font-size:13px;white-space:pre-wrap;">${data.memo}</div>`;
+                html += '</div>';
+            }
+
+            // 기타 항목이나 세대 메모가 없지만 설정 비고만 있는 경우
+            if((!data.charges || data.charges.length === 0) && !data.memo && unit.memo) {
+                html += '<div style="grid-column: 1 / -1;color:#64748b;font-size:13px;font-style:italic;">';
+                html += '(설정에 비고만 등록된 세대입니다)';
+                html += '</div>';
+            }
+
+            html += '</div>'; // unit-summary-details
+            html += '</div>'; // unit-summary-card
         });
 
-        html += '</tbody></table>';
+        html += '</div>';
     } else {
-        html += '<p style="color:#64748b;margin-top:20px;">기타금액 및 세대별 메모가 없습니다.</p>';
+        html += '<div class="confirm-section">';
+        html += '<p style="color:#64748b;margin:0;">기타금액 및 세대별 메모가 없습니다.</p>';
+        html += '</div>';
     }
 
     container.innerHTML = html;
