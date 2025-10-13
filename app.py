@@ -930,17 +930,35 @@ def view_bills():
     floors = Floor.query.order_by(Floor.floor_number).all()
     units = Unit.query.order_by(Unit.floor_id, Unit.unit_name).all()
 
-    electric_bills_json = [{
-        'id': b.id,
-        'billing_month': b.billing_month.isoformat(),
-        'floor_name': b.floor_ref.name if b.floor_ref else '',
-        'total_amount': float(b.total_amount),
-        'welfare_discount': float(b.welfare_discount or 0),
-        'voucher_discount': float(b.voucher_discount or 0),
-        'tv_fee_total': float(b.tv_fee_total or 0),
-        'billing_months_count': b.billing_months_count or 1,
-        'monthly_details': b.monthly_details or []
-    } for b in electric_bills]
+    # 전기요금 데이터 - 상세 정보 포함
+    electric_bills_json = []
+    for b in electric_bills:
+        bill_data = {
+            'id': b.id,
+            'billing_month': b.billing_month.isoformat(),
+            'floor_id': b.floor_id,
+            'floor_name': b.floor_ref.name if b.floor_ref else '',
+            'total_amount': float(b.total_amount),
+            'welfare_discount': float(b.welfare_discount or 0),
+            'voucher_discount': float(b.voucher_discount or 0),
+            'tv_fee_total': float(b.tv_fee_total or 0),
+            'billing_months_count': b.billing_months_count or 1,
+            'monthly_details': b.monthly_details or [],
+            'details': [  # ★ 새로 추가: 세대별 상세 정보
+                {
+                    'unit_name': d.unit.unit_name,
+                    'usage_amount': float(d.usage_amount),
+                    'base_amount': float(d.base_amount),
+                    'welfare_discount': float(d.welfare_discount or 0),
+                    'voucher_discount': float(d.voucher_discount or 0),
+                    'tv_fee': float(d.tv_fee or 0),
+                    'final_amount': float(d.final_amount),
+                    'charged_amount': float(d.charged_amount)
+                }
+                for d in b.details
+            ]
+        }
+        electric_bills_json.append(bill_data)
 
     water_bills_json = [{
         'id': b.id,

@@ -3,24 +3,6 @@
 {% block content %}
 <h1>🧮 계산</h1>
 
-<div class="grid grid-2">
-  <div style="background:#f8fafc;padding:16px;border-radius:12px;">
-    <h3>요약</h3>
-    <ul>
-      <li>총 세대: <strong>{{ total_units }}</strong></li>
-      <li>재실 세대: <strong>{{ occupied_units }}</strong></li>
-      <li>공실 세대: <strong>{{ vacant_units }}</strong></li>
-      <li>총 거주 인원: <strong>{{ total_residents }}</strong></li>
-    </ul>
-  </div>
-  <div style="background:#f8fafc;padding:16px;border-radius:12px;">
-    <h3>빠른 선택</h3>
-    <label>층 선택</label>
-    <select id="floorSelect"></select>
-    <small style="display:block;color:#64748b;margin-top:8px;">층을 선택하면 전기 검침 입력 표가 해당 층 세대로 채워집니다.</small>
-  </div>
-</div>
-
 <!-- 전기요금 -->
 <div style="margin-top:24px;background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
   <h2 style="margin-bottom:12px;">⚡ 전기요금 계산</h2>
@@ -162,13 +144,11 @@ let monthRowCounter = 0;
 
 // 층 옵션 렌더링
 function renderFloorOptions(){
-  const sel1 = document.getElementById('floorSelect');
   const sel2 = document.getElementById('electric_floor_id');
   const options = '<option value="">선택</option>' + FLOORS.map(f => {
     const label = f.name || (f.floor_number < 0 ? 'B' + (-f.floor_number) + '층' : f.floor_number + '층');
     return `<option value="${f.id}">${label}</option>`;
   }).join('');
-  sel1.innerHTML = options;
   sel2.innerHTML = options;
 }
 
@@ -413,18 +393,8 @@ function loadPreviousReadings(){
 }
 
 // 층 선택 동기화
-document.getElementById('floorSelect').addEventListener('change', (e) => {
-  const id = e.target.value;
-  document.getElementById('electric_floor_id').value = id;
-  if(id) {
-    renderReadingTable(id);
-    renderUnitsInfoCards(id);
-  }
-});
-
 document.getElementById('electric_floor_id').addEventListener('change', (e) => {
   const id = e.target.value;
-  document.getElementById('floorSelect').value = id;
   if(id) {
     renderReadingTable(id);
     renderUnitsInfoCards(id);
