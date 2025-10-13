@@ -917,6 +917,8 @@ def calculate_common():
 # ======================================================
 # Views / Delete
 # ======================================================
+# app.py의 view_bills 라우트를 다음과 같이 수정하세요
+
 @app.route('/view')
 def view_bills():
     view_type = request.args.get('view', 'month')
@@ -944,7 +946,7 @@ def view_bills():
             'tv_fee_total': float(b.tv_fee_total or 0),
             'billing_months_count': b.billing_months_count or 1,
             'monthly_details': b.monthly_details or [],
-            'details': [  # ★ 새로 추가: 세대별 상세 정보
+            'details': [
                 {
                     'unit_name': d.unit.unit_name,
                     'usage_amount': float(d.usage_amount),
@@ -1046,19 +1048,29 @@ def invoice_combination():
     common_bills = CommonBill.query.order_by(CommonBill.billing_month.desc(), CommonBill.id.desc()).all()
     combinations = InvoiceCombination.query.order_by(InvoiceCombination.created_at.desc()).all()
     units = Unit.query.filter_by(is_vacant=False).order_by(Unit.floor_id, Unit.unit_name).all()
+    floors = Floor.query.order_by(Floor.floor_number).all()  # 층 정보 추가
 
     units_json = [{
         'id': u.id,
+        'floor_id': u.floor_id,
         'unit_name': u.unit_name,
+        'memo': u.memo or '',  # 세대 비고 추가
         'is_vacant': u.is_vacant
     } for u in units]
+
+    floors_json = [{
+        'id': f.id,
+        'floor_number': f.floor_number,
+        'name': f.name or ''
+    } for f in floors]
 
     return render_template('invoice.html',
                            electric_bills=electric_bills,
                            water_bills=water_bills,
                            common_bills=common_bills,
                            combinations=combinations,
-                           units=units_json)
+                           units=units_json,
+                           floors=floors_json)
 
 
 @app.route('/invoice/create', methods=['POST'])

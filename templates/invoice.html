@@ -49,12 +49,60 @@
   color: white;
 }
 
+.unit-card {
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+
+.unit-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.unit-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f1f5f9;
+}
+
+.unit-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.unit-memo-badge {
+  font-size: 13px;
+  color: #64748b;
+  background: #f8fafc;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
 .additional-charge-row {
   display: grid;
   grid-template-columns: 1fr 150px 80px;
   gap: 10px;
   margin-bottom: 10px;
   align-items: center;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 </style>
 {% endblock %}
@@ -76,7 +124,7 @@
         </div>
         <div class="step" id="step2-indicator">
             <div class="step-number">2</div>
-            <span>추가금/메모</span>
+            <span>기타금액/메모</span>
         </div>
         <div class="step" id="step3-indicator">
             <div class="step-number">3</div>
@@ -240,11 +288,11 @@
         </div>
     </div>
 
-    <!-- Step 2: 세대별 추가금 및 메모 -->
+    <!-- Step 2: 세대별 기타금액 및 메모 -->
     <div id="step2" class="step-content" style="display:none;">
-        <h2>Step 2: 세대별 추가금 및 메모</h2>
+        <h2>Step 2: 세대별 기타금액 및 메모</h2>
         <p style="color:#64748b;margin-bottom:20px;">
-            💡 특정 세대에만 부과되는 추가 항목(미납금, 수리비 등)과 세대별 특별 안내사항을 입력하세요.
+            💡 특정 세대에만 부과되는 기타 항목(미납금, 수리비 등)과 세대별 특별 안내사항을 입력하세요.
         </p>
 
         <div id="unitsAdditionalContainer"></div>
@@ -252,7 +300,7 @@
         <div style="margin-top: 30px;display:flex;gap:10px;">
             <button class="btn btn-secondary" onclick="goToStep1()">이전: 항목 선택</button>
             <button class="btn btn-primary" onclick="goToStep3()">다음: 최종 확인</button>
-            <button class="btn" onclick="skipToFinal()">추가금 없이 바로 생성</button>
+            <button class="btn" onclick="skipToFinal()">기타금액 없이 바로 생성</button>
         </div>
     </div>
 
@@ -309,6 +357,7 @@
 {% block scripts %}
 <script>
 const UNITS = {{ (units|default([]))|tojson }};
+const FLOORS = {{ (floors|default([]))|tojson }};
 let selectedItems = [];
 let unitAdditionalData = {};
 
@@ -397,26 +446,60 @@ function renderStep2() {
     const container = document.getElementById('unitsAdditionalContainer');
     const occupiedUnits = UNITS.filter(u => !u.is_vacant);
 
-    let html = '';
+    // 층별로 그룹화
+    const floorGroups = {};
     occupiedUnits.forEach(unit => {
-        html += `
-            <div style="background:#f8fafc;padding:20px;border-radius:12px;margin-bottom:20px;">
-                <h3 style="margin-bottom:15px;">${unit.unit_name}</h3>
+        if (!floorGroups[unit.floor_id]) {
+            const floor = FLOORS.find(f => f.id === unit.floor_id);
+            floorGroups[unit.floor_id] = {
+                floor_name: floor ? floor.name : '',
+                units: []
+            };
+        }
+        floorGroups[unit.floor_id].units.push(unit);
+    });
 
-                <div style="margin-bottom:15px;">
-                    <label style="font-weight:600;margin-bottom:10px;display:block;">특별 추가금</label>
-                    <div id="charges-${unit.id}"></div>
-                    <button type="button" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;margin-top:5px;"
-                            onclick="addChargeRow(${unit.id})">+ 항목 추가</button>
-                </div>
+    let html = '';
 
-                <div class="form-group">
-                    <label>세대별 메모</label>
-                    <textarea id="memo-${unit.id}" rows="2" placeholder="이 세대에만 안내할 특별 사항"
-                              style="font-size:13px;"></textarea>
+    // 층별로 렌더링
+    Object.keys(floorGroups).sort((a, b) => {
+        const floorA = FLOORS.find(f => f.id == a);
+        const floorB = FLOORS.find(f => f.id == b);
+        return (floorA?.floor_number || 0) - (floorB?.floor_number || 0);
+    }).forEach(floorId => {
+        const group = floorGroups[floorId];
+        const floor = FLOORS.find(f => f.id == floorId);
+        const floorMemo = floor && floor.name ? floor.name : '';
+
+        html += `<h3 style="margin-top:30px;margin-bottom:16px;color:#334155;font-size:18px;">${group.floor_name}</h3>`;
+
+        group.units.forEach(unit => {
+            const unitMemo = unit.memo ? `(${unit.memo})` : '';
+
+            html += `
+                <div class="unit-card">
+                    <div class="unit-card-header">
+                        <div>
+                            <span class="unit-name">${unit.unit_name}</span>
+                            ${unitMemo ? `<span class="unit-memo-badge">${unitMemo}</span>` : ''}
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:16px;">
+                        <div class="section-title">💰 기타 항목</div>
+                        <div id="charges-${unit.id}"></div>
+                        <button type="button" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;margin-top:8px;"
+                                onclick="addChargeRow(${unit.id})">+ 항목 추가</button>
+                    </div>
+
+                    <div>
+                        <div class="section-title">📝 세대별 메모</div>
+                        <textarea id="memo-${unit.id}" rows="2" placeholder="이 세대에만 안내할 특별 사항"
+                                  style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;"></textarea>
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        });
     });
 
     container.innerHTML = html;
@@ -432,8 +515,8 @@ function addChargeRow(unitId) {
     row.className = 'additional-charge-row';
     row.id = rowId;
     row.innerHTML = `
-        <input type="text" placeholder="항목명 (예: 전월 미납금)" class="charge-desc" style="font-size:13px;">
-        <input type="number" placeholder="금액" class="charge-amount" min="0" style="font-size:13px;">
+        <input type="text" placeholder="항목명 (예: 전월 미납금)" class="charge-desc" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
+        <input type="number" placeholder="금액" class="charge-amount" min="0" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
         <button type="button" class="btn btn-danger" style="padding:6px 12px;font-size:12px;"
                 onclick="removeChargeRow('${rowId}')">삭제</button>
     `;
@@ -485,11 +568,11 @@ function renderStep3() {
     });
     html += '</ul>';
 
-    // 추가금이 있는 세대만 표시
+    // 기타금액이 있는 세대만 표시
     const unitsWithAdditional = Object.keys(unitAdditionalData);
     if(unitsWithAdditional.length > 0) {
-        html += '<h3 style="margin-top:30px;">추가금 및 메모 설정</h3>';
-        html += '<table><thead><tr><th>세대</th><th>추가 항목</th><th>세대 메모</th></tr></thead><tbody>';
+        html += '<h3 style="margin-top:30px;">기타금액 및 메모 설정</h3>';
+        html += '<table><thead><tr><th>세대</th><th>기타 항목</th><th>세대 메모</th></tr></thead><tbody>';
 
         unitsWithAdditional.forEach(unitId => {
             const unit = UNITS.find(u => u.id == unitId);
@@ -511,7 +594,7 @@ function renderStep3() {
 
         html += '</tbody></table>';
     } else {
-        html += '<p style="color:#64748b;margin-top:20px;">추가금 및 세대별 메모가 없습니다.</p>';
+        html += '<p style="color:#64748b;margin-top:20px;">기타금액 및 세대별 메모가 없습니다.</p>';
     }
 
     container.innerHTML = html;

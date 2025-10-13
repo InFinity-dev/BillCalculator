@@ -262,14 +262,14 @@
                     {% if invoice.additional_charges %}
                         {% for charge in invoice.additional_charges %}
                         <tr>
-                            <td class="additional-item">{{ charge.description }}</td>
+                            <td class="additional-item">기타 - {{ charge.description }}</td>
                             <td class="amount" style="color:#c53030;">{{ "{:,.0f}".format(charge.amount) }}원</td>
                         </tr>
                         {% endfor %}
                     {% endif %}
 
                     <tr class="total-row">
-                        <td>이 청구금액</td>
+                        <td>총 청구금액</td>
                         <td class="amount">{{ "{:,.0f}".format(invoice.total_amount) }}원</td>
                     </tr>
                 </tbody>
