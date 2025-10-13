@@ -73,6 +73,10 @@
       </label>
     </div>
 
+    <!-- 선택된 층의 세대 정보 카드 -->
+    <div id="unitsInfoCardContainer" style="margin-top:20px;"></div>
+
+    <!-- 검침 입력 테이블 -->
     <div id="readingTableWrap" style="margin-top:16px;"></div>
 
     <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;">
@@ -85,6 +89,10 @@
 <!-- 수도요금 -->
 <div style="margin-top:24px;background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
   <h2 style="margin-bottom:12px;">💧 수도요금 계산</h2>
+
+  <!-- 수도 계산 분배 요약 -->
+  <div id="waterSummaryContainer" style="margin-bottom:20px;"></div>
+
   <form id="waterForm">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <div class="grid grid-4">
@@ -252,7 +260,50 @@ function updateTvFeeInputs(){
   calculateBillTotals();
 }
 
-// 검침표 렌더링
+// 세대 정보 카드 렌더링 (전기)
+function renderUnitsInfoCards(floorId){
+  const container = document.getElementById('unitsInfoCardContainer');
+  const units = UNITS.filter(u => u.floor_id == floorId).sort((a, b) => a.unit_name.localeCompare(b.unit_name));
+
+  if(units.length === 0){
+    container.innerHTML = '';
+    return;
+  }
+
+  let html = '<div style="background:#e0e7ff;padding:16px;border-radius:12px;margin-bottom:16px;border-left:4px solid #667eea;">';
+  html += '<h4 style="margin-top:0;color:#4338ca;">👥 선택된 층 세대 정보</h4>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">';
+
+  units.forEach(u => {
+    const statusBadge = u.is_vacant
+      ? '<span class="badge badge-danger">공실</span>'
+      : '<span class="badge badge-success">재실</span>';
+
+    const elecWelfare = u.electric_welfare ? '<span class="badge badge-primary">전기복지</span>' : '';
+    const elecVoucher = u.electric_voucher ? '<span class="badge badge-primary">전기바우처</span>' : '';
+    const tv = u.has_tv ? '<span class="badge badge-warning">TV보유</span>' : '';
+    const waterWelfare = u.water_welfare ? '<span class="badge badge-primary">수도복지</span>' : '';
+
+    html += `
+      <div style="background:white;padding:12px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px;">
+        <div style="font-weight:bold;margin-bottom:8px;font-size:14px;">${u.unit_name}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
+          ${statusBadge}
+          ${elecWelfare}
+          ${elecVoucher}
+          ${tv}
+          ${waterWelfare}
+        </div>
+        <div style="color:#64748b;">👥 ${u.residents_count}명</div>
+      </div>
+    `;
+  });
+
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+// 검침표 렌더링 (세대 정보 포함)
 function renderReadingTable(floorId){
   const wrap = document.getElementById('readingTableWrap');
   const units = UNITS.filter(u => u.floor_id == floorId && !u.is_vacant);
@@ -262,15 +313,18 @@ function renderReadingTable(floorId){
     return;
   }
 
-  let html = '<h4>검침 입력</h4><table><thead><tr><th>세대</th><th>전월 검침</th><th>현월 검침</th><th>사용량</th></tr></thead><tbody>';
+  let html = '<h4>검침 입력</h4><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f0f4f8;"><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">세대</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">속성</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">전월 검침</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">현월 검침</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">사용량</th></tr></thead><tbody>';
+
   units.forEach(u => {
-    html += `<tr>
-      <td><strong>${u.unit_name}</strong></td>
-      <td><input type="number" name="prev_${u.id}" step="0.01" placeholder="전월" class="reading-prev" data-unit="${u.id}"></td>
-      <td><input type="number" name="curr_${u.id}" step="0.01" placeholder="현월" class="reading-curr" data-unit="${u.id}"></td>
-      <td><span id="usage_${u.id}" style="font-weight:bold;">0.00</span></td>
-    </tr>`;
+    const badges = [];
+    if(u.electric_welfare) badges.push('복지');
+    if(u.electric_voucher) badges.push('바우처');
+    if(u.has_tv) badges.push('TV');
+    const badgeStr = badges.length > 0 ? badges.join(', ') : '-';
+
+    html += `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:12px;"><strong>${u.unit_name}</strong></td><td style="padding:12px;font-size:12px;color:#64748b;">${badgeStr}</td><td style="padding:12px;"><input type="number" name="prev_${u.id}" step="0.01" placeholder="전월" class="reading-prev" data-unit="${u.id}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;"></td><td style="padding:12px;"><input type="number" name="curr_${u.id}" step="0.01" placeholder="현월" class="reading-curr" data-unit="${u.id}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;"></td><td style="padding:12px;font-weight:bold;"><span id="usage_${u.id}" style="font-weight:bold;">0.00</span></td></tr>`;
   });
+
   html += '</tbody></table>';
   wrap.innerHTML = html;
 
@@ -283,6 +337,47 @@ function renderReadingTable(floorId){
       document.getElementById(`usage_${unitId}`).textContent = (curr - prev).toFixed(2);
     });
   });
+}
+
+// 수도 계산 요약 렌더링
+function renderWaterSummary(){
+  const container = document.getElementById('waterSummaryContainer');
+  const occupiedUnits = UNITS.filter(u => !u.is_vacant);
+  const waterWelfareUnits = occupiedUnits.filter(u => u.water_welfare);
+  const totalResidents = occupiedUnits.reduce((sum, u) => sum + (u.residents_count || 1), 0);
+
+  let html = '<div style="background:#e0f2fe;padding:16px;border-radius:12px;border-left:4px solid #0284c7;margin-bottom:16px;">';
+  html += '<h4 style="margin-top:0;color:#0c4a6e;">💧 수도 계산 분배 안내</h4>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:12px;">';
+
+  html += `
+    <div style="background:white;padding:12px;border-radius:8px;">
+      <div style="font-size:12px;color:#64748b;">정산 세대 (재실)</div>
+      <div style="font-size:18px;font-weight:bold;color:#0284c7;">${occupiedUnits.length}세대</div>
+    </div>
+    <div style="background:white;padding:12px;border-radius:8px;">
+      <div style="font-size:12px;color:#64748b;">총 거주 인원</div>
+      <div style="font-size:18px;font-weight:bold;color:#0284c7;">${totalResidents}명</div>
+    </div>
+    <div style="background:white;padding:12px;border-radius:8px;">
+      <div style="font-size:12px;color:#64748b;">수도 복지 대상</div>
+      <div style="font-size:18px;font-weight:bold;color:#${waterWelfareUnits.length > 0 ? '059669' : '94a3b8'}">${waterWelfareUnits.length}세대</div>
+    </div>
+  `;
+
+  html += '</div>';
+
+  // 세대별 상세 정보
+  html += '<details style="background:white;padding:12px;border-radius:8px;border:1px solid #cbd5e1;"><summary style="cursor:pointer;font-weight:600;color:#0284c7;">세대별 상세 정보 보기</summary>';
+  html += '<table style="width:100%;font-size:12px;border-collapse:collapse;margin-top:12px;"><thead><tr style="background:#f0f4f8;"><th style="padding:8px;text-align:left;border-bottom:1px solid #cbd5e1;">세대</th><th style="padding:8px;text-align:center;border-bottom:1px solid #cbd5e1;">인원수</th><th style="padding:8px;text-align:center;border-bottom:1px solid #cbd5e1;">수도복지</th><th style="padding:8px;text-align:center;border-bottom:1px solid #cbd5e1;">상태</th></tr></thead><tbody>';
+
+  occupiedUnits.forEach(u => {
+    const welfare = u.water_welfare ? '✓' : '-';
+    html += `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px;"><strong>${u.unit_name}</strong></td><td style="padding:8px;text-align:center;">${u.residents_count}명</td><td style="padding:8px;text-align:center;color:${u.water_welfare ? '#059669' : '#94a3b8'};">${welfare}</td><td style="padding:8px;text-align:center;"><span class="badge ${u.water_welfare ? 'badge-success' : 'badge-warning'}">${u.water_welfare ? '할인대상' : '일반'}</span></td></tr>`;
+  });
+
+  html += '</tbody></table></details></div>';
+  container.innerHTML = html;
 }
 
 // 이전 정산 현월값 불러오기
@@ -321,13 +416,19 @@ function loadPreviousReadings(){
 document.getElementById('floorSelect').addEventListener('change', (e) => {
   const id = e.target.value;
   document.getElementById('electric_floor_id').value = id;
-  if(id) renderReadingTable(id);
+  if(id) {
+    renderReadingTable(id);
+    renderUnitsInfoCards(id);
+  }
 });
 
 document.getElementById('electric_floor_id').addEventListener('change', (e) => {
   const id = e.target.value;
   document.getElementById('floorSelect').value = id;
-  if(id) renderReadingTable(id);
+  if(id) {
+    renderReadingTable(id);
+    renderUnitsInfoCards(id);
+  }
 });
 
 // TV 모드 변경
@@ -349,7 +450,6 @@ document.getElementById('electricForm').addEventListener('submit', async (e) => 
     return;
   }
 
-  // 빈 값을 0으로 채우기 (비활성화된 필드 제외)
   e.target.querySelectorAll('input[type="number"]:not([disabled])').forEach(input => {
     if(!input.value || input.value.trim() === ''){
       input.value = '0';
@@ -357,28 +457,17 @@ document.getElementById('electricForm').addEventListener('submit', async (e) => 
   });
 
   const fd = new FormData(e.target);
-
-  // ===== 디버깅: FormData 내용 출력 =====
-
-  for(let pair of fd.entries()) {
-    console.log(pair[0] + ': ' + pair[1]);
-  }
-
   fd.set('overwrite', e.target.overwrite.checked ? 'true' : 'false');
 
   try {
-
     const res = await fetch('/calculate/electric', { method: 'POST', body: fd });
     const j = await res.json();
-
-
 
     if(j.exists){
       if(confirm('해당 월의 전기요금이 이미 존재합니다. 덮어쓸까요?')){
         fd.set('overwrite', 'true');
         const res2 = await fetch('/calculate/electric', { method: 'POST', body: fd });
         const j2 = await res2.json();
-
         alert(j2.message || (j2.success ? '저장되었습니다.' : '실패했습니다.'));
         if(j2.success) location.reload();
       }
@@ -388,11 +477,9 @@ document.getElementById('electricForm').addEventListener('submit', async (e) => 
         location.reload();
       } else {
         alert('오류: ' + (j.message || '알 수 없는 오류'));
-        console.error('서버 오류 상세:', j);
       }
     }
   } catch(error) {
-    console.error('네트워크 오류:', error);
     alert('네트워크 오류가 발생했습니다: ' + error.message);
   }
 });
@@ -427,7 +514,6 @@ document.getElementById('waterForm').addEventListener('submit', async (e) => {
       if(j.success) location.reload();
     }
   } catch(error) {
-    console.error('Error:', error);
     alert('오류가 발생했습니다: ' + error.message);
   }
 });
@@ -450,12 +536,12 @@ document.getElementById('commonForm').addEventListener('submit', async (e) => {
     alert(j.message || (j.success ? '저장되었습니다.' : '실패했습니다.'));
     if(j.success) location.reload();
   } catch(error) {
-    console.error('Error:', error);
     alert('오류가 발생했습니다: ' + error.message);
   }
 });
 
 // 초기화
 renderFloorOptions();
+renderWaterSummary();
 </script>
 {% endblock %}
