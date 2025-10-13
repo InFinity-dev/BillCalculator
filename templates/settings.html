@@ -6,10 +6,11 @@
 <div class="tabs">
   <button class="tab active" onclick="showTab('floors-tab', event)">층/세대 관리</button>
   <button class="tab" onclick="showTab('settings-tab', event)">요금 설정</button>
+  <button class="tab" onclick="showTab('invoice-settings-tab', event)">정산서 설정</button>
   <button class="tab" onclick="showTab('import-export-tab', event)">가져오기/내보내기</button>
 </div>
 
-<!-- 층/세대 관리 -->
+<!-- 층/세대 관리 탭 -->
 <div id="floors-tab" class="tab-content">
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
     <h2>층 및 세대 관리</h2>
@@ -83,7 +84,7 @@
   {% endif %}
 </div>
 
-<!-- 요금 설정 -->
+<!-- 요금 설정 탭 -->
 <div id="settings-tab" class="tab-content" style="display:none;">
   <h2>요금 설정</h2>
   <form action="{{ url_for('save_settings') }}" method="POST">
@@ -114,7 +115,40 @@
   </form>
 </div>
 
-<!-- 가져오기/내보내기 -->
+<!-- 정산서 설정 탭 -->
+<div id="invoice-settings-tab" class="tab-content" style="display:none;">
+  <h2>📄 정산서 설정</h2>
+  <p style="color:#64748b;margin-bottom:20px;">
+    정산서에 항상 포함될 고정 메모를 설정할 수 있습니다. (예: 입금 계좌 안내, 납부 기한 등)
+  </p>
+  <form action="{{ url_for('save_settings') }}" method="POST">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <!-- 기존 요금 설정값도 함께 전송 -->
+    <input type="hidden" name="tv_fee" value="{{ tv_fee }}">
+    <input type="hidden" name="electric_welfare_amount" value="{{ electric_welfare_amount }}">
+    <input type="hidden" name="electric_voucher_amount" value="{{ electric_voucher_amount }}">
+    <input type="hidden" name="water_welfare_amount" value="{{ water_welfare_amount }}">
+
+    <div class="form-group">
+      <label>정산서 고정 메모</label>
+      <textarea name="invoice_default_memo" rows="8" placeholder="예:&#10;&#10;입금 계좌: OO은행 123-456-789 (예금주: 홍길동)&#10;납부 기한: 매월 말일까지&#10;문의: 010-1234-5678" style="font-family: monospace;">{{ invoice_default_memo }}</textarea>
+      <small style="color:#94a3b8;">
+        이 메모는 모든 정산서 생성 시 자동으로 포함됩니다. 정산서 생성 시 추가 메모를 입력하면 이 고정 메모 뒤에 추가됩니다.
+      </small>
+    </div>
+
+    <div style="background:#dbeafe;padding:15px;border-radius:8px;margin-bottom:20px;">
+      <h4 style="margin:0 0 10px 0;color:#1e40af;">💡 미리보기</h4>
+      <div style="background:white;padding:15px;border-radius:5px;white-space:pre-wrap;font-family:monospace;font-size:13px;color:#334155;">
+        {{ invoice_default_memo if invoice_default_memo else '(아직 설정된 고정 메모가 없습니다)' }}
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">설정 저장</button>
+  </form>
+</div>
+
+<!-- 가져오기/내보내기 탭 -->
 <div id="import-export-tab" class="tab-content" style="display:none;">
   <h2>데이터 가져오기/내보내기</h2>
   <div class="grid grid-2">

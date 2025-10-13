@@ -38,41 +38,149 @@ const electricBills = {{ (electric_bills_json|default([]))|tojson }};
 const waterBills = {{ (water_bills_json|default([]))|tojson }};
 const commonBills = {{ (common_bills_json|default([]))|tojson }};
 
+async function deleteBill(type, id) {
+  if(!confirm('정말 삭제하시겠습니까?')) return;
+
+  const fd = new FormData();
+  fd.append('_csrf_token', getCsrfToken());
+
+  const res = await fetch(`/bills/delete/${type}/${id}`, {
+    method: 'POST',
+    body: fd
+  });
+
+  const j = await res.json();
+  alert(j.message || (j.success ? '삭제되었습니다.' : '삭제 실패'));
+  if(j.success) location.reload();
+}
+
+// 🔧 개선: 월별 고지 정보를 파싱하여 표시
+function formatMonthlyDetails(bill) {
+  if (!bill.monthly_details || !Array.isArray(bill.monthly_details) || bill.monthly_details.length === 0) {
+    return '<span style="color:#94a3b8;">-</span>';
+  }
+
+  const months = bill.monthly_details
+    .map(m => m.month ? m.month.substring(0, 7) : '-')
+    .filter(m => m !== '-');
+
+  if (months.length === 0) {
+    return '<span style="color:#94a3b8;">-</span>';
+  }
+
+  if (months.length === 1) {
+    return `<span style="color:#334155;">${months[0]}</span>`;
+  }
+
+  // 여러 개월인 경우
+  return `<div style="display:flex;align-items:center;gap:8px;">
+    <span style="color:#667eea;font-weight:600;">${months.length}개월 묶음</span>
+    <div style="font-size:12px;color:#64748b;">
+      ${months.join(', ')}
+    </div>
+  </div>`;
+}
+
+// 🔧 개선: 월별 상세 정보 툴팁
+function getMonthlyDetailsTooltip(bill) {
+  if (!bill.monthly_details || !Array.isArray(bill.monthly_details)) {
+    return '';
+  }
+
+  const details = bill.monthly_details.map(m => {
+    const month = m.month ? m.month.substring(0, 7) : '-';
+    const amount = Number(m.amount || 0).toLocaleString();
+    const welfare = Number(m.welfare || 0).toLocaleString();
+    const voucher = Number(m.voucher || 0).toLocaleString();
+    return `${month}: ${amount}원 (복지 ${welfare}원, 바우처 ${voucher}원)`;
+  }).join('\n');
+
+  return `title="${details}"`;
+}
+
 function renderElectric(){
   const el = document.getElementById('electricList');
-  if(!electricBills.length){ el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>'; return; }
-  el.innerHTML = '<table><thead><tr><th>월</th><th>층</th><th>총액</th><th>복지</th><th>바우처</th><th>TV</th></tr></thead><tbody>' +
-    electricBills.map(b=>`<tr>
-      <td>${b.billing_month.slice(0,7)}</td>
-      <td>${b.floor_name || ''}</td>
-      <td style="text-align:right">${Number(b.total_amount).toLocaleString()}</td>
-      <td style="text-align:right">${Number(b.welfare_discount||0).toLocaleString()}</td>
-      <td style="text-align:right">${Number(b.voucher_discount||0).toLocaleString()}</td>
-      <td style="text-align:right">${Number(b.tv_fee_total||0).toLocaleString()}</td>
-    </tr>`).join('') + '</tbody></table>';
+  if(!electricBills.length){
+    el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
+    return;
+  }
+
+  el.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>정산월</th>
+          <th>고지월 정보</th>
+          <th>층</th>
+          <th>총액</th>
+          <th>복지</th>
+          <th>바우처</th>
+          <th>TV</th>
+          <th>작업</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${electricBills.map(b => `
+          <tr>
+            <td>${b.billing_month.slice(0,7)}</td>
+            <td style="min-width:200px;" ${getMonthlyDetailsTooltip(b)}>
+              ${formatMonthlyDetails(b)}
+            </td>
+            <td>${b.floor_name || ''}</td>
+            <td style="text-align:right">${Number(b.total_amount).toLocaleString()}원</td>
+            <td style="text-align:right">${Number(b.welfare_discount||0).toLocaleString()}원</td>
+            <td style="text-align:right">${Number(b.voucher_discount||0).toLocaleString()}원</td>
+            <td style="text-align:right">${Number(b.tv_fee_total||0).toLocaleString()}원</td>
+            <td style="white-space:nowrap;">
+              <a href="/view/electric/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
+              <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('electric', ${b.id})">삭제</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
 }
+
 function renderWater(){
   const el = document.getElementById('waterList');
-  if(!waterBills.length){ el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>'; return; }
-  el.innerHTML = '<table><thead><tr><th>월</th><th>총액</th><th>복지합계</th></tr></thead><tbody>' +
+  if(!waterBills.length){
+    el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
+    return;
+  }
+  el.innerHTML = '<table><thead><tr><th>월</th><th>총액</th><th>복지합계</th><th>작업</th></tr></thead><tbody>' +
     waterBills.map(b=>`<tr>
       <td>${b.billing_month.slice(0,7)}</td>
-      <td style="text-align:right">${Number(b.total_amount).toLocaleString()}</td>
-      <td style="text-align:right">${Number(b.welfare_discount_total||0).toLocaleString()}</td>
-    </tr>`).join('') + '</tbody></table>';
-}
-function renderCommon(){
-  const el = document.getElementById('commonList');
-  if(!commonBills.length){ el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>'; return; }
-  el.innerHTML = '<table><thead><tr><th>월</th><th>설명</th><th>총액</th><th>분배 방식</th></tr></thead><tbody>' +
-    commonBills.map(b=>`<tr>
-      <td>${b.billing_month.slice(0,7)}</td>
-      <td>${b.description||''}</td>
-      <td style="text-align:right">${Number(b.total_amount).toLocaleString()}</td>
-      <td>${b.distribution_method}</td>
+      <td style="text-align:right">${Number(b.total_amount).toLocaleString()}원</td>
+      <td style="text-align:right">${Number(b.welfare_discount_total||0).toLocaleString()}원</td>
+      <td>
+        <a href="/view/water/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
+        <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('water', ${b.id})">삭제</button>
+      </td>
     </tr>`).join('') + '</tbody></table>';
 }
 
-renderElectric(); renderWater(); renderCommon();
+function renderCommon(){
+  const el = document.getElementById('commonList');
+  if(!commonBills.length){
+    el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
+    return;
+  }
+  el.innerHTML = '<table><thead><tr><th>월</th><th>설명</th><th>총액</th><th>분배 방식</th><th>작업</th></tr></thead><tbody>' +
+    commonBills.map(b=>`<tr>
+      <td>${b.billing_month.slice(0,7)}</td>
+      <td>${b.description||''}</td>
+      <td style="text-align:right">${Number(b.total_amount).toLocaleString()}원</td>
+      <td>${b.distribution_method === 'BY_RESIDENTS' ? '인원수 비례' : '세대 균등'}</td>
+      <td>
+        <a href="/view/common/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
+        <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('common', ${b.id})">삭제</button>
+      </td>
+    </tr>`).join('') + '</tbody></table>';
+}
+
+renderElectric();
+renderWater();
+renderCommon();
 </script>
 {% endblock %}

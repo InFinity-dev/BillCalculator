@@ -51,7 +51,7 @@
       <h4>월별 고지 내역 입력</h4>
       <div id="monthlyBillsContainer"></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-        <button type="button" class="btn btn-secondary" onclick="addMonthRow()">+ 월 추가</button>
+        <button type="button" class="btn btn-secondary" onclick="addMonthBillRow()">+ 월 추가</button>
       </div>
       <div style="margin-top:15px; padding:10px; background:#e7f3ff; border-radius:5px;">
         <strong>합계:</strong>
@@ -61,7 +61,8 @@
         TV수신료 <span id="totalTvFee">0</span>원
       </div>
       <small style="color:#64748b;display:block;margin-top:8px;">
-        개별 부과 모드에서는 TV 수신료는 설정의 단가 × 개월 수로 보유세대에만 부과됩니다. 이 경우 월별 TV수신료 입력칸은 비활성화됩니다.
+        <strong>개별 부과 모드:</strong> TV 보유 세대만 설정의 TV 단가 × 개월수가 부과됩니다. TV수신료 입력칸은 비활성화됩니다.<br>
+        <strong>균등 분배 모드:</strong> TV수신료 입력칸에 월별 총 TV 수신료를 입력하면, 공실을 제외한 모든 재실 세대가 균등 분담합니다.
       </small>
     </div>
 
@@ -75,7 +76,7 @@
     <div id="readingTableWrap" style="margin-top:16px;"></div>
 
     <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;">
-      <button type="button" class="btn" onclick="loadPrevReadings()">이전 정산 현월값 불러오기</button>
+      <button type="button" class="btn" onclick="loadPreviousReadings()">이전 정산 현월값 불러오기</button>
       <button type="submit" class="btn btn-primary">전기요금 계산 저장</button>
     </div>
   </form>
@@ -93,11 +94,11 @@
       </div>
       <div class="form-group">
         <label>수도 총액 (주택)</label>
-        <input type="number" name="total_amount" min="0" required>
+        <input type="number" name="total_amount" min="0" placeholder="수도요금 (원)" required>
       </div>
       <div class="form-group">
         <label>복지 할인 총액</label>
-        <input type="number" name="welfare_discount_total" min="0" value="0" required>
+        <input type="number" name="welfare_discount_total" min="0" placeholder="복지할인 (원)">
       </div>
       <div class="form-group" style="align-self:end;">
         <label style="visibility:hidden;">중복 처리</label>
@@ -126,7 +127,7 @@
       </div>
       <div class="form-group">
         <label>총액</label>
-        <input type="number" name="total_amount" min="0" required>
+        <input type="number" name="total_amount" min="0" placeholder="공과금 총액 (원)" required>
       </div>
       <div class="form-group">
         <label>분배 방식</label>
@@ -149,186 +150,312 @@
 const FLOORS = {{ (floors_json|default([]))|tojson }};
 const UNITS = {{ (units_json|default([]))|tojson }};
 
-let monthRowCount = 0;
+let monthRowCounter = 0;
 
+// 층 옵션 렌더링
 function renderFloorOptions(){
   const sel1 = document.getElementById('floorSelect');
   const sel2 = document.getElementById('electric_floor_id');
-  [sel1, sel2].forEach(sel => {
-    sel.innerHTML = '<option value="">선택</option>' + FLOORS.map(f => `<option value="${f.id}">${f.name || (f.floor_number < 0 ? 'B' + (-f.floor_number) + '층' : f.floor_number + '층')}</option>`).join('');
-  });
+  const options = '<option value="">선택</option>' + FLOORS.map(f => {
+    const label = f.name || (f.floor_number < 0 ? 'B' + (-f.floor_number) + '층' : f.floor_number + '층');
+    return `<option value="${f.id}">${label}</option>`;
+  }).join('');
+  sel1.innerHTML = options;
+  sel2.innerHTML = options;
 }
 
-function addMonthRow(){
+// 월별 고지 행 추가
+function addMonthBillRow(){
   const container = document.getElementById('monthlyBillsContainer');
-  const rowIndex = monthRowCount;
+  const idx = monthRowCounter;
 
-  const row = document.createElement('div');
-  row.className = 'month-row';
-  row.style.cssText = 'display:grid; grid-template-columns: 1.2fr 2fr 2fr 2fr 2fr 1fr; gap:10px; margin-bottom:10px; padding:10px; background:white; border-radius:5px;';
-  row.innerHTML = `
-    <input type="month" name="month_${rowIndex}" placeholder="고지월">
-    <input type="number" name="amount_${rowIndex}" placeholder="전기요금" min="0" step="0.01" onchange="calculateTotals()">
-    <input type="number" name="welfare_${rowIndex}" placeholder="복지할인" min="0" step="0.01" onchange="calculateTotals()">
-    <input type="number" name="voucher_${rowIndex}" placeholder="바우처할인" min="0" step="0.01" onchange="calculateTotals()">
-    <input type="number" name="tv_fee_${rowIndex}" class="tvfee" placeholder="TV수신료" min="0" step="0.01" onchange="calculateTotals()">
-    <button type="button" class="btn btn-danger" onclick="removeMonthRow(this)">삭제</button>
+  const rowDiv = document.createElement('div');
+  rowDiv.className = 'month-bill-row';
+  rowDiv.dataset.index = idx;
+  rowDiv.style.cssText = 'display:grid; grid-template-columns: 1fr 1.5fr 1.5fr 1.5fr 1.5fr 0.5fr; gap:8px; margin-bottom:10px; padding:10px; background:white; border-radius:5px; align-items:center;';
+
+  rowDiv.innerHTML = `
+    <input type="month" name="month_${idx}" placeholder="고지월" required style="font-size:13px;">
+    <input type="number" name="amount_${idx}" placeholder="전기요금 (원)" min="0" step="0.01" class="bill-amount" required style="font-size:13px;">
+    <input type="number" name="welfare_${idx}" placeholder="복지할인 (원)" min="0" step="0.01" class="bill-welfare" style="font-size:13px;">
+    <input type="number" name="voucher_${idx}" placeholder="바우처할인 (원)" min="0" step="0.01" class="bill-voucher" style="font-size:13px;">
+    <input type="number" name="tv_fee_${idx}" placeholder="TV수신료 총액 (원)" min="0" step="0.01" class="bill-tvfee" style="font-size:13px;">
+    <button type="button" class="btn btn-danger" onclick="removeMonthBillRow(${idx})" style="padding:8px;">삭제</button>
   `;
-  container.appendChild(row);
 
-  monthRowCount++;
-  document.getElementById('month_count').value = monthRowCount;
-  syncTvFeeInputs(); // 모드에 따라 비활성화 처리
-  calculateTotals();
+  container.appendChild(rowDiv);
+  monthRowCounter++;
+  updateMonthCount();
+  attachBillInputListeners();
+  updateTvFeeInputs();
 }
 
-function removeMonthRow(btn){
-  btn.parentElement.remove();
-  // reindex names to be continuous (0..n-1)
-  const rows = document.querySelectorAll('#monthlyBillsContainer .month-row');
-  rows.forEach((row, idx) => {
-    row.querySelectorAll('input').forEach(input => {
-      const parts = input.name.split('_');
-      if(parts.length > 1){
-        parts[parts.length-1] = String(idx);
-        input.name = parts.join('_');
-      }
-    });
-  });
-  monthRowCount = rows.length;
-  document.getElementById('month_count').value = monthRowCount;
-  calculateTotals();
-}
-
-function calculateTotals(){
-  let totalAmount = 0, totalWelfare = 0, totalVoucher = 0, totalTv = 0;
-  for(let i=0;i<monthRowCount;i++){
-    totalAmount += parseFloat(document.querySelector(`[name="amount_${i}"]`)?.value || 0);
-    totalWelfare += parseFloat(document.querySelector(`[name="welfare_${i}"]`)?.value || 0);
-    totalVoucher += parseFloat(document.querySelector(`[name="voucher_${i}"]`)?.value || 0);
-    totalTv += parseFloat(document.querySelector(`[name="tv_fee_${i}"]`)?.value || 0);
+// 월별 고지 행 삭제
+function removeMonthBillRow(idx){
+  const row = document.querySelector(`.month-bill-row[data-index="${idx}"]`);
+  if(row){
+    row.remove();
+    updateMonthCount();
+    calculateBillTotals();
   }
+}
+
+// 월 개수 업데이트
+function updateMonthCount(){
+  const rows = document.querySelectorAll('#monthlyBillsContainer .month-bill-row');
+  document.getElementById('month_count').value = rows.length;
+}
+
+// 입력 필드 이벤트 리스너 연결
+function attachBillInputListeners(){
+  document.querySelectorAll('.bill-amount, .bill-welfare, .bill-voucher, .bill-tvfee').forEach(input => {
+    input.removeEventListener('input', calculateBillTotals);
+    input.addEventListener('input', calculateBillTotals);
+  });
+}
+
+// 합계 계산
+function calculateBillTotals(){
+  let totalAmount = 0, totalWelfare = 0, totalVoucher = 0, totalTv = 0;
+
+  document.querySelectorAll('.bill-amount').forEach(input => {
+    totalAmount += parseFloat(input.value || 0);
+  });
+  document.querySelectorAll('.bill-welfare').forEach(input => {
+    totalWelfare += parseFloat(input.value || 0);
+  });
+  document.querySelectorAll('.bill-voucher').forEach(input => {
+    totalVoucher += parseFloat(input.value || 0);
+  });
+  document.querySelectorAll('.bill-tvfee').forEach(input => {
+    totalTv += parseFloat(input.value || 0);
+  });
+
   document.getElementById('totalAmount').textContent = totalAmount.toLocaleString();
   document.getElementById('totalWelfare').textContent = totalWelfare.toLocaleString();
   document.getElementById('totalVoucher').textContent = totalVoucher.toLocaleString();
   document.getElementById('totalTvFee').textContent = totalTv.toLocaleString();
 }
 
+// TV 수신료 입력란 활성/비활성
+function updateTvFeeInputs(){
+  const isIndividual = document.getElementById('tv_mode').value === 'INDIVIDUAL';
+  document.querySelectorAll('.bill-tvfee').forEach(input => {
+    input.disabled = isIndividual;
+    if(isIndividual){
+      input.value = '';
+      input.style.backgroundColor = '#e5e7eb';
+    } else {
+      input.style.backgroundColor = '';
+    }
+  });
+  calculateBillTotals();
+}
+
+// 검침표 렌더링
 function renderReadingTable(floorId){
   const wrap = document.getElementById('readingTableWrap');
   const units = UNITS.filter(u => u.floor_id == floorId && !u.is_vacant);
+
   if(units.length === 0){
     wrap.innerHTML = '<p style="color:#94a3b8;">해당 층의 재실 세대가 없습니다.</p>';
     return;
   }
+
   let html = '<h4>검침 입력</h4><table><thead><tr><th>세대</th><th>전월 검침</th><th>현월 검침</th><th>사용량</th></tr></thead><tbody>';
   units.forEach(u => {
     html += `<tr>
       <td><strong>${u.unit_name}</strong></td>
-      <td><input type="number" name="prev_${u.id}" step="0.01" value="0" onchange="calcUsage(${u.id})"></td>
-      <td><input type="number" name="curr_${u.id}" step="0.01" value="0" onchange="calcUsage(${u.id})"></td>
-      <td><span id="usage_${u.id}">0</span></td>
+      <td><input type="number" name="prev_${u.id}" step="0.01" placeholder="전월" class="reading-prev" data-unit="${u.id}"></td>
+      <td><input type="number" name="curr_${u.id}" step="0.01" placeholder="현월" class="reading-curr" data-unit="${u.id}"></td>
+      <td><span id="usage_${u.id}" style="font-weight:bold;">0.00</span></td>
     </tr>`;
   });
   html += '</tbody></table>';
   wrap.innerHTML = html;
-}
 
-function calcUsage(unitId){
-  const prev = parseFloat(document.querySelector(`[name="prev_${unitId}"]`).value || 0);
-  const curr = parseFloat(document.querySelector(`[name="curr_${unitId}"]`).value || 0);
-  document.getElementById(`usage_${unitId}`).textContent = (curr - prev).toFixed(2);
-}
-
-// Floor selectors sync
-document.getElementById('floorSelect').addEventListener('change', (e)=>{
-  const id = e.target.value;
-  document.getElementById('electric_floor_id').value = id;
-  if(id){ renderReadingTable(id); }
-});
-document.getElementById('electric_floor_id').addEventListener('change', (e)=>{
-  const id = e.target.value;
-  document.getElementById('floorSelect').value = id;
-  if(id){ renderReadingTable(id); }
-});
-
-// TV 분배 모드에 따라 월별 TV 수신료 입력칸 활성/비활성
-document.getElementById('tv_mode').addEventListener('change', syncTvFeeInputs);
-function syncTvFeeInputs(){
-  const isIndividual = document.getElementById('tv_mode').value === 'INDIVIDUAL';
-  document.querySelectorAll('#monthlyBillsContainer .tvfee').forEach(inp => {
-    inp.disabled = isIndividual;
-    if(isIndividual){ inp.value = ''; } // 개별부과 모드에서 값 미사용
+  // 사용량 자동 계산
+  document.querySelectorAll('.reading-prev, .reading-curr').forEach(input => {
+    input.addEventListener('input', function(){
+      const unitId = this.dataset.unit;
+      const prev = parseFloat(document.querySelector(`.reading-prev[data-unit="${unitId}"]`).value || 0);
+      const curr = parseFloat(document.querySelector(`.reading-curr[data-unit="${unitId}"]`).value || 0);
+      document.getElementById(`usage_${unitId}`).textContent = (curr - prev).toFixed(2);
+    });
   });
 }
 
-// 이전 정산 현월값을 전월값으로 채우기
-function loadPrevReadings(){
+// 이전 정산 현월값 불러오기
+function loadPreviousReadings(){
   const monthInput = document.getElementById('billing_month');
   const floorId = document.getElementById('electric_floor_id').value;
-  if(!monthInput.value || !floorId){ alert('정산월과 층을 먼저 선택하세요.'); return; }
+
+  if(!monthInput.value || !floorId){
+    alert('정산월과 층을 먼저 선택하세요.');
+    return;
+  }
+
   fetch(`/get_previous_readings/${floorId}/${monthInput.value}`)
-    .then(r=>r.json()).then(j=>{
-      if(!j.success){ alert(j.message || '이전 정산 검침 불러오기에 실패했습니다.'); return; }
-      const map = j.readings || {};
-      Object.entries(map).forEach(([uid, val])=>{
-        const input = document.querySelector(`#readingTableWrap [name="prev_${uid}"]`);
-        if(input) {
-          input.value = val;
-          calcUsage(uid);
+    .then(r => r.json())
+    .then(j => {
+      if(!j.success){
+        alert(j.message || '이전 정산 검침 불러오기에 실패했습니다.');
+        return;
+      }
+
+      const readings = j.readings || {};
+      Object.entries(readings).forEach(([unitId, value]) => {
+        const input = document.querySelector(`.reading-prev[data-unit="${unitId}"]`);
+        if(input){
+          input.value = value;
+          input.dispatchEvent(new Event('input'));
         }
       });
+
       alert('이전 정산의 현월 검침을 불러왔습니다.');
-    }).catch(()=> alert('통신 오류가 발생했습니다.'));
+    })
+    .catch(() => alert('통신 오류가 발생했습니다.'));
 }
 
-// Submit handlers
-document.getElementById('electricForm').addEventListener('submit', async (e)=>{
+// 층 선택 동기화
+document.getElementById('floorSelect').addEventListener('change', (e) => {
+  const id = e.target.value;
+  document.getElementById('electric_floor_id').value = id;
+  if(id) renderReadingTable(id);
+});
+
+document.getElementById('electric_floor_id').addEventListener('change', (e) => {
+  const id = e.target.value;
+  document.getElementById('floorSelect').value = id;
+  if(id) renderReadingTable(id);
+});
+
+// TV 모드 변경
+document.getElementById('tv_mode').addEventListener('change', updateTvFeeInputs);
+
+// 전기요금 폼 제출
+document.getElementById('electricForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const fd = new FormData(e.target);
-  fd.set('overwrite', e.target.overwrite.checked ? 'true' : 'false');
-  const res = await fetch('/calculate/electric', { method:'POST', body: fd });
-  const j = await res.json();
-  if(j.exists){
-    if(confirm('해당 월의 전기요금이 이미 존재합니다. 덮어쓸까요?')){
-      fd.set('overwrite','true');
-      const res2 = await fetch('/calculate/electric', { method:'POST', body: fd });
-      const j2 = await res2.json();
-      alert(j2.message || (j2.success ? '저장되었습니다.' : '실패했습니다.'));
+
+  const rows = document.querySelectorAll('#monthlyBillsContainer .month-bill-row');
+  if(rows.length === 0){
+    alert('월별 고지 내역을 최소 1개 이상 추가해주세요.');
+    return;
+  }
+
+  const floorId = document.getElementById('electric_floor_id').value;
+  if(!floorId){
+    alert('층을 선택해주세요.');
+    return;
+  }
+
+  // 빈 값을 0으로 채우기 (비활성화된 필드 제외)
+  e.target.querySelectorAll('input[type="number"]:not([disabled])').forEach(input => {
+    if(!input.value || input.value.trim() === ''){
+      input.value = '0';
     }
-  }else{
-    alert(j.message || (j.success ? '저장되었습니다.' : '실패했습니다.'));
+  });
+
+  const fd = new FormData(e.target);
+
+  // ===== 디버깅: FormData 내용 출력 =====
+
+  for(let pair of fd.entries()) {
+    console.log(pair[0] + ': ' + pair[1]);
+  }
+
+  fd.set('overwrite', e.target.overwrite.checked ? 'true' : 'false');
+
+  try {
+
+    const res = await fetch('/calculate/electric', { method: 'POST', body: fd });
+    const j = await res.json();
+
+
+
+    if(j.exists){
+      if(confirm('해당 월의 전기요금이 이미 존재합니다. 덮어쓸까요?')){
+        fd.set('overwrite', 'true');
+        const res2 = await fetch('/calculate/electric', { method: 'POST', body: fd });
+        const j2 = await res2.json();
+
+        alert(j2.message || (j2.success ? '저장되었습니다.' : '실패했습니다.'));
+        if(j2.success) location.reload();
+      }
+    } else {
+      if(j.success) {
+        alert('저장되었습니다.');
+        location.reload();
+      } else {
+        alert('오류: ' + (j.message || '알 수 없는 오류'));
+        console.error('서버 오류 상세:', j);
+      }
+    }
+  } catch(error) {
+    console.error('네트워크 오류:', error);
+    alert('네트워크 오류가 발생했습니다: ' + error.message);
   }
 });
 
-document.getElementById('waterForm').addEventListener('submit', async (e)=>{
+// 수도요금 폼 제출
+document.getElementById('waterForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+
+  e.target.querySelectorAll('input[type="number"]').forEach(input => {
+    if(!input.value || input.value.trim() === ''){
+      input.value = '0';
+    }
+  });
+
   const fd = new FormData(e.target);
   fd.set('overwrite', e.target.overwrite.checked ? 'true' : 'false');
-  const res = await fetch('/calculate/water', { method:'POST', body: fd });
-  const j = await res.json();
-  if(j.exists){
-    if(confirm('해당 월의 수도요금이 이미 존재합니다. 덮어쓸까요?')){
-      fd.set('overwrite','true');
-      const res2 = await fetch('/calculate/water', { method:'POST', body: fd });
-      const j2 = await res2.json();
-      alert(j2.message || (j2.success ? '저장되었습니다.' : '실패했습니다.'));
+
+  try {
+    const res = await fetch('/calculate/water', { method: 'POST', body: fd });
+    const j = await res.json();
+
+    if(j.exists){
+      if(confirm('해당 월의 수도요금이 이미 존재합니다. 덮어쓸까요?')){
+        fd.set('overwrite', 'true');
+        const res2 = await fetch('/calculate/water', { method: 'POST', body: fd });
+        const j2 = await res2.json();
+        alert(j2.message || (j2.success ? '저장되었습니다.' : '실패했습니다.'));
+        if(j2.success) location.reload();
+      }
+    } else {
+      alert(j.message || (j.success ? '저장되었습니다.' : '실패했습니다.'));
+      if(j.success) location.reload();
     }
-  }else{
-    alert(j.message || (j.success ? '저장되었습니다.' : '실패했습니다.'));
+  } catch(error) {
+    console.error('Error:', error);
+    alert('오류가 발생했습니다: ' + error.message);
   }
 });
 
-document.getElementById('commonForm').addEventListener('submit', async (e)=>{
+// 공동 공과금 폼 제출
+document.getElementById('commonForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+
+  e.target.querySelectorAll('input[type="number"]').forEach(input => {
+    if(!input.value || input.value.trim() === ''){
+      input.value = '0';
+    }
+  });
+
   const fd = new FormData(e.target);
-  const res = await fetch('/calculate/common', { method:'POST', body: fd });
-  const j = await res.json();
-  alert(j.message || (j.success ? '저장되었습니다.' : '실패했습니다.'));
+
+  try {
+    const res = await fetch('/calculate/common', { method: 'POST', body: fd });
+    const j = await res.json();
+    alert(j.message || (j.success ? '저장되었습니다.' : '실패했습니다.'));
+    if(j.success) location.reload();
+  } catch(error) {
+    console.error('Error:', error);
+    alert('오류가 발생했습니다: ' + error.message);
+  }
 });
 
-// init
+// 초기화
 renderFloorOptions();
-syncTvFeeInputs();
 </script>
 {% endblock %}

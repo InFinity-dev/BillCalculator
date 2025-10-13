@@ -2,6 +2,63 @@
 
 {% block title %}정산 조합 - 공과금 정산 시스템{% endblock %}
 
+{% block extra_css %}
+<style>
+.step-indicator {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin: 30px 0;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  background: #e2e8f0;
+  border-radius: 25px;
+  transition: all 0.3s;
+}
+
+.step.active {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.step.completed {
+  background: #10b981;
+  color: white;
+}
+
+.step-number {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: white;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.step.active .step-number,
+.step.completed .step-number {
+  background: rgba(255,255,255,0.3);
+  color: white;
+}
+
+.additional-charge-row {
+  display: grid;
+  grid-template-columns: 1fr 150px 80px;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <h1>📄 정산 조합</h1>
 
@@ -12,139 +69,209 @@
 
 <!-- 새 정산 생성 탭 -->
 <div id="create-tab" class="tab-content">
-    <h2>새 정산서 생성</h2>
-    
-    <div class="form-group">
-        <label>정산서 이름</label>
-        <input type="text" id="invoiceName" placeholder="예: 2024년 3월 정산" required>
+    <div class="step-indicator">
+        <div class="step active" id="step1-indicator">
+            <div class="step-number">1</div>
+            <span>항목 선택</span>
+        </div>
+        <div class="step" id="step2-indicator">
+            <div class="step-number">2</div>
+            <span>추가금/메모</span>
+        </div>
+        <div class="step" id="step3-indicator">
+            <div class="step-number">3</div>
+            <span>최종 확인</span>
+        </div>
     </div>
-    
-    <div class="form-group">
-        <label>공통 메모 (선택)</label>
-        <textarea id="invoiceMemo" rows="2" placeholder="세대별 청구서에 포함될 공통 메모"></textarea>
+
+    <!-- Step 1: 항목 선택 -->
+    <div id="step1" class="step-content">
+        <h2>Step 1: 청구 항목 선택</h2>
+
+        <div class="form-group">
+            <label>정산서 이름</label>
+            <input type="text" id="invoiceName" placeholder="예: 2024년 3월 정산" required>
+        </div>
+
+        <div class="form-group">
+            <label>추가 메모 (선택)</label>
+            <textarea id="invoiceMemo" rows="3" placeholder="고정 메모 외에 추가로 안내할 내용이 있으면 입력하세요"></textarea>
+            <small style="color:#64748b;">
+                💡 설정에서 등록한 고정 메모가 자동으로 포함됩니다. 여기에 입력한 내용은 고정 메모 뒤에 추가됩니다.
+            </small>
+        </div>
+
+        <!-- 전기요금 선택 -->
+        <div style="margin: 30px 0;">
+            <h3>⚡ 전기요금 선택</h3>
+            {% if electric_bills %}
+            <table>
+                <thead>
+                    <tr>
+                        <th width="50">선택</th>
+                        <th>정산월</th>
+                        <th>포함 고지월</th>
+                        <th>층</th>
+                        <th>총액</th>
+                        <th>세대수</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in electric_bills %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="electric-item"
+                                   data-id="{{ bill.id }}"
+                                   data-month="{{ bill.billing_month }}"
+                                   data-desc="{{ bill.billing_month.strftime('%Y년 %m월') }} {{ bill.floor_ref.name }} 전기요금">
+                        </td>
+                        <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
+                        <td style="min-width:200px;">
+                            {% if bill.monthly_details %}
+                                {% set months = bill.monthly_details | map(attribute='month') | select | list %}
+                                {% if months|length > 1 %}
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <span class="badge badge-primary">{{ months|length }}개월 묶음</span>
+                                        <span style="font-size:12px;color:#64748b;">
+                                            {% for detail in bill.monthly_details %}
+                                                {% if detail.month %}
+                                                    {{ detail.month[:7] }}{% if not loop.last %}, {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </span>
+                                    </div>
+                                {% else %}
+                                    <span style="color:#64748b;">단일 월</span>
+                                {% endif %}
+                            {% else %}
+                                <span style="color:#94a3b8;">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ bill.floor_ref.name }}</td>
+                        <td style="text-align:right;">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                        <td>{{ bill.details|length }}세대</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color: #94a3b8;">선택 가능한 전기요금이 없습니다.</p>
+            {% endif %}
+        </div>
+
+        <!-- 수도요금 선택 -->
+        <div style="margin: 30px 0;">
+            <h3>💧 수도요금 선택</h3>
+            {% if water_bills %}
+            <table>
+                <thead>
+                    <tr>
+                        <th width="50">선택</th>
+                        <th>정산월</th>
+                        <th>총액</th>
+                        <th>세대수</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in water_bills %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="water-item"
+                                   data-id="{{ bill.id }}"
+                                   data-month="{{ bill.billing_month }}"
+                                   data-desc="{{ bill.billing_month.strftime('%Y년 %m월') }} 수도요금">
+                        </td>
+                        <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
+                        <td style="text-align:right;">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                        <td>{{ bill.details|length }}세대</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color: #94a3b8;">선택 가능한 수도요금이 없습니다.</p>
+            {% endif %}
+        </div>
+
+        <!-- 공동 공과금 선택 -->
+        <div style="margin: 30px 0;">
+            <h3>🏘️ 공동 공과금 선택</h3>
+            {% if common_bills %}
+            <table>
+                <thead>
+                    <tr>
+                        <th width="50">선택</th>
+                        <th>정산월</th>
+                        <th>항목</th>
+                        <th>총액</th>
+                        <th>분배방식</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in common_bills %}
+                    <tr>
+                        <td>
+                            <input type="checkbox" class="common-item"
+                                   data-id="{{ bill.id }}"
+                                   data-month="{{ bill.billing_month }}"
+                                   data-desc="{{ bill.description }}">
+                        </td>
+                        <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
+                        <td>{{ bill.description }}</td>
+                        <td style="text-align:right;">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                        <td>
+                            {% if bill.distribution_method == 'BY_RESIDENTS' %}
+                                인원수 비례
+                            {% else %}
+                                세대 균등
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p style="color: #94a3b8;">선택 가능한 공동 공과금이 없습니다.</p>
+            {% endif %}
+        </div>
+
+        <div style="margin-top: 30px;">
+            <button class="btn btn-primary" onclick="goToStep2()">다음 단계: 세대별 설정</button>
+        </div>
     </div>
-    
-    <!-- 전기요금 선택 -->
-    <div style="margin: 30px 0;">
-        <h3>⚡ 전기요금 선택</h3>
-        {% if electric_bills %}
-        <table>
-            <thead>
-                <tr>
-                    <th width="50">선택</th>
-                    <th>정산월</th>
-                    <th>층</th>
-                    <th>총액</th>
-                    <th>세대수</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for bill in electric_bills %}
-                <tr>
-                    <td>
-                        <input type="checkbox" class="electric-item" 
-                               data-id="{{ bill.id }}" 
-                               data-month="{{ bill.billing_month }}"
-                               data-desc="{{ bill.billing_month.strftime('%Y년 %m월') }} {{ bill.floor_ref.name }} 전기요금">
-                    </td>
-                    <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
-                    <td>{{ bill.floor_ref.name }}</td>
-                    <td>{{ "{:,.0f}".format(bill.total_amount) }}원</td>
-                    <td>{{ bill.details|length }}세대</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p style="color: #94a3b8;">선택 가능한 전기요금이 없습니다.</p>
-        {% endif %}
+
+    <!-- Step 2: 세대별 추가금 및 메모 -->
+    <div id="step2" class="step-content" style="display:none;">
+        <h2>Step 2: 세대별 추가금 및 메모</h2>
+        <p style="color:#64748b;margin-bottom:20px;">
+            💡 특정 세대에만 부과되는 추가 항목(미납금, 수리비 등)과 세대별 특별 안내사항을 입력하세요.
+        </p>
+
+        <div id="unitsAdditionalContainer"></div>
+
+        <div style="margin-top: 30px;display:flex;gap:10px;">
+            <button class="btn btn-secondary" onclick="goToStep1()">이전: 항목 선택</button>
+            <button class="btn btn-primary" onclick="goToStep3()">다음: 최종 확인</button>
+            <button class="btn" onclick="skipToFinal()">추가금 없이 바로 생성</button>
+        </div>
     </div>
-    
-    <!-- 수도요금 선택 -->
-    <div style="margin: 30px 0;">
-        <h3>💧 수도요금 선택</h3>
-        {% if water_bills %}
-        <table>
-            <thead>
-                <tr>
-                    <th width="50">선택</th>
-                    <th>정산월</th>
-                    <th>총액</th>
-                    <th>세대수</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for bill in water_bills %}
-                <tr>
-                    <td>
-                        <input type="checkbox" class="water-item" 
-                               data-id="{{ bill.id }}" 
-                               data-month="{{ bill.billing_month }}"
-                               data-desc="{{ bill.billing_month.strftime('%Y년 %m월') }} 수도요금">
-                    </td>
-                    <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
-                    <td>{{ "{:,.0f}".format(bill.total_amount) }}원</td>
-                    <td>{{ bill.details|length }}세대</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p style="color: #94a3b8;">선택 가능한 수도요금이 없습니다.</p>
-        {% endif %}
-    </div>
-    
-    <!-- 공동 공과금 선택 -->
-    <div style="margin: 30px 0;">
-        <h3>🏘️ 공동 공과금 선택</h3>
-        {% if common_bills %}
-        <table>
-            <thead>
-                <tr>
-                    <th width="50">선택</th>
-                    <th>정산월</th>
-                    <th>항목</th>
-                    <th>총액</th>
-                    <th>분배방식</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for bill in common_bills %}
-                <tr>
-                    <td>
-                        <input type="checkbox" class="common-item" 
-                               data-id="{{ bill.id }}" 
-                               data-month="{{ bill.billing_month }}"
-                               data-desc="{{ bill.description }}">
-                    </td>
-                    <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
-                    <td>{{ bill.description }}</td>
-                    <td>{{ "{:,.0f}".format(bill.total_amount) }}원</td>
-                    <td>
-                        {% if bill.distribution_method == 'BY_RESIDENTS' %}
-                            인원수 비례
-                        {% else %}
-                            세대 균등
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p style="color: #94a3b8;">선택 가능한 공동 공과금이 없습니다.</p>
-        {% endif %}
-    </div>
-    
-    <div style="margin-top: 30px;">
-        <button class="btn btn-primary" onclick="createInvoice()">정산서 생성</button>
+
+    <!-- Step 3: 최종 확인 -->
+    <div id="step3" class="step-content" style="display:none;">
+        <h2>Step 3: 최종 확인</h2>
+        <div id="finalConfirmation"></div>
+
+        <div style="margin-top: 30px;display:flex;gap:10px;">
+            <button class="btn btn-secondary" onclick="goToStep2()">이전: 세대별 설정</button>
+            <button class="btn btn-primary" onclick="createInvoiceFinal()">✅ 정산서 생성</button>
+        </div>
     </div>
 </div>
 
 <!-- 정산 내역 탭 -->
 <div id="history-tab" class="tab-content" style="display: none;">
     <h2>정산 내역</h2>
-    
+
     {% if combinations %}
     <table>
         <thead>
@@ -161,11 +288,12 @@
             <tr>
                 <td>{{ combo.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                 <td><strong>{{ combo.invoice_name }}</strong></td>
-                <td>{{ combo.memo or '-' }}</td>
+                <td>{{ combo.memo[:50] if combo.memo else '-' }}{% if combo.memo and combo.memo|length > 50 %}...{% endif %}</td>
                 <td>{{ combo.items|length }}개</td>
                 <td>
                     <a href="{{ url_for('view_invoice', combination_id=combo.id) }}" class="btn btn-secondary" style="padding: 5px 10px;">조회</a>
                     <a href="{{ url_for('print_invoice', combination_id=combo.id) }}" target="_blank" class="btn btn-primary" style="padding: 5px 10px;">인쇄</a>
+                    <button class="btn btn-danger" style="padding: 5px 10px;" onclick="deleteInvoice({{ combo.id }})">삭제</button>
                 </td>
             </tr>
             {% endfor %}
@@ -180,6 +308,10 @@
 
 {% block scripts %}
 <script>
+const UNITS = {{ (units|default([]))|tojson }};
+let selectedItems = [];
+let unitAdditionalData = {};
+
 // 탭 전환
 function showTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(tab => {
@@ -188,63 +320,221 @@ function showTab(tabId) {
     document.querySelectorAll('.tab').forEach(btn => {
         btn.classList.remove('active');
     });
-    
+
     document.getElementById(tabId).style.display = 'block';
     event.target.classList.add('active');
 }
 
-// 정산서 생성
-async function createInvoice() {
+// Step 관리
+function updateStepIndicators(currentStep) {
+    for(let i = 1; i <= 3; i++) {
+        const indicator = document.getElementById(`step${i}-indicator`);
+        const content = document.getElementById(`step${i}`);
+
+        if(i < currentStep) {
+            indicator.className = 'step completed';
+        } else if(i === currentStep) {
+            indicator.className = 'step active';
+        } else {
+            indicator.className = 'step';
+        }
+
+        content.style.display = (i === currentStep) ? 'block' : 'none';
+    }
+}
+
+function goToStep1() {
+    updateStepIndicators(1);
+}
+
+function goToStep2() {
     const name = document.getElementById('invoiceName').value;
     if (!name) {
         alert('정산서 이름을 입력해주세요.');
         return;
     }
-    
-    const items = [];
-    
-    // 전기요금 항목 수집
+
+    // 선택된 항목 수집
+    selectedItems = [];
+
     document.querySelectorAll('.electric-item:checked').forEach(el => {
-        items.push({
+        selectedItems.push({
             type: 'ELECTRIC',
             id: parseInt(el.dataset.id),
             month: el.dataset.month,
             description: el.dataset.desc
         });
     });
-    
-    // 수도요금 항목 수집
+
     document.querySelectorAll('.water-item:checked').forEach(el => {
-        items.push({
+        selectedItems.push({
             type: 'WATER',
             id: parseInt(el.dataset.id),
             month: el.dataset.month,
             description: el.dataset.desc
         });
     });
-    
-    // 공동 공과금 항목 수집
+
     document.querySelectorAll('.common-item:checked').forEach(el => {
-        items.push({
+        selectedItems.push({
             type: 'COMMON',
             id: parseInt(el.dataset.id),
             month: el.dataset.month,
             description: el.dataset.desc
         });
     });
-    
-    if (items.length === 0) {
+
+    if (selectedItems.length === 0) {
         alert('최소 하나 이상의 항목을 선택해주세요.');
         return;
     }
-    
+
+    renderStep2();
+    updateStepIndicators(2);
+}
+
+function renderStep2() {
+    const container = document.getElementById('unitsAdditionalContainer');
+    const occupiedUnits = UNITS.filter(u => !u.is_vacant);
+
+    let html = '';
+    occupiedUnits.forEach(unit => {
+        html += `
+            <div style="background:#f8fafc;padding:20px;border-radius:12px;margin-bottom:20px;">
+                <h3 style="margin-bottom:15px;">${unit.unit_name}</h3>
+
+                <div style="margin-bottom:15px;">
+                    <label style="font-weight:600;margin-bottom:10px;display:block;">특별 추가금</label>
+                    <div id="charges-${unit.id}"></div>
+                    <button type="button" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;margin-top:5px;"
+                            onclick="addChargeRow(${unit.id})">+ 항목 추가</button>
+                </div>
+
+                <div class="form-group">
+                    <label>세대별 메모</label>
+                    <textarea id="memo-${unit.id}" rows="2" placeholder="이 세대에만 안내할 특별 사항"
+                              style="font-size:13px;"></textarea>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+let chargeCounter = 0;
+
+function addChargeRow(unitId) {
+    const container = document.getElementById(`charges-${unitId}`);
+    const rowId = `charge-${unitId}-${chargeCounter++}`;
+
+    const row = document.createElement('div');
+    row.className = 'additional-charge-row';
+    row.id = rowId;
+    row.innerHTML = `
+        <input type="text" placeholder="항목명 (예: 전월 미납금)" class="charge-desc" style="font-size:13px;">
+        <input type="number" placeholder="금액" class="charge-amount" min="0" style="font-size:13px;">
+        <button type="button" class="btn btn-danger" style="padding:6px 12px;font-size:12px;"
+                onclick="removeChargeRow('${rowId}')">삭제</button>
+    `;
+
+    container.appendChild(row);
+}
+
+function removeChargeRow(rowId) {
+    document.getElementById(rowId).remove();
+}
+
+function goToStep3() {
+    // 세대별 추가 데이터 수집
+    unitAdditionalData = {};
+    const occupiedUnits = UNITS.filter(u => !u.is_vacant);
+
+    occupiedUnits.forEach(unit => {
+        const charges = [];
+        const chargesContainer = document.getElementById(`charges-${unit.id}`);
+
+        if(chargesContainer) {
+            chargesContainer.querySelectorAll('.additional-charge-row').forEach(row => {
+                const desc = row.querySelector('.charge-desc').value;
+                const amount = parseFloat(row.querySelector('.charge-amount').value) || 0;
+
+                if(desc && amount > 0) {
+                    charges.push({ description: desc, amount: amount });
+                }
+            });
+        }
+
+        const memo = document.getElementById(`memo-${unit.id}`)?.value || '';
+
+        if(charges.length > 0 || memo) {
+            unitAdditionalData[unit.id] = { charges, memo };
+        }
+    });
+
+    renderStep3();
+    updateStepIndicators(3);
+}
+
+function renderStep3() {
+    const container = document.getElementById('finalConfirmation');
+
+    let html = '<h3>선택한 항목</h3><ul>';
+    selectedItems.forEach(item => {
+        html += `<li>${item.description}</li>`;
+    });
+    html += '</ul>';
+
+    // 추가금이 있는 세대만 표시
+    const unitsWithAdditional = Object.keys(unitAdditionalData);
+    if(unitsWithAdditional.length > 0) {
+        html += '<h3 style="margin-top:30px;">추가금 및 메모 설정</h3>';
+        html += '<table><thead><tr><th>세대</th><th>추가 항목</th><th>세대 메모</th></tr></thead><tbody>';
+
+        unitsWithAdditional.forEach(unitId => {
+            const unit = UNITS.find(u => u.id == unitId);
+            const data = unitAdditionalData[unitId];
+
+            let chargesText = '-';
+            if(data.charges && data.charges.length > 0) {
+                chargesText = data.charges.map(c => `${c.description}: ${c.amount.toLocaleString()}원`).join('<br>');
+            }
+
+            html += `
+                <tr>
+                    <td><strong>${unit.unit_name}</strong></td>
+                    <td>${chargesText}</td>
+                    <td>${data.memo || '-'}</td>
+                </tr>
+            `;
+        });
+
+        html += '</tbody></table>';
+    } else {
+        html += '<p style="color:#64748b;margin-top:20px;">추가금 및 세대별 메모가 없습니다.</p>';
+    }
+
+    container.innerHTML = html;
+}
+
+function skipToFinal() {
+    unitAdditionalData = {};
+    renderStep3();
+    updateStepIndicators(3);
+}
+
+// 정산서 최종 생성
+async function createInvoiceFinal() {
+    const name = document.getElementById('invoiceName').value;
+
     const data = {
         name: name,
         memo: document.getElementById('invoiceMemo').value,
-        items: items,
+        items: selectedItems,
+        unit_additional_data: unitAdditionalData,
         _csrf_token: getCsrfToken()
     };
-    
+
     const response = await fetch('/invoice/create', {
         method: 'POST',
         headers: {
@@ -252,7 +542,7 @@ async function createInvoice() {
         },
         body: JSON.stringify(data)
     });
-    
+
     const result = await response.json();
     if (result.success) {
         alert('정산서가 생성되었습니다.');
@@ -260,6 +550,23 @@ async function createInvoice() {
     } else {
         alert(result.message);
     }
+}
+
+// 정산서 삭제
+async function deleteInvoice(id) {
+    if(!confirm('정말 삭제하시겠습니까? 관련된 모든 청구 내역도 함께 삭제됩니다.')) return;
+
+    const fd = new FormData();
+    fd.append('_csrf_token', getCsrfToken());
+
+    const res = await fetch(`/invoice/delete/${id}`, {
+        method: 'POST',
+        body: fd
+    });
+
+    const j = await res.json();
+    alert(j.message || (j.success ? '삭제되었습니다.' : '삭제 실패'));
+    if(j.success) location.reload();
 }
 </script>
 {% endblock %}

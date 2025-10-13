@@ -95,6 +95,12 @@
             color: #666;
         }
 
+        .additional-item {
+            padding-left: 20px;
+            font-size: 14px;
+            color: #c53030;
+        }
+
         .total-row {
             background: #fff3cd;
             font-size: 18px;
@@ -115,6 +121,19 @@
         .memo-section h3 {
             margin-top: 0;
             color: #333;
+        }
+
+        .unit-memo-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 8px;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .unit-memo-section h4 {
+            margin: 0 0 10px 0;
+            color: #92400e;
         }
 
         .footer {
@@ -240,17 +259,33 @@
                         {% endif %}
                     {% endif %}
 
+                    {% if invoice.additional_charges %}
+                        {% for charge in invoice.additional_charges %}
+                        <tr>
+                            <td class="additional-item">{{ charge.description }}</td>
+                            <td class="amount" style="color:#c53030;">{{ "{:,.0f}".format(charge.amount) }}원</td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+
                     <tr class="total-row">
-                        <td>총 청구금액</td>
+                        <td>이 청구금액</td>
                         <td class="amount">{{ "{:,.0f}".format(invoice.total_amount) }}원</td>
                     </tr>
                 </tbody>
             </table>
 
+            {% if invoice.unit_memo %}
+            <div class="unit-memo-section">
+                <h4>⚠️ 세대 안내사항</h4>
+                <p style="white-space:pre-wrap;margin:0;color:#78350f;">{{ invoice.unit_memo }}</p>
+            </div>
+            {% endif %}
+
             {% if combination.memo %}
             <div class="memo-section">
                 <h3>안내사항</h3>
-                <p>{{ combination.memo }}</p>
+                <p style="white-space:pre-wrap;margin:0;">{{ combination.memo }}</p>
             </div>
             {% endif %}
 
