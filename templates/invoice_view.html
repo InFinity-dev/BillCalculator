@@ -30,7 +30,43 @@
         {% for item in combination.items %}
         <li>
             {% if item.item_type == 'ELECTRIC' %}
-                ⚡ {{ item.billing_month.strftime('%Y년 %m월') }} 전기요금
+                {# 전기요금: 층별 고지월 정보 표시 #}
+                {% if item.electric_bill_ref %}
+                    {% set ebill = item.electric_bill_ref %}
+                    {% set floor_name = ebill.floor_ref.name if ebill.floor_ref else '' %}
+
+                    ⚡
+                    {% if ebill.monthly_details and ebill.monthly_details|length > 0 %}
+                        {# N개월 묶음 정산인 경우 모든 고지월 표시 #}
+                        {% set months = ebill.monthly_details | map(attribute='month') | select | list %}
+                        {% if months|length > 1 %}
+                            <strong>{{ floor_name }}</strong> 전기요금
+                            <span style="color:#667eea;font-weight:500;">({{ months|length }}개월 묶음)</span>
+                            <span style="font-size:13px;color:#64748b;">
+                                - 고지월:
+                                {% for detail in ebill.monthly_details %}
+                                    {% if detail.month %}
+                                        {{ detail.month[:7] }}
+                                        {% if not loop.last %}, {% endif %}
+                                    {% endif %}
+                                {% endfor %}
+                            </span>
+                        {% else %}
+                            {# 단일 고지월인 경우 #}
+                            {% set first_month = months[0] if months|length > 0 else '' %}
+                            {% if first_month %}
+                                {{ first_month[:7] }} <strong>{{ floor_name }}</strong> 전기요금
+                            {% else %}
+                                {{ item.billing_month.strftime('%Y년 %m월') }} <strong>{{ floor_name }}</strong> 전기요금
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        {# monthly_details가 없는 경우 정산월 표시 #}
+                        {{ item.billing_month.strftime('%Y년 %m월') }} <strong>{{ floor_name }}</strong> 전기요금
+                    {% endif %}
+                {% else %}
+                    ⚡ {{ item.billing_month.strftime('%Y년 %m월') }} 전기요금
+                {% endif %}
             {% elif item.item_type == 'WATER' %}
                 💧 {{ item.billing_month.strftime('%Y년 %m월') }} 수도요금
             {% elif item.item_type == 'COMMON' %}

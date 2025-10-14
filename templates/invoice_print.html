@@ -5,63 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>청구서 인쇄 - {{ combination.invoice_name }}</title>
     <style>
-        @media print {
-            .page-break {
-                page-break-after: always;
-            }
-
-            .no-print {
-                display: none;
-            }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
         body {
-            font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            margin: 0;
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            background: #f5f5f5;
             padding: 20px;
-            background: white;
         }
 
         .invoice-container {
-            max-width: 210mm;
+            max-width: 800px;
             margin: 0 auto;
         }
 
         .invoice {
-            border: 2px solid #333;
-            padding: 30px;
-            margin-bottom: 30px;
-            position: relative;
-            page-break-inside: avoid;
+            background: white;
+            padding: 40px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .page-break {
+            page-break-after: always;
         }
 
         .header {
             text-align: center;
-            border-bottom: 2px solid #333;
+            border-bottom: 3px solid #333;
             padding-bottom: 20px;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }
 
         .header h1 {
-            margin: 0;
-            font-size: 24px;
-            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
         }
 
         .header p {
-            margin: 5px 0;
             color: #666;
+            font-size: 14px;
         }
 
         .unit-info {
-            background: #f8f8f8;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 8px;
+            margin-bottom: 25px;
         }
 
         .unit-name {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
             color: #333;
         }
@@ -70,98 +64,109 @@
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
-            font-size: 14px;
         }
 
         .bill-table th,
         .bill-table td {
-            border: 1px solid #ddd;
             padding: 12px;
             text-align: left;
+            border-bottom: 1px solid #ddd;
         }
 
         .bill-table th {
-            background: #f0f0f0;
+            background: #f8f9fa;
             font-weight: bold;
         }
 
-        .bill-table td.amount {
+        .bill-table .amount {
             text-align: right;
-            font-weight: bold;
+            font-weight: 500;
         }
 
-        .sub-item {
-            padding-left: 20px;
+        .bill-table .total-row {
+            font-weight: bold;
+            background: #fff9c4;
+            font-size: 18px;
+        }
+
+        .bill-table .sub-item {
+            padding-left: 30px;
             font-size: 14px;
             color: #666;
         }
 
-        .additional-item {
-            padding-left: 20px;
+        .bill-table .additional-item {
+            padding-left: 30px;
             font-size: 14px;
         }
 
-        .refund-item {
-            color: #059669;
-        }
-
-        .charge-item {
+        .bill-table .charge-item {
             color: #c53030;
         }
 
-        .total-row {
-            background: #fff3cd;
-            font-size: 18px;
-            font-weight: bold;
-        }
-
-        .total-row td {
-            padding: 15px 12px;
+        .bill-table .refund-item {
+            color: #059669;
         }
 
         .memo-section {
-            margin-top: 30px;
-            padding: 20px;
             background: #f8f9fa;
-            border-radius: 8px;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
         }
 
         .memo-section h3 {
-            margin-top: 0;
+            margin-bottom: 10px;
             color: #333;
         }
 
         .unit-memo-section {
-            margin-top: 20px;
-            padding: 15px;
             background: #fff3cd;
-            border-radius: 8px;
-            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #fbbf24;
         }
 
         .unit-memo-section h4 {
-            margin: 0 0 10px 0;
-            color: #92400e;
+            margin-bottom: 10px;
+            color: #78350f;
         }
 
         .footer {
             margin-top: 30px;
-            text-align: center;
+            padding-top: 15px;
+            border-top: 2px solid #ddd;
+            font-size: 12px;
             color: #666;
-            font-size: 11px;
-            border-top: 1px solid #ddd;
-            padding-top: 10px;
+            text-align: center;
             white-space: pre-wrap;
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .invoice {
+                box-shadow: none;
+                page-break-after: always;
+            }
+
+            .no-print {
+                display: none;
+            }
         }
 
         .print-button {
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 10px 20px;
             background: #667eea;
             color: white;
             border: none;
+            padding: 12px 24px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
@@ -190,6 +195,22 @@
             padding-left: 20px;
             font-size: 13px;
             color: #666;
+            line-height: 1.8;
+        }
+
+        .items-summary li {
+            margin-bottom: 3px;
+        }
+
+        .items-summary .floor-info {
+            font-weight: 600;
+            color: #4338ca;
+        }
+
+        .items-summary .billing-months {
+            color: #64748b;
+            font-size: 12px;
+            margin-left: 8px;
         }
     </style>
 </head>
@@ -216,7 +237,42 @@
                     {% for item in combination.items %}
                         <li>
                             {% if item.item_type == 'ELECTRIC' %}
-                                ⚡ {{ item.billing_month.strftime('%Y년 %m월') }} 전기요금
+                                {# 전기요금: 층별 고지월 정보 표시 #}
+                                {% if item.electric_bill_ref %}
+                                    {% set ebill = item.electric_bill_ref %}
+                                    {% set floor_name = ebill.floor_ref.name if ebill.floor_ref else '' %}
+
+                                    ⚡
+                                    {% if ebill.monthly_details and ebill.monthly_details|length > 0 %}
+                                        {# N개월 묶음 정산인 경우 모든 고지월 표시 #}
+                                        {% set months = ebill.monthly_details | map(attribute='month') | select | list %}
+                                        {% if months|length > 1 %}
+                                            <span class="floor-info">{{ floor_name }}</span> 전기요금 ({{ months|length }}개월 묶음)
+                                            <span class="billing-months">
+                                                - 고지월:
+                                                {% for detail in ebill.monthly_details %}
+                                                    {% if detail.month %}
+                                                        {{ detail.month[:7] }}
+                                                        {% if not loop.last %}, {% endif %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </span>
+                                        {% else %}
+                                            {# 단일 고지월인 경우 #}
+                                            {% set first_month = months[0] if months|length > 0 else '' %}
+                                            {% if first_month %}
+                                                {{ first_month[:7] }} <span class="floor-info">{{ floor_name }}</span> 전기요금
+                                            {% else %}
+                                                {{ item.billing_month.strftime('%Y년 %m월') }} <span class="floor-info">{{ floor_name }}</span> 전기요금
+                                            {% endif %}
+                                        {% endif %}
+                                    {% else %}
+                                        {# monthly_details가 없는 경우 정산월 표시 #}
+                                        {{ item.billing_month.strftime('%Y년 %m월') }} <span class="floor-info">{{ floor_name }}</span> 전기요금
+                                    {% endif %}
+                                {% else %}
+                                    ⚡ {{ item.billing_month.strftime('%Y년 %m월') }} 전기요금
+                                {% endif %}
                             {% elif item.item_type == 'WATER' %}
                                 💧 {{ item.billing_month.strftime('%Y년 %m월') }} 수도요금
                             {% elif item.item_type == 'COMMON' %}
@@ -280,7 +336,7 @@
                     {% endif %}
 
                     <tr class="total-row">
-                        <td>이 청구금액</td>
+                        <td>총 청구금액</td>
                         <td class="amount">{{ "{:,.0f}".format(invoice.total_amount) }}원</td>
                     </tr>
                 </tbody>
@@ -300,7 +356,7 @@
             </div>
             {% endif %}
 
-            <div class="footer">{{ invoice_footer|default('* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.\n* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다.') }}</div>
+            <div class="footer">{{ invoice_footer|default('* Footer 문구를 설정에서 커스텀 할 수 있습니다.') }}</div>
         </div>
         {% endfor %}
     </div>

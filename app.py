@@ -8,6 +8,8 @@ from functools import wraps
 import mysql.connector
 from mysql.connector import Error
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm import joinedload
 import json
 
 # =========================
@@ -272,13 +274,22 @@ class InvoiceCombination(db.Model):
 
 class InvoiceCombinationItem(db.Model):
     __tablename__ = 'invoice_combination_items'
+
     id = db.Column(db.Integer, primary_key=True)
     combination_id = db.Column(db.Integer, db.ForeignKey('invoice_combinations.id'), nullable=False)
-    item_type = db.Column(db.Enum('ELECTRIC', 'WATER', 'COMMON'), nullable=False)
-    item_id = db.Column(db.Integer, nullable=False)
+    item_type = db.Column(db.String(20), nullable=False)  # ELECTRIC, WATER, COMMON
     billing_month = db.Column(db.Date, nullable=False)
-    item_description = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    item_description = db.Column(db.String(200))
+
+    # Foreign Keys
+    electric_bill_id = db.Column(db.Integer, db.ForeignKey('electric_bills.id'))
+    water_bill_id = db.Column(db.Integer, db.ForeignKey('water_bills.id'))
+    common_bill_id = db.Column(db.Integer, db.ForeignKey('common_bills.id'))
+
+    # Relationships
+    electric_bill_ref = relationship('ElectricBill', foreign_keys=[electric_bill_id], lazy='joined')
+    water_bill_ref = relationship('WaterBill', foreign_keys=[water_bill_id], lazy='joined')
+    common_bill_ref = relationship('CommonBill', foreign_keys=[common_bill_id], lazy='joined')
 
 
 class FinalInvoice(db.Model):
@@ -1159,13 +1170,24 @@ def create_invoice():
 
         for item in data.get('items', []):
             month = datetime.strptime(item['month'], '%Y-%m-%d').date()
-            db.session.add(InvoiceCombinationItem(
-                combination_id=combination.id,
-                item_type=item['type'],
-                item_id=item['id'],
-                billing_month=month,
-                item_description=item.get('description', '')
-            ))
+
+            # item_type에 따라 적절한 외래 키 설정
+            item_data = {
+                'combination_id': combination.id,
+                'item_type': item['type'],
+                'billing_month': month,
+                'item_description': item.get('description', '')
+            }
+
+            # 타입별로 해당하는 외래 키만 설정
+            if item['type'] == 'ELECTRIC':
+                item_data['electric_bill_id'] = item['id']
+            elif item['type'] == 'WATER':
+                item_data['water_bill_id'] = item['id']
+            elif item['type'] == 'COMMON':
+                item_data['common_bill_id'] = item['id']
+
+            db.session.add(InvoiceCombinationItem(**item_data))
 
         unit_additional_data = data.get('unit_additional_data', {})
 
@@ -1234,17 +1256,49 @@ def create_invoice():
 
 @app.route('/invoice/view/<int:combination_id>')
 def view_invoice(combination_id):
-    combination = InvoiceCombination.query.get_or_404(combination_id)
-    invoices = FinalInvoice.query.filter_by(combination_id=combination_id).all()
-    return render_template('invoice_view.html', combination=combination, invoices=invoices)
+    combination = db.session.query(InvoiceCombination).options(
+        joinedload(InvoiceCombination.items)
+        .joinedload(InvoiceCombinationItem.electric_bill_ref)
+        .joinedload(ElectricBill.floor_ref)
+    ).filter_by(id=combination_id).first_or_404()
+
+    # FinalInvoice로 수정
+    invoices = db.session.query(FinalInvoice).options(
+        joinedload(FinalInvoice.unit)
+    ).filter_by(
+        combination_id=combination_id
+    ).order_by(FinalInvoice.unit_id).all()
+
+    return render_template(
+        'invoice_view.html',
+        combination=combination,
+        invoices=invoices
+    )
 
 
 @app.route('/invoice/print/<int:combination_id>')
 def print_invoice(combination_id):
-    combination = InvoiceCombination.query.get_or_404(combination_id)
-    invoices = FinalInvoice.query.filter_by(combination_id=combination_id).all()
-    invoice_footer = get_setting('invoice_footer', '* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.\n* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다.')
-    return render_template('invoice_print.html', combination=combination, invoices=invoices, invoice_footer=invoice_footer)
+    combination = db.session.query(InvoiceCombination).options(
+        joinedload(InvoiceCombination.items)
+        .joinedload(InvoiceCombinationItem.electric_bill_ref)
+        .joinedload(ElectricBill.floor_ref)
+    ).filter_by(id=combination_id).first_or_404()
+
+    invoices = db.session.query(FinalInvoice).options(
+        joinedload(FinalInvoice.unit)
+    ).filter_by(
+        combination_id=combination_id
+    ).order_by(FinalInvoice.unit_id).all()
+
+    # ✅ get_setting 헬퍼 함수 사용
+    invoice_footer = get_setting('invoice_footer', '* Footer 문구를 설정에서 커스텀 할 수 있습니다.')
+
+    return render_template(
+        'invoice_print.html',
+        combination=combination,
+        invoices=invoices,
+        invoice_footer=invoice_footer
+    )
 
 
 @app.route('/invoice/delete/<int:combination_id>', methods=['POST'])
@@ -1292,7 +1346,7 @@ if __name__ == '__main__':
                 'electric_voucher_amount': '0',
                 'water_welfare_amount': '0',
                 'invoice_default_memo': '',
-                'invoice_footer': '* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.\n* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다.',
+                'invoice_footer': '* Footer 문구를 설정에서 커스텀 할 수 있습니다.',
             }
             for k, v in defaults.items():
                 if not Setting.query.filter_by(setting_key=k).first():
