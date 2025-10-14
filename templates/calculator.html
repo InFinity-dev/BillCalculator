@@ -3,9 +3,16 @@
 {% block content %}
 <h1>🧮 계산</h1>
 
-<!-- 전기요금 섹션은 기존과 동일 -->
-<div style="margin-top:24px;background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+<!-- 탭 버튼 -->
+<div class="tabs">
+  <button class="tab active" onclick="showCalcTab('electric-tab', event)">⚡ 전기요금</button>
+  <button class="tab" onclick="showCalcTab('water-tab', event)">💧 수도요금</button>
+  <button class="tab" onclick="showCalcTab('common-tab', event)">🏘️ 공동 공과금</button>
+</div>
+
+<!-- 전기요금 탭 -->
+<div id="electric-tab" class="tab-content">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
     <h2 style="margin:0;">⚡ 전기요금 계산</h2>
     {% if electric_bill_url %}
     <button type="button" class="btn btn-secondary" onclick="window.open('{{ electric_bill_url }}', '_blank')" style="padding:8px 16px;">
@@ -13,6 +20,7 @@
     </button>
     {% endif %}
   </div>
+
   <form id="electricForm">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
     <input type="hidden" name="month_count" id="month_count" value="0">
@@ -43,7 +51,7 @@
       </div>
       <div style="margin-top:15px; padding:10px; background:#e7f3ff; border-radius:5px;">
         <strong>합계:</strong>
-        이액 <span id="totalAmount">0</span>원 |
+        총액 <span id="totalAmount">0</span>원 |
         복지할인 <span id="totalWelfare">0</span>원 |
         바우처할인 <span id="totalVoucher">0</span>원 |
         TV수신료 <span id="totalTvFee">0</span>원
@@ -71,9 +79,9 @@
   </form>
 </div>
 
-<!-- 수도요금 섹션 - 세대 선택 기능 추가 -->
-<div style="margin-top:24px;background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+<!-- 수도요금 탭 -->
+<div id="water-tab" class="tab-content" style="display:none;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
     <h2 style="margin:0;">💧 수도요금 계산</h2>
     {% if water_bill_url %}
     <button type="button" class="btn btn-secondary" onclick="window.open('{{ water_bill_url }}', '_blank')" style="padding:8px 16px;">
@@ -103,11 +111,11 @@
         <input type="month" name="billing_month" required>
       </div>
       <div class="form-group">
-        <label>수도 이액 (주택)</label>
+        <label>수도 총액 (주택)</label>
         <input type="number" name="total_amount" min="0" placeholder="수도요금 (원)" required>
       </div>
       <div class="form-group">
-        <label>복지 할인 이액</label>
+        <label>복지 할인 총액</label>
         <input type="number" name="welfare_discount_total" min="0" placeholder="복지할인 (원)">
       </div>
       <div class="form-group" style="align-self:end;">
@@ -121,12 +129,26 @@
   </form>
 </div>
 
-<!-- 공동 공과금 섹션은 기존과 동일 -->
-<div style="margin-top:24px;background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
-  <h2 style="margin-bottom:12px;">🏘️ 공동 공과금</h2>
+<!-- 공동 공과금 탭 -->
+<div id="common-tab" class="tab-content" style="display:none;">
+  <h2>🏘️ 공동 공과금 계산</h2>
+
+  <div style="background:#fff3cd;padding:15px;border-radius:8px;margin-bottom:20px;border-left:4px solid #f59e0b;">
+    <div style="display:flex;align-items:start;gap:10px;">
+      <span style="font-size:20px;">💡</span>
+      <div style="flex:1;">
+        <strong style="color:#92400e;">공동 공과금이란?</strong>
+        <p style="color:#92400e;margin:5px 0 0 0;font-size:14px;line-height:1.6;">
+          청소비, 엘리베이터 유지보수비, 공용 전기세, 정화조 관리비 등 건물 전체에 부과되는 비용을 말합니다.<br>
+          인원수 비례 또는 세대 균등 분배 방식을 선택할 수 있습니다.
+        </p>
+      </div>
+    </div>
+  </div>
+
   <form id="commonForm">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <div class="grid grid-4">
+    <div class="grid grid-2">
       <div class="form-group">
         <label>정산월</label>
         <input type="month" name="billing_month" required>
@@ -136,8 +158,8 @@
         <input type="text" name="description" placeholder="예: 청소비, 엘리베이터 유지보수 등" required>
       </div>
       <div class="form-group">
-        <label>이액</label>
-        <input type="number" name="total_amount" min="0" placeholder="공과금 이액 (원)" required>
+        <label>총액</label>
+        <input type="number" name="total_amount" min="0" placeholder="공과금 총액 (원)" required>
       </div>
       <div class="form-group">
         <label>분배 방식</label>
@@ -147,6 +169,27 @@
         </select>
       </div>
     </div>
+
+    <div style="background:#f8fafc;padding:15px;border-radius:8px;margin:20px 0;">
+      <h4 style="margin:0 0 10px 0;color:#334155;">📊 분배 방식 설명</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+        <div style="background:white;padding:12px;border-radius:6px;border:1px solid #e2e8f0;">
+          <div style="font-weight:600;color:#667eea;margin-bottom:5px;">👥 인원수 비례</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.5;">
+            각 세대의 거주 인원수에 비례하여 금액을 분배합니다.
+            인원이 많은 세대가 더 많이 부담합니다.
+          </div>
+        </div>
+        <div style="background:white;padding:12px;border-radius:6px;border:1px solid #e2e8f0;">
+          <div style="font-weight:600;color:#667eea;margin-bottom:5px;">🏠 세대 균등</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.5;">
+            재실 세대수로 균등하게 분배합니다.
+            인원수와 관계없이 모든 세대가 동일하게 부담합니다.
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div style="margin-top:12px;">
       <button type="submit" class="btn btn-primary">공동 공과금 저장</button>
     </div>
@@ -163,6 +206,25 @@ const UNITS = {{ (units_json|default([]))|tojson }};
 let monthRowCounter = 0;
 let waterExcludedUnits = new Set(); // 수도세 제외 세대 ID 저장
 
+// 탭 전환 함수
+function showCalcTab(tabId, event) {
+  // 모든 탭 콘텐츠 숨기기
+  document.querySelectorAll('#electric-tab, #water-tab, #common-tab').forEach(tab => {
+    tab.style.display = 'none';
+  });
+
+  // 모든 탭 버튼 비활성화
+  document.querySelectorAll('.tab').forEach(btn => {
+    btn.classList.remove('active');
+  });
+
+  // 선택된 탭 표시
+  document.getElementById(tabId).style.display = 'block';
+  if(event && event.target) {
+    event.target.classList.add('active');
+  }
+}
+
 // 층 옵션 렌더링
 function renderFloorOptions(){
   const sel2 = document.getElementById('electric_floor_id');
@@ -177,7 +239,7 @@ function renderFloorOptions(){
   sel2.innerHTML = options;
 }
 
-// 전기 관련 함수들 (기존과 동일)
+// 전기 관련 함수들
 function addMonthBillRow(){
   const container = document.getElementById('monthlyBillsContainer');
   const idx = monthRowCounter;
@@ -192,7 +254,7 @@ function addMonthBillRow(){
     <input type="number" name="amount_${idx}" placeholder="전기요금 (원)" min="0" step="0.01" class="bill-amount" required style="font-size:13px;">
     <input type="number" name="welfare_${idx}" placeholder="복지할인 (원)" min="0" step="0.01" class="bill-welfare" style="font-size:13px;">
     <input type="number" name="voucher_${idx}" placeholder="바우처할인 (원)" min="0" step="0.01" class="bill-voucher" style="font-size:13px;">
-    <input type="number" name="tv_fee_${idx}" placeholder="TV수신료 이액 (원)" min="0" step="0.01" class="bill-tvfee" style="font-size:13px;">
+    <input type="number" name="tv_fee_${idx}" placeholder="TV수신료 총액 (원)" min="0" step="0.01" class="bill-tvfee" style="font-size:13px;">
     <button type="button" class="btn btn-danger" onclick="removeMonthBillRow(${idx})" style="padding:8px;">삭제</button>
   `;
 
@@ -358,7 +420,7 @@ function renderReadingTable(floorId){
   });
 }
 
-// 수도 세대 선택 UI 렌더링 (통계 정보 포함)
+// 수도 세대 선택 UI 렌더링
 function renderWaterUnitsSelection(){
   const container = document.getElementById('waterUnitsSelection');
   const occupiedUnits = UNITS.filter(u => !u.is_vacant);
@@ -374,7 +436,6 @@ function renderWaterUnitsSelection(){
 
   let html = '';
 
-  // 상단: 제목 및 안내
   html += `
     <div style="margin-bottom:20px;">
       <h3 style="margin:0 0 12px 0;color:#0c4a6e;font-size:18px;">🏘️ 정산 대상 세대 선택</h3>
@@ -384,7 +445,6 @@ function renderWaterUnitsSelection(){
     </div>
   `;
 
-  // 통계 정보
   html += `
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;">
       <div style="background:white;padding:14px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
@@ -406,10 +466,8 @@ function renderWaterUnitsSelection(){
     </div>
   `;
 
-  // 구분선
   html += '<div style="border-top:2px solid rgba(255,255,255,0.5);margin:20px 0;"></div>';
 
-  // 층별로 그룹화
   const floorGroups = {};
   occupiedUnits.forEach(unit => {
     if (!floorGroups[unit.floor_id]) {
@@ -423,7 +481,6 @@ function renderWaterUnitsSelection(){
     floorGroups[unit.floor_id].units.push(unit);
   });
 
-  // 층별로 정렬하여 렌더링
   Object.keys(floorGroups).sort((a, b) => {
     return floorGroups[a].floor_number - floorGroups[b].floor_number;
   }).forEach(floorId => {
@@ -465,7 +522,6 @@ function renderWaterUnitsSelection(){
     html += '</div></div>';
   });
 
-  // 하단: 안내 메시지
   html += `
     <div style="margin-top:20px;padding:14px;background:rgba(255,255,255,0.7);border-radius:8px;border:1px solid rgba(8,145,178,0.3);">
       <div style="display:flex;align-items:start;gap:10px;font-size:13px;color:#0c4a6e;">
@@ -485,7 +541,6 @@ function renderWaterUnitsSelection(){
   container.innerHTML = html;
 }
 
-// 수도 세대 토글
 function toggleWaterUnit(unitId){
   if(waterExcludedUnits.has(unitId)){
     waterExcludedUnits.delete(unitId);
@@ -493,11 +548,9 @@ function toggleWaterUnit(unitId){
     waterExcludedUnits.add(unitId);
   }
 
-  // hidden input 업데이트
   const excludedArray = Array.from(waterExcludedUnits);
   document.getElementById('excluded_units').value = JSON.stringify(excludedArray);
 
-  // UI 업데이트
   renderWaterUnitsSelection();
 }
 
@@ -606,7 +659,6 @@ document.getElementById('waterForm').addEventListener('submit', async (e) => {
 
   const fd = new FormData(e.target);
 
-  // excluded_units를 명시적으로 설정
   const excludedArray = Array.from(waterExcludedUnits);
   const excludedUnitsValue = JSON.stringify(excludedArray);
   fd.set('excluded_units', excludedUnitsValue);
