@@ -336,3 +336,7 @@ PREPARE s FROM @stmt; EXECUTE s; DEALLOCATE PREPARE s;
 -- ALTER TABLE electric_bills ADD INDEX idx_electric_bills_updated (updated_at);
 
 -- Done.
+
+ALTER TABLE water_bill_details
+ADD COLUMN is_excluded TINYINT(1) DEFAULT 0
+AFTER unit_snapshot;

@@ -8,6 +8,7 @@ from functools import wraps
 import mysql.connector
 from mysql.connector import Error
 from sqlalchemy.exc import IntegrityError
+import json
 
 # =========================
 # Safe numeric helpers & JSON provider (Decimal-safe)
@@ -228,6 +229,7 @@ class WaterBillDetail(db.Model):
     final_amount = db.Column(db.Numeric(10, 2), nullable=False)
     charged_amount = db.Column(db.Numeric(10, 2), nullable=False)
     unit_snapshot = db.Column(db.JSON)
+    is_excluded = db.Column(db.Boolean, default=False)  # 수도세 정산 제외 Boolean
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     unit = db.relationship('Unit', backref='water_bill_details')
 
@@ -791,6 +793,13 @@ def calculate_water():
         total_amount = dec(request.form.get('total_amount'))
         welfare_discount_input = dec(request.form.get('welfare_discount_total', '0'))
 
+        # 제외된 세대 ID 목록 받기
+        excluded_units_json = request.form.get('excluded_units', '[]')
+        try:
+            excluded_unit_ids = set(map(int, json.loads(excluded_units_json)))
+        except:
+            excluded_unit_ids = set()
+
         existing = WaterBill.query.filter_by(billing_month=billing_month).first()
         if existing and request.form.get('overwrite') != 'true':
             return jsonify({'success': False, 'exists': True, 'message': '해당 월의 수도요금이 이미 존재합니다.'})
@@ -806,10 +815,17 @@ def calculate_water():
         db.session.add(bill)
         db.session.flush()
 
-        units = Unit.query.filter_by(is_vacant=False).all()
-        total_residents = sum(u.residents_count for u in units)
+        # 모든 재실 세대 가져오기
+        all_units = Unit.query.filter_by(is_vacant=False).all()
 
-        welfare_units = [u for u in units if u.water_welfare]
+        # 정산 대상 세대 필터링 (제외되지 않은 세대만)
+        included_units = [u for u in all_units if u.id not in excluded_unit_ids]
+
+        # 정산 대상 세대의 총 거주 인원 계산
+        total_residents = sum(u.residents_count for u in included_units)
+
+        # 정산 대상 세대 중 복지 대상 필터링
+        welfare_units = [u for u in included_units if u.water_welfare]
 
         if welfare_discount_input > 0 and welfare_units:
             welfare_per_unit = welfare_discount_input / len(welfare_units)
@@ -823,23 +839,46 @@ def calculate_water():
 
         original_amount = total_amount + total_welfare_to_apply
 
-        for unit in units:
-            base_amount = (dec(unit.residents_count) / dec(
-                total_residents) * original_amount) if total_residents > 0 else (
-                original_amount / len(units) if units else dec(0))
+        # 모든 세대에 대해 detail 생성
+        for unit in all_units:
+            if unit.id in excluded_unit_ids:
+                # 제외된 세대: 금액 0, is_excluded=True
+                detail = WaterBillDetail(
+                    water_bill_id=bill.id,
+                    unit_id=unit.id,
+                    base_amount=dec(0),
+                    welfare_discount=dec(0),
+                    final_amount=dec(0),
+                    charged_amount=dec(0),
+                    unit_snapshot=create_unit_snapshot(unit),
+                    is_excluded=True
+                )
+            else:
+                # 포함된 세대: 정상 계산
+                if total_residents > 0:
+                    base_amount = (dec(unit.residents_count) / dec(total_residents)) * original_amount
+                elif len(included_units) > 0:
+                    base_amount = original_amount / len(included_units)
+                else:
+                    base_amount = dec(0)
 
-            unit_welfare = welfare_per_unit if unit.water_welfare else dec(0)
+                unit_welfare = welfare_per_unit if unit.water_welfare else dec(0)
+                final_amount = base_amount - unit_welfare
+                if final_amount < 0:
+                    final_amount = dec(0)
+                charged_amount = dec(round_up_to_10(final_amount))
 
-            final_amount = base_amount - unit_welfare
-            if final_amount < 0:
-                final_amount = dec(0)
-            charged_amount = dec(round_up_to_10(final_amount))
+                detail = WaterBillDetail(
+                    water_bill_id=bill.id,
+                    unit_id=unit.id,
+                    base_amount=base_amount,
+                    welfare_discount=unit_welfare,
+                    final_amount=final_amount,
+                    charged_amount=charged_amount,
+                    unit_snapshot=create_unit_snapshot(unit),
+                    is_excluded=False
+                )
 
-            detail = WaterBillDetail(
-                water_bill_id=bill.id, unit_id=unit.id, base_amount=base_amount,
-                welfare_discount=unit_welfare, final_amount=final_amount, charged_amount=charged_amount,
-                unit_snapshot=create_unit_snapshot(unit)
-            )
             db.session.add(detail)
 
         bill.welfare_discount_total = total_welfare_to_apply

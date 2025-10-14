@@ -3,7 +3,7 @@
 {% block content %}
 <h1>🧮 계산</h1>
 
-<!-- 전기요금 -->
+<!-- 전기요금 섹션은 기존과 동일 -->
 <div style="margin-top:24px;background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
   <h2 style="margin-bottom:12px;">⚡ 전기요금 계산</h2>
   <form id="electricForm">
@@ -28,7 +28,6 @@
       </div>
     </div>
 
-    <!-- 월별 상세 입력 -->
     <div style="margin-top:20px; background:#f0f4f8; padding:15px; border-radius:8px;">
       <h4>월별 고지 내역 입력</h4>
       <div id="monthlyBillsContainer"></div>
@@ -37,14 +36,14 @@
       </div>
       <div style="margin-top:15px; padding:10px; background:#e7f3ff; border-radius:5px;">
         <strong>합계:</strong>
-        총액 <span id="totalAmount">0</span>원 |
+        이액 <span id="totalAmount">0</span>원 |
         복지할인 <span id="totalWelfare">0</span>원 |
         바우처할인 <span id="totalVoucher">0</span>원 |
         TV수신료 <span id="totalTvFee">0</span>원
       </div>
       <small style="color:#64748b;display:block;margin-top:8px;">
         <strong>개별 부과 모드:</strong> TV 보유 세대만 설정의 TV 단가 × 개월수가 부과됩니다. TV수신료 입력칸은 비활성화됩니다.<br>
-        <strong>균등 분배 모드:</strong> TV수신료 입력칸에 월별 이 TV 수신료를 입력하면, 공실을 제외한 모든 재실 세대가 균등 분담합니다.
+        <strong>균등 분배 모드:</strong> TV수신료 입력칸에 월별 총 TV 수신료를 입력하면, 공실을 제외한 모든 재실 세대가 균등 분담합니다.
       </small>
     </div>
 
@@ -55,10 +54,7 @@
       </label>
     </div>
 
-    <!-- 선택된 층의 세대 정보 카드 -->
     <div id="unitsInfoCardContainer" style="margin-top:20px;"></div>
-
-    <!-- 검침 입력 테이블 -->
     <div id="readingTableWrap" style="margin-top:16px;"></div>
 
     <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;">
@@ -68,15 +64,19 @@
   </form>
 </div>
 
-<!-- 수도요금 -->
+<!-- 수도요금 섹션 - 세대 선택 기능 추가 -->
 <div style="margin-top:24px;background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
   <h2 style="margin-bottom:12px;">💧 수도요금 계산</h2>
 
-  <!-- 수도 계산 분배 요약 -->
-  <div id="waterSummaryContainer" style="margin-bottom:20px;"></div>
+  <!-- 통합된 세대 선택 및 정산 안내 -->
+  <div style="background:#e0f2fe;padding:20px;border-radius:12px;margin-bottom:20px;border-left:4px solid #0284c7;">
+    <div id="waterUnitsSelection"></div>
+  </div>
 
   <form id="waterForm">
     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="excluded_units" id="excluded_units" value="[]">
+
     <div class="grid grid-4">
       <div class="form-group">
         <label>정산월</label>
@@ -101,7 +101,7 @@
   </form>
 </div>
 
-<!-- 공동 공과금 -->
+<!-- 공동 공과금 섹션은 기존과 동일 -->
 <div style="margin-top:24px;background:#fff;padding:16px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">
   <h2 style="margin-bottom:12px;">🏘️ 공동 공과금</h2>
   <form id="commonForm">
@@ -141,21 +141,20 @@ const FLOORS = {{ (floors_json|default([]))|tojson }};
 const UNITS = {{ (units_json|default([]))|tojson }};
 
 let monthRowCounter = 0;
+let waterExcludedUnits = new Set(); // 수도세 제외 세대 ID 저장
 
-// 층 옵션 렌더링 (층 번호 + 이름)
+// 층 옵션 렌더링
 function renderFloorOptions(){
   const sel2 = document.getElementById('electric_floor_id');
   const options = '<option value="">선택</option>' + FLOORS.map(f => {
-    // 기본 층 번호 라벨
     const floorLabel = f.floor_number < 0 ? 'B' + (-f.floor_number) + '층' : f.floor_number + '층';
-    // 층 이름이 있으면 함께 표시
     const displayLabel = f.name ? `${floorLabel} (${f.name})` : floorLabel;
     return `<option value="${f.id}">${displayLabel}</option>`;
   }).join('');
   sel2.innerHTML = options;
 }
 
-// 월별 고지 행 추가
+// 전기 관련 함수들 (기존과 동일)
 function addMonthBillRow(){
   const container = document.getElementById('monthlyBillsContainer');
   const idx = monthRowCounter;
@@ -181,7 +180,6 @@ function addMonthBillRow(){
   updateTvFeeInputs();
 }
 
-// 월별 고지 행 삭제
 function removeMonthBillRow(idx){
   const row = document.querySelector(`.month-bill-row[data-index="${idx}"]`);
   if(row){
@@ -191,13 +189,11 @@ function removeMonthBillRow(idx){
   }
 }
 
-// 월 개수 업데이트
 function updateMonthCount(){
   const rows = document.querySelectorAll('#monthlyBillsContainer .month-bill-row');
   document.getElementById('month_count').value = rows.length;
 }
 
-// 입력 필드 이벤트 리스너 연결
 function attachBillInputListeners(){
   document.querySelectorAll('.bill-amount, .bill-welfare, .bill-voucher, .bill-tvfee').forEach(input => {
     input.removeEventListener('input', calculateBillTotals);
@@ -205,7 +201,6 @@ function attachBillInputListeners(){
   });
 }
 
-// 합계 계산
 function calculateBillTotals(){
   let totalAmount = 0, totalWelfare = 0, totalVoucher = 0, totalTv = 0;
 
@@ -228,7 +223,6 @@ function calculateBillTotals(){
   document.getElementById('totalTvFee').textContent = totalTv.toLocaleString();
 }
 
-// TV 수신료 입력란 활성/비활성
 function updateTvFeeInputs(){
   const isIndividual = document.getElementById('tv_mode').value === 'INDIVIDUAL';
   document.querySelectorAll('.bill-tvfee').forEach(input => {
@@ -243,7 +237,6 @@ function updateTvFeeInputs(){
   calculateBillTotals();
 }
 
-// 세대 정보 카드 렌더링 (전기)
 function renderUnitsInfoCards(floorId){
   const container = document.getElementById('unitsInfoCardContainer');
   const units = UNITS.filter(u => u.floor_id == floorId).sort((a, b) => a.unit_name.localeCompare(b.unit_name));
@@ -253,7 +246,6 @@ function renderUnitsInfoCards(floorId){
     return;
   }
 
-  // 선택된 층 정보 가져오기
   const selectedFloor = FLOORS.find(f => f.id == floorId);
   const floorLabel = selectedFloor ?
     (selectedFloor.floor_number < 0 ? 'B' + (-selectedFloor.floor_number) + '층' : selectedFloor.floor_number + '층') : '';
@@ -300,7 +292,6 @@ function renderUnitsInfoCards(floorId){
   container.innerHTML = html;
 }
 
-// 검침표 렌더링 (세대 정보 포함)
 function renderReadingTable(floorId){
   const wrap = document.getElementById('readingTableWrap');
   const units = UNITS.filter(u => u.floor_id == floorId && !u.is_vacant);
@@ -310,7 +301,6 @@ function renderReadingTable(floorId){
     return;
   }
 
-  // 선택된 층 정보 가져오기
   const selectedFloor = FLOORS.find(f => f.id == floorId);
   const floorLabel = selectedFloor ?
     (selectedFloor.floor_number < 0 ? 'B' + (-selectedFloor.floor_number) + '층' : selectedFloor.floor_number + '층') : '';
@@ -331,7 +321,6 @@ function renderReadingTable(floorId){
   html += '</tbody></table>';
   wrap.innerHTML = html;
 
-  // 사용량 자동 계산
   document.querySelectorAll('.reading-prev, .reading-curr').forEach(input => {
     input.addEventListener('input', function(){
       const unitId = this.dataset.unit;
@@ -342,66 +331,149 @@ function renderReadingTable(floorId){
   });
 }
 
-// 수도 계산 요약 렌더링
-function renderWaterSummary(){
-  const container = document.getElementById('waterSummaryContainer');
+// 수도 세대 선택 UI 렌더링 (통계 정보 포함)
+function renderWaterUnitsSelection(){
+  const container = document.getElementById('waterUnitsSelection');
   const occupiedUnits = UNITS.filter(u => !u.is_vacant);
+
+  if(occupiedUnits.length === 0){
+    container.innerHTML = '<p style="color:#0c4a6e;margin:0;">재실 세대가 없습니다.</p>';
+    return;
+  }
+
   const waterWelfareUnits = occupiedUnits.filter(u => u.water_welfare);
   const totalResidents = occupiedUnits.reduce((sum, u) => sum + (u.residents_count || 1), 0);
+  const selectedCount = occupiedUnits.length - waterExcludedUnits.size;
 
-  let html = '<div style="background:#e0f2fe;padding:16px;border-radius:12px;border-left:4px solid #0284c7;margin-bottom:16px;">';
-  html += '<h4 style="margin-top:0;color:#0c4a6e;">💧 수도 계산 분배 안내</h4>';
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:12px;">';
+  let html = '';
 
+  // 상단: 제목 및 안내
   html += `
-    <div style="background:white;padding:12px;border-radius:8px;">
-      <div style="font-size:12px;color:#64748b;">정산 세대 (재실)</div>
-      <div style="font-size:18px;font-weight:bold;color:#0284c7;">${occupiedUnits.length}세대</div>
-    </div>
-    <div style="background:white;padding:12px;border-radius:8px;">
-      <div style="font-size:12px;color:#64748b;">이 거주 인원</div>
-      <div style="font-size:18px;font-weight:bold;color:#0284c7;">${totalResidents}명</div>
-    </div>
-    <div style="background:white;padding:12px;border-radius:8px;">
-      <div style="font-size:12px;color:#64748b;">수도 복지 대상</div>
-      <div style="font-size:18px;font-weight:bold;color:#${waterWelfareUnits.length > 0 ? '059669' : '94a3b8'}">${waterWelfareUnits.length}세대</div>
+    <div style="margin-bottom:20px;">
+      <h3 style="margin:0 0 12px 0;color:#0c4a6e;font-size:18px;">🏘️ 정산 대상 세대 선택</h3>
+      <p style="color:#0c4a6e;font-size:14px;margin:0;line-height:1.6;">
+        💡 수도세 정산에 포함할 세대를 선택하세요. 장기 출장 등으로 해당 월에 수도를 사용하지 않은 세대는 선택 해제할 수 있습니다.
+      </p>
     </div>
   `;
 
-  html += '</div>';
+  // 통계 정보
+  html += `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;">
+      <div style="background:white;padding:14px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">전체 세대 (재실)</div>
+        <div style="font-size:22px;font-weight:bold;color:#0284c7;">${occupiedUnits.length}<span style="font-size:14px;font-weight:normal;color:#64748b;">세대</span></div>
+      </div>
+      <div style="background:white;padding:14px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">선택된 세대</div>
+        <div style="font-size:22px;font-weight:bold;color:#0891b2;" id="selectedCountDisplay">${selectedCount}<span style="font-size:14px;font-weight:normal;color:#64748b;">세대</span></div>
+      </div>
+      <div style="background:white;padding:14px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">총 거주 인원</div>
+        <div style="font-size:22px;font-weight:bold;color:#0284c7;">${totalResidents}<span style="font-size:14px;font-weight:normal;color:#64748b;">명</span></div>
+      </div>
+      <div style="background:white;padding:14px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
+        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">수도 복지 대상</div>
+        <div style="font-size:22px;font-weight:bold;color:#${waterWelfareUnits.length > 0 ? '059669' : '94a3b8'};">${waterWelfareUnits.length}<span style="font-size:14px;font-weight:normal;color:#64748b;">세대</span></div>
+      </div>
+    </div>
+  `;
 
-// 세대별 상세 정보 - 카드 그리드 형식
-  html += '<details style="background:white;padding:12px;border-radius:8px;border:1px solid #cbd5e1;"><summary style="cursor:pointer;font-weight:600;color:#0284c7;padding:8px;">세대별 상세 정보 보기</summary>';
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:16px;">';
+  // 구분선
+  html += '<div style="border-top:2px solid rgba(255,255,255,0.5);margin:20px 0;"></div>';
 
-  occupiedUnits.forEach(u => {
-    const borderColor = u.water_welfare ? '#10b981' : '#e2e8f0';
-    const bgColor = u.water_welfare ? '#d1fae5' : '#f8fafc';
-    const badgeBg = u.water_welfare ? '#059669' : '#94a3b8';
-    const badgeText = u.water_welfare ? '복지할인' : '일반';
+  // 층별로 그룹화
+  const floorGroups = {};
+  occupiedUnits.forEach(unit => {
+    if (!floorGroups[unit.floor_id]) {
+      const floor = FLOORS.find(f => f.id === unit.floor_id);
+      floorGroups[unit.floor_id] = {
+        floor_number: floor ? floor.floor_number : 999,
+        floor_name: floor ? floor.name : '',
+        units: []
+      };
+    }
+    floorGroups[unit.floor_id].units.push(unit);
+  });
 
-    html += `
-      <div style="background:${bgColor};border:2px solid ${borderColor};border-radius:8px;padding:14px;transition:all 0.2s;">
-        <div style="font-weight:bold;font-size:15px;margin-bottom:10px;color:#1e293b;">${u.unit_name}</div>
-        <div style="display:flex;flex-direction:column;gap:8px;">
-          <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:12px;color:#64748b;">거주인원</span>
-            <span style="font-weight:600;color:#0284c7;font-size:14px;">${u.residents_count}명</span>
+  // 층별로 정렬하여 렌더링
+  Object.keys(floorGroups).sort((a, b) => {
+    return floorGroups[a].floor_number - floorGroups[b].floor_number;
+  }).forEach(floorId => {
+    const group = floorGroups[floorId];
+    const floorLabel = group.floor_number < 0 ? `B${-group.floor_number}층` : `${group.floor_number}층`;
+    const floorDisplayName = group.floor_name ? `${floorLabel} (${group.floor_name})` : floorLabel;
+
+    html += `<div style="margin-bottom:20px;">`;
+    html += `<h4 style="margin:0 0 12px 0;color:#0c4a6e;font-size:15px;font-weight:600;">${floorDisplayName}</h4>`;
+    html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">';
+
+    group.units.forEach(unit => {
+      const isIncluded = !waterExcludedUnits.has(unit.id);
+      const cardStyle = isIncluded
+        ? 'background:white;border:2px solid #0891b2;box-shadow:0 2px 4px rgba(8,145,178,0.15);'
+        : 'background:#f8fafc;border:2px solid #cbd5e1;';
+
+      html += `
+        <div class="water-unit-card" data-unit-id="${unit.id}"
+             style="${cardStyle}padding:14px;border-radius:10px;cursor:pointer;transition:all 0.2s;min-height:110px;display:flex;flex-direction:column;"
+             onclick="toggleWaterUnit(${unit.id})">
+          <div style="display:flex;align-items:start;gap:10px;margin-bottom:10px;">
+            <input type="checkbox"
+                   ${isIncluded ? 'checked' : ''}
+                   onclick="event.stopPropagation(); toggleWaterUnit(${unit.id});"
+                   style="width:18px;height:18px;cursor:pointer;margin-top:2px;flex-shrink:0;accent-color:#0891b2;">
+            <div style="flex:1;">
+              <div style="font-weight:bold;font-size:15px;color:#1e293b;margin-bottom:4px;">${unit.unit_name}</div>
+              <div style="font-size:13px;color:#64748b;">👥 ${unit.residents_count}명</div>
+            </div>
           </div>
-          <div style="margin-top:4px;">
-            <span style="display:inline-block;background:${badgeBg};color:white;font-size:11px;padding:4px 10px;border-radius:4px;font-weight:500;">${badgeText}</span>
+          <div style="margin-top:auto;min-height:24px;display:flex;align-items:center;">
+            ${unit.water_welfare ? '<span style="background:#d1fae5;color:#059669;font-size:11px;padding:4px 10px;border-radius:5px;font-weight:500;display:inline-block;">💰 복지할인</span>' : ''}
+          </div>
+        </div>
+      `;
+    });
+
+    html += '</div></div>';
+  });
+
+  // 하단: 안내 메시지
+  html += `
+    <div style="margin-top:20px;padding:14px;background:rgba(255,255,255,0.7);border-radius:8px;border:1px solid rgba(8,145,178,0.3);">
+      <div style="display:flex;align-items:start;gap:10px;font-size:13px;color:#0c4a6e;">
+        <span style="font-size:18px;flex-shrink:0;">ℹ️</span>
+        <div style="flex:1;line-height:1.6;">
+          <div style="margin-bottom:4px;">
+            <strong>선택 방법:</strong> 체크박스를 클릭하거나 카드 전체를 클릭하여 정산 대상을 선택/해제할 수 있습니다.
+          </div>
+          <div style="font-size:12px;color:#0369a1;">
+            기본값은 모든 재실 세대가 선택되어 있으며, 필요시 개별 세대를 제외할 수 있습니다.
           </div>
         </div>
       </div>
-    `;
-  });
-
-  html += '</div></details></div>';
+    </div>
+  `;
 
   container.innerHTML = html;
 }
 
-// 이전 정산 현월값 불러오기
+// 수도 세대 토글
+function toggleWaterUnit(unitId){
+  if(waterExcludedUnits.has(unitId)){
+    waterExcludedUnits.delete(unitId);
+  } else {
+    waterExcludedUnits.add(unitId);
+  }
+
+  // hidden input 업데이트
+  const excludedArray = Array.from(waterExcludedUnits);
+  document.getElementById('excluded_units').value = JSON.stringify(excludedArray);
+
+  // UI 업데이트
+  renderWaterUnitsSelection();
+}
+
 function loadPreviousReadings(){
   const monthInput = document.getElementById('billing_month');
   const floorId = document.getElementById('electric_floor_id').value;
@@ -506,6 +578,11 @@ document.getElementById('waterForm').addEventListener('submit', async (e) => {
   });
 
   const fd = new FormData(e.target);
+
+  // excluded_units를 명시적으로 설정
+  const excludedArray = Array.from(waterExcludedUnits);
+  const excludedUnitsValue = JSON.stringify(excludedArray);
+  fd.set('excluded_units', excludedUnitsValue);
   fd.set('overwrite', e.target.overwrite.checked ? 'true' : 'false');
 
   try {
@@ -553,6 +630,6 @@ document.getElementById('commonForm').addEventListener('submit', async (e) => {
 
 // 초기화
 renderFloorOptions();
-renderWaterSummary();
+renderWaterUnitsSelection();
 </script>
 {% endblock %}
