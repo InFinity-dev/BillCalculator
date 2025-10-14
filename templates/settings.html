@@ -6,6 +6,7 @@
 <div class="tabs">
   <button class="tab active" onclick="showTab('floors-tab', event)">층/세대 관리</button>
   <button class="tab" onclick="showTab('settings-tab', event)">요금 설정</button>
+  <button class="tab" onclick="showTab('bill-inquiry-tab', event)">요금 조회 설정</button>
   <button class="tab" onclick="showTab('invoice-settings-tab', event)">정산서 설정</button>
   <button class="tab" onclick="showTab('import-export-tab', event)">가져오기/내보내기</button>
 </div>
@@ -20,13 +21,18 @@
   {% for floor in floors %}
   <div style="background:#f8fafc;padding:20px;border-radius:12px;margin-bottom:20px;">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
-      <h3>
-        {% set label = ('B' ~ (0 - floor.floor_number) ~ '층') if floor.floor_number < 0 else (floor.floor_number ~ '층') %}
-        {{ label }}{% if floor.name %} ({{ floor.name }}){% endif %}
-      </h3>
+      <div>
+        <h3 style="margin-bottom:5px;">
+          {% set label = ('B' ~ (0 - floor.floor_number) ~ '층') if floor.floor_number < 0 else (floor.floor_number ~ '층') %}
+          {{ label }}{% if floor.name %} ({{ floor.name }}){% endif %}
+        </h3>
+        {% if floor.electric_contract_number %}
+        <small style="color:#667eea;font-weight:500;">⚡ 계약번호: {{ floor.electric_contract_number }}</small>
+        {% endif %}
+      </div>
       <div>
         <button class="btn btn-secondary" data-open-add-unit data-floor-id="{{ floor.id }}">+ 세대 추가</button>
-        <button class="btn" data-open-rename-floor data-floor-id="{{ floor.id }}" data-floor-number="{{ floor.floor_number }}" data-floor-name="{{ floor.name|default('') }}">이름 수정</button>
+        <button class="btn" data-open-rename-floor data-floor-id="{{ floor.id }}" data-floor-number="{{ floor.floor_number }}" data-floor-name="{{ floor.name|default('') }}" data-floor-contract="{{ floor.electric_contract_number|default('') }}">이름 수정</button>
         <button class="btn btn-danger" data-delete-floor data-floor-id="{{ floor.id }}">층 삭제</button>
       </div>
     </div>
@@ -92,6 +98,10 @@
     <!-- 정산서 설정값도 함께 전송 -->
     <input type="hidden" name="invoice_default_memo" value="{{ invoice_default_memo }}">
     <input type="hidden" name="invoice_footer" value="{{ invoice_footer }}">
+    <!-- 요금 조회 설정값도 함께 전송 -->
+    <input type="hidden" name="electric_bill_url" value="{{ electric_bill_url }}">
+    <input type="hidden" name="water_bill_url" value="{{ water_bill_url }}">
+    <input type="hidden" name="water_customer_number" value="{{ water_customer_number }}">
 
     <div class="grid grid-2">
       <div class="form-group">
@@ -119,6 +129,61 @@
   </form>
 </div>
 
+<!-- 요금 조회 설정 탭 -->
+<div id="bill-inquiry-tab" class="tab-content" style="display:none;">
+  <h2>💻 요금 조회 설정</h2>
+  <p style="color:#64748b;margin-bottom:20px;">
+    전기요금 및 수도요금 조회를 위한 웹사이트 URL을 설정하세요. 계산기 페이지에서 빠르게 접근할 수 있습니다.
+  </p>
+
+  <form action="{{ url_for('save_settings') }}" method="POST">
+    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+    <!-- 요금 설정값도 함께 전송 -->
+    <input type="hidden" name="tv_fee" value="{{ tv_fee }}">
+    <input type="hidden" name="electric_welfare_amount" value="{{ electric_welfare_amount }}">
+    <input type="hidden" name="electric_voucher_amount" value="{{ electric_voucher_amount }}">
+    <input type="hidden" name="water_welfare_amount" value="{{ water_welfare_amount }}">
+    <!-- 정산서 설정값도 함께 전송 -->
+    <input type="hidden" name="invoice_default_memo" value="{{ invoice_default_memo }}">
+    <input type="hidden" name="invoice_footer" value="{{ invoice_footer }}">
+
+    <div class="form-group">
+      <label>⚡ 전기요금 조회 URL</label>
+      <input type="url" name="electric_bill_url" value="{{ electric_bill_url }}" placeholder="https://example.com/electric">
+      <small style="color:#94a3b8;">
+        예: 한국전력공사 요금 조회 페이지 URL
+      </small>
+    </div>
+
+    <div class="form-group">
+      <label>💧 수도요금 조회 URL</label>
+      <input type="url" name="water_bill_url" value="{{ water_bill_url }}" placeholder="https://example.com/water">
+      <small style="color:#94a3b8;">
+        예: 지역 상수도사업소 요금 조회 페이지 URL
+      </small>
+    </div>
+
+    <div class="form-group">
+      <label>🏠 주택 수도 고객번호</label>
+      <input type="text" name="water_customer_number" value="{{ water_customer_number }}" placeholder="예: 12345-67890">
+      <small style="color:#94a3b8;">
+        주택 전체에 적용되는 수도 고객번호입니다. 계산기 페이지에서 참조용으로 표시됩니다.
+      </small>
+    </div>
+
+    <div style="background:#e0f2fe;padding:15px;border-radius:8px;margin:20px 0;">
+      <h4 style="margin:0 0 10px 0;color:#0c4a6e;">💡 사용 방법</h4>
+      <ul style="color:#0c4a6e;font-size:14px;line-height:1.8;margin:0;padding-left:20px;">
+        <li>계산기 페이지에서 "요금 조회" 버튼을 클릭하면 여기서 설정한 URL이 새 창으로 열립니다.</li>
+        <li>수도 고객번호는 수도요금 계산 시 참조용으로 표시됩니다.</li>
+        <li>URL을 비워두면 해당 버튼이 표시되지 않습니다.</li>
+      </ul>
+    </div>
+
+    <button type="submit" class="btn btn-primary">설정 저장</button>
+  </form>
+</div>
+
 <!-- 정산서 설정 탭 -->
 <div id="invoice-settings-tab" class="tab-content" style="display:none;">
   <h2>📄 정산서 설정</h2>
@@ -132,6 +197,10 @@
     <input type="hidden" name="electric_welfare_amount" value="{{ electric_welfare_amount }}">
     <input type="hidden" name="electric_voucher_amount" value="{{ electric_voucher_amount }}">
     <input type="hidden" name="water_welfare_amount" value="{{ water_welfare_amount }}">
+    <!-- 요금 조회 설정값도 함께 전송 -->
+    <input type="hidden" name="electric_bill_url" value="{{ electric_bill_url }}">
+    <input type="hidden" name="water_bill_url" value="{{ water_bill_url }}">
+    <input type="hidden" name="water_customer_number" value="{{ water_customer_number }}">
 
     <div class="form-group">
       <label>정산서 고정 메모</label>
@@ -193,10 +262,16 @@
       <div class="form-group">
         <label>층 번호</label>
         <input type="number" name="floor_number" required>
+        <small style="color:#94a3b8;">지하층은 음수로 입력 (예: -1)</small>
       </div>
       <div class="form-group">
         <label>층 이름 (선택)</label>
         <input type="text" name="name" placeholder="예: 1층">
+      </div>
+      <div class="form-group">
+        <label>⚡ 전기 계약번호 (선택)</label>
+        <input type="text" name="electric_contract_number" placeholder="예: 1234-5678-9012">
+        <small style="color:#94a3b8;">이 층의 전기 계약번호입니다. 계산기에서 참조용으로 표시됩니다.</small>
       </div>
       <div style="display:flex;gap:10px;">
         <button type="submit" class="btn btn-primary">추가</button>
@@ -275,7 +350,7 @@
 <!-- 층 이름 수정 모달 -->
 <div id="renameFloorModal" class="modal">
   <div class="modal-content">
-    <h2>층 이름 수정</h2>
+    <h2>층 정보 수정</h2>
     <form id="renameFloorForm">
       <input type="hidden" name="floor_id" id="rename_floor_id">
       <div class="form-group">
@@ -283,8 +358,13 @@
         <input type="number" name="floor_number" id="rename_floor_number" required>
       </div>
       <div class="form-group">
-        <label>새 이름</label>
+        <label>층 이름</label>
         <input type="text" name="name" id="rename_floor_name" placeholder="예: B1층" required>
+      </div>
+      <div class="form-group">
+        <label>⚡ 전기 계약번호 (선택)</label>
+        <input type="text" name="electric_contract_number" id="rename_floor_contract" placeholder="예: 1234-5678-9012">
+        <small style="color:#94a3b8;">이 층의 전기 계약번호입니다.</small>
       </div>
       <div style="display:flex;gap:10px;">
         <button type="submit" class="btn btn-primary">저장</button>
@@ -324,6 +404,7 @@ document.addEventListener('click', (e)=>{
     document.getElementById('rename_floor_id').value = renameBtn.getAttribute('data-floor-id');
     document.getElementById('rename_floor_name').value = renameBtn.getAttribute('data-floor-name') || '';
     document.getElementById('rename_floor_number').value = renameBtn.getAttribute('data-floor-number') || '';
+    document.getElementById('rename_floor_contract').value = renameBtn.getAttribute('data-floor-contract') || '';
     openModal('renameFloorModal');
   }
 

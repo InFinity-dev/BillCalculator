@@ -129,6 +129,7 @@ class Floor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     floor_number = db.Column(db.Integer, nullable=False, unique=True)
     name = db.Column(db.String(50))
+    electric_contract_number = db.Column(db.String(50)) # 전기 계약 번호
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     units = db.relationship('Unit', backref='floor', lazy=True, cascade='all, delete-orphan')
@@ -385,9 +386,14 @@ def settings_page():
         'electric_voucher_amount': get_setting('electric_voucher_amount', '0'),
         'water_welfare_amount': get_setting('water_welfare_amount', '0'),
         'invoice_default_memo': get_setting('invoice_default_memo', ''),
-        'invoice_footer': get_setting('invoice_footer', '* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.\n* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다.'),
+        'invoice_footer': get_setting('invoice_footer', '* 사용자 지정 Footer를 설정메뉴에서 설정 할 수 있습니다.'),
+        # 추가: 요금 조회 설정
+        'electric_bill_url': get_setting('electric_bill_url', ''),
+        'water_bill_url': get_setting('water_bill_url', ''),
+        'water_customer_number': get_setting('water_customer_number', ''),
     }
     return render_template('settings.html', **ctx)
+
 
 
 @app.route('/settings/save', methods=['POST'])
@@ -400,6 +406,10 @@ def save_settings():
         set_setting('water_welfare_amount', request.form.get('water_welfare_amount', '0'))
         set_setting('invoice_default_memo', request.form.get('invoice_default_memo', ''))
         set_setting('invoice_footer', request.form.get('invoice_footer', ''))
+        # 추가: 요금 조회 설정
+        set_setting('electric_bill_url', request.form.get('electric_bill_url', ''))
+        set_setting('water_bill_url', request.form.get('water_bill_url', ''))
+        set_setting('water_customer_number', request.form.get('water_customer_number', ''))
         db.session.commit()
         flash('설정이 저장되었습니다.', 'success')
         return redirect(url_for('settings'))
@@ -420,6 +430,10 @@ def export_settings():
             'water_welfare_amount': get_setting('water_welfare_amount', '0'),
             'invoice_default_memo': get_setting('invoice_default_memo', ''),
             'invoice_footer': get_setting('invoice_footer', ''),
+            # 추가: 요금 조회 설정
+            'electric_bill_url': get_setting('electric_bill_url', ''),
+            'water_bill_url': get_setting('water_bill_url', ''),
+            'water_customer_number': get_setting('water_customer_number', ''),
         },
         'floors': []
     }
@@ -427,6 +441,7 @@ def export_settings():
         payload['floors'].append({
             'floor_number': f.floor_number,
             'name': f.name,
+            'electric_contract_number': f.electric_contract_number,  # 추가
             'units': [{
                 'unit_name': u.unit_name,
                 'memo': u.memo,
@@ -457,11 +472,16 @@ def import_settings():
         set_setting('water_welfare_amount', s.get('water_welfare_amount', '0'))
         set_setting('invoice_default_memo', s.get('invoice_default_memo', ''))
         set_setting('invoice_footer', s.get('invoice_footer', ''))
+        # 추가: 요금 조회 설정
+        set_setting('electric_bill_url', s.get('electric_bill_url', ''))
+        set_setting('water_bill_url', s.get('water_bill_url', ''))
+        set_setting('water_customer_number', s.get('water_customer_number', ''))
 
         for f in data.get('floors', []):
             floor = Floor(
                 floor_number=int(f.get('floor_number')),
-                name=f.get('name')
+                name=f.get('name'),
+                electric_contract_number=f.get('electric_contract_number')  # 추가
             )
             db.session.add(floor)
             db.session.flush()
@@ -499,9 +519,16 @@ def add_floor():
             return jsonify({'success': False, 'message': '층 번호는 정수로 입력해주세요.'})
 
         name = request.form.get('name') or (f"B{abs(floor_number)}층" if floor_number < 0 else f"{floor_number}층")
+        electric_contract_number = request.form.get('electric_contract_number', '').strip() or None
+
         if Floor.query.filter_by(floor_number=floor_number).first():
             return jsonify({'success': False, 'message': '이미 같은 층 번호가 존재합니다.'})
-        floor = Floor(floor_number=floor_number, name=name)
+
+        floor = Floor(
+            floor_number=floor_number,
+            name=name,
+            electric_contract_number=electric_contract_number
+        )
         db.session.add(floor)
         db.session.commit()
         return jsonify({'success': True, 'message': '층이 추가되었습니다.'})
@@ -520,6 +547,7 @@ def update_floor(floor_id):
         floor = Floor.query.get_or_404(floor_id)
         new_name = (request.form.get('name') or '').strip()
         new_number_raw = (request.form.get('floor_number') or '').strip()
+        new_contract = (request.form.get('electric_contract_number') or '').strip()
 
         if new_number_raw:
             new_number = to_int(new_number_raw, None)
@@ -534,6 +562,8 @@ def update_floor(floor_id):
 
         if new_name:
             floor.name = new_name
+
+        floor.electric_contract_number = new_contract if new_contract else None
 
         db.session.commit()
         return jsonify({'success': True, 'message': '층 정보가 수정되었습니다.'})
@@ -627,7 +657,13 @@ def calculator():
     vacant_units = total_units - occupied_units
     total_residents = sum(u.residents_count for u in units if not u.is_vacant)
 
-    floors_json = [{'id': f.id, 'name': f.name, 'floor_number': f.floor_number} for f in floors]
+    floors_json = [{
+        'id': f.id,
+        'name': f.name,
+        'floor_number': f.floor_number,
+        'electric_contract_number': f.electric_contract_number  # 추가
+    } for f in floors]
+
     units_json = [{
         'id': u.id,
         'floor_id': u.floor_id,
@@ -644,7 +680,11 @@ def calculator():
                            floors=floors, units=units,
                            floors_json=floors_json, units_json=units_json,
                            total_units=total_units, occupied_units=occupied_units,
-                           vacant_units=vacant_units, total_residents=total_residents)
+                           vacant_units=vacant_units, total_residents=total_residents,
+                           # 추가: 요금 조회 URL
+                           electric_bill_url=get_setting('electric_bill_url', ''),
+                           water_bill_url=get_setting('water_bill_url', ''),
+                           water_customer_number=get_setting('water_customer_number', ''))
 
 
 @app.route('/calculate/electric', methods=['POST'])
