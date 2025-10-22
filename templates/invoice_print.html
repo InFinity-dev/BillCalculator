@@ -15,6 +15,7 @@
             font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
             background: #f5f5f5;
             padding: 20px;
+            line-height: 1.6;
         }
 
         .invoice-container {
@@ -27,40 +28,63 @@
             padding: 40px;
             margin-bottom: 20px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-radius: 8px;
         }
 
         .page-break {
             page-break-after: always;
         }
 
+        /* 헤더 */
         .header {
             text-align: center;
             border-bottom: 3px solid #333;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
+            padding-bottom: 12px;
+            margin-bottom: 12px;
         }
 
         .header h1 {
-            font-size: 28px;
-            margin-bottom: 10px;
-            color: #333;
+            font-size: 32px;
+            color: #1a1a1a;
+            font-weight: 700;
         }
 
         .header p {
             color: #666;
-            font-size: 14px;
+            font-size: 15px;
         }
 
-        .unit-info {
-            margin-bottom: 25px;
+        /* 청구 항목 요약 */
+        .items-summary {
+            margin: 12px 0;
+            padding: 12px;
+            background: #f0f0f0;
+            border-radius: 8px;
         }
 
-        .unit-name {
-            font-size: 22px;
-            font-weight: bold;
+        .items-summary h3 {
+            margin-bottom: 12px;
             color: #333;
+            font-size: 16px;
         }
 
+        .items-summary ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .items-summary li {
+            padding: 6px 0;
+            color: #555;
+            font-size: 14px;
+            border-bottom: 1px dashed #ddd;
+        }
+
+        .items-summary li:last-child {
+            border-bottom: none;
+        }
+
+        /* 테이블 */
         .bill-table {
             width: 100%;
             border-collapse: collapse;
@@ -74,6 +98,10 @@
             border-bottom: 1px solid #ddd;
         }
 
+        .bill-table .amount-title{
+            text-align: right;
+        }
+
         .bill-table th {
             background: #f8f9fa;
             font-weight: 600;
@@ -81,22 +109,116 @@
         }
 
         .bill-table .amount {
+            font-size: 16px;
             text-align: right;
-            font-weight: 500;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
         }
 
         .bill-table .total-row {
             font-weight: bold;
             background: #fff9c4;
-            font-size: 18px;
+            font-size: 16px;
+            border-top: 2px solid #999;
+        }
+
+        .bill-table .total-row td {
+            padding: 16px 12px;
         }
 
         .bill-table .sub-item {
-            color: #64748b;
             font-size: 13px;
-            padding-left: 30px;
+            color: #666;
         }
 
+        .bill-table .charge-item {
+            color: #c53030;
+        }
+
+        .bill-table .refund-item {
+            color: #059669;
+        }
+
+        /* 메모 섹션 */
+        .memo-section {
+            background: #f8f9fa;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            border: 1px solid #e0e0e0;
+        }
+
+        .memo-section h3 {
+            margin-bottom: 12px;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .memo-section p {
+            white-space: pre-wrap;
+            margin: 0;
+            color: #444;
+            line-height: 1.8;
+        }
+
+        /* 세대 메모 */
+        .unit-memo-section {
+            background: #fff3cd;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
+            border-left: 4px solid #fbbf24;
+        }
+
+        .unit-memo-section h4 {
+            margin-bottom: 12px;
+            color: #78350f;
+            font-size: 15px;
+        }
+
+        .unit-memo-section p {
+            white-space: pre-wrap;
+            margin: 0;
+            color: #78350f;
+            line-height: 1.8;
+        }
+
+        /* 푸터 */
+        .footer {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #ddd;
+            font-size: 13px;
+            color: #666;
+            text-align: center;
+            white-space: pre-wrap;
+            line-height: 1.8;
+        }
+
+        /* 인쇄 버튼 */
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .print-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+
+        /* 인쇄 최적화 */
         @media print {
             body {
                 background: white;
@@ -105,12 +227,50 @@
 
             .invoice {
                 box-shadow: none;
+                border-radius: 0;
                 page-break-after: always;
+                padding: 30px;
+            }
+
+            .invoice:last-child {
+                page-break-after: auto;
+            }
+
+            .print-button {
+                display: none;
             }
 
             .no-print {
                 display: none;
             }
+
+            .header {
+                border-bottom: 2px solid #000;
+            }
+
+            .bill-table th {
+                background: #e0e0e0 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .bill-table .total-row {
+                background: #f5f5f5 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+
+        /* 월 배지 */
+        .month-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            margin: 2px;
+            background: #667eea;
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
         }
     </style>
 </head>
@@ -121,15 +281,10 @@
         {% for invoice in invoices %}
         <div class="invoice {% if not loop.last %}page-break{% endif %}">
             <div class="header">
-                <h1>공과금 청구서</h1>
                 <p>{{ combination.invoice_name }}</p>
+                <h1>공과금 청구서-{{ invoice.unit.unit_name }}</h1>
                 <p>발행일: {{ combination.created_at.strftime('%Y년 %m월 %d일') }}</p>
             </div>
-
-            <div class="unit-info">
-                <div class="unit-name">{{ invoice.unit.unit_name }}</div>
-            </div>
-
             <!-- 포함된 항목 요약 -->
             <div class="items-summary">
                 <h4>📋 청구 항목 안내</h4>
@@ -186,8 +341,8 @@
             <table class="bill-table">
                 <thead>
                     <tr>
-                        <th width="70%">청구 항목</th>
-                        <th width="30%">금액</th>
+                        <th>청구 항목</th>
+                        <th class="amount-title">금액</th>
                     </tr>
                 </thead>
                 <tbody>
