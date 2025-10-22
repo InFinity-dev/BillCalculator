@@ -446,11 +446,11 @@
             position: fixed;
             top: 0;
             left: 0;
-            width: 100%;
-            height: 100%;
+            width: 100vw;
+            height: 100vh;
             background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(5px);
-            z-index: 1000;
+            z-index: 10000;
             align-items: center;
             justify-content: center;
         }
@@ -673,6 +673,9 @@
         </div>
     </div>
 
+    <!-- 모달 영역 (body 직계 자식, container 외부) -->
+    {% block modals %}{% endblock %}
+
     <script>
         // CSRF 토큰 처리
         function getCsrfToken() {
@@ -731,8 +734,5 @@
         }
     </script>
     {% block scripts %}{% endblock %}
-
-    <!-- 모달 영역 (body 직계 자식) -->
-    {% block modals %}{% endblock %}
 </body>
 </html>
