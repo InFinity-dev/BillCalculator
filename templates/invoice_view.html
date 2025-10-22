@@ -11,8 +11,8 @@
         {% if combination.memo %}
         <details style="margin-top:10px;">
             <summary style="cursor:pointer;color:#667eea;font-weight:500;">공통 메모 보기</summary>
-            <div style="background:#f8fafc;padding:15px;border-radius:8px;margin-top:10px;white-space:pre-wrap;font-size:14px;">
-                {{ combination.memo }}
+            <div style="background:#f8fafc;padding:15px;border-radius:8px;margin-top:10px;white-space:pre-line;font-size:14px;">
+                {{ combination.memo | trim }}
             </div>
         </details>
         {% endif %}
