@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}계산 - 공과금 정산 시스템{% endblock %}
 {% block content %}
-<h1>🧮 계산</h1>
+    <h1><span class="emoji">🧮</span> 계산</h1>
 
 <!-- 탭 버튼 -->
 <div class="tabs">
@@ -9,191 +9,192 @@
   <button class="tab" onclick="showCalcTab('water-tab', event)">💧 수도요금</button>
   <button class="tab" onclick="showCalcTab('common-tab', event)">🏘️ 공동 공과금</button>
 </div>
-
-<!-- 전기요금 탭 -->
-<div id="electric-tab" class="tab-content">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-    <h2 style="margin:0;">⚡ 전기요금 계산</h2>
-    {% if electric_bill_url %}
-    <button type="button" class="btn btn-secondary" onclick="window.open('{{ electric_bill_url }}', '_blank')" style="padding:8px 16px;">
-      🔍 요금 조회
-    </button>
-    {% endif %}
-  </div>
-
-  <form id="electricForm">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <input type="hidden" name="month_count" id="month_count" value="0">
-
-    <div class="grid grid-3">
-      <div class="form-group">
-        <label>정산월</label>
-        <input type="month" name="billing_month" id="billing_month" required>
+<div class="tabs-container">
+    <!-- 전기요금 탭 -->
+    <div id="electric-tab" class="tab-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h2 style="margin:0;">⚡ 전기요금 계산</h2>
+        {% if electric_bill_url %}
+        <button type="button" class="btn btn-secondary" onclick="window.open('{{ electric_bill_url }}', '_blank')" style="padding:8px 16px;">
+          🔍 요금 조회
+        </button>
+        {% endif %}
       </div>
-      <div class="form-group">
-        <label>층</label>
-        <select name="floor_id" id="electric_floor_id" required></select>
-      </div>
-      <div class="form-group">
-        <label>TV 수신료 배분</label>
-        <select name="tv_distribution_mode" id="tv_mode">
-          <option value="INDIVIDUAL">개별 부과 (TV 보유 세대만)</option>
-          <option value="EQUAL">균등 분배 (재실 세대 전체)</option>
-        </select>
-      </div>
-    </div>
 
-    <div style="margin-top:20px; background:#f0f4f8; padding:15px; border-radius:8px;">
-      <h4>월별 고지 내역 입력</h4>
-      <div id="monthlyBillsContainer"></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-        <button type="button" class="btn btn-secondary" onclick="addMonthBillRow()">+ 월 추가</button>
-      </div>
-      <div style="margin-top:15px; padding:10px; background:#e7f3ff; border-radius:5px;">
-        <strong>합계:</strong>
-        총액 <span id="totalAmount">0</span>원 |
-        복지할인 <span id="totalWelfare">0</span>원 |
-        바우처할인 <span id="totalVoucher">0</span>원 |
-        TV수신료 <span id="totalTvFee">0</span>원
-      </div>
-      <small style="color:#64748b;display:block;margin-top:8px;">
-        <strong>개별 부과 모드:</strong> TV 보유 세대만 설정의 TV 단가 × 개월수가 부과됩니다. TV수신료 입력칸은 비활성화됩니다.<br>
-        <strong>균등 분배 모드:</strong> TV수신료 입력칸에 월별 총 TV 수신료를 입력하면, 공실을 제외한 모든 재실 세대가 균등 분담합니다.
-      </small>
-    </div>
+      <form id="electricForm">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="month_count" id="month_count" value="0">
 
-    <div class="form-group" style="margin-top:10px;">
-      <label class="checkbox-wrapper">
-        <input type="checkbox" name="overwrite">
-        <span>기존 정산 덮어쓰기</span>
-      </label>
-    </div>
-
-    <div id="unitsInfoCardContainer" style="margin-top:20px;"></div>
-    <div id="readingTableWrap" style="margin-top:16px;"></div>
-
-    <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;">
-      <button type="button" class="btn" onclick="loadPreviousReadings()">이전 정산 현월값 불러오기</button>
-      <button type="submit" class="btn btn-primary">전기요금 계산 저장</button>
-    </div>
-  </form>
-</div>
-
-<!-- 수도요금 탭 -->
-<div id="water-tab" class="tab-content" style="display:none;">
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-    <h2 style="margin:0;">💧 수도요금 계산</h2>
-    {% if water_bill_url %}
-    <button type="button" class="btn btn-secondary" onclick="window.open('{{ water_bill_url }}', '_blank')" style="padding:8px 16px;">
-      🔍 요금 조회
-    </button>
-    {% endif %}
-  </div>
-
-  <!-- 통합된 세대 선택 및 정산 안내 -->
-  <div style="background:#e0f2fe;padding:20px;border-radius:12px;margin-bottom:20px;border-left:4px solid #0284c7;">
-    {% if water_customer_number %}
-    <div style="margin-bottom:15px;padding-bottom:15px;border-bottom:1px solid rgba(255,255,255,0.5);">
-      <div style="font-size:13px;color:#0369a1;font-weight:600;margin-bottom:5px;">🏠 주택 수도 고객번호</div>
-      <div style="font-size:18px;font-weight:bold;color:#0c4a6e;font-family:monospace;">{{ water_customer_number }}</div>
-    </div>
-    {% endif %}
-    <div id="waterUnitsSelection"></div>
-  </div>
-
-  <form id="waterForm">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <input type="hidden" name="excluded_units" id="excluded_units" value="[]">
-
-    <div class="grid grid-4">
-      <div class="form-group">
-        <label>정산월</label>
-        <input type="month" name="billing_month" required>
-      </div>
-      <div class="form-group">
-        <label>수도 총액 (주택)</label>
-        <input type="number" name="total_amount" min="0" placeholder="수도요금 (원)" required>
-      </div>
-      <div class="form-group">
-        <label>복지 할인 총액</label>
-        <input type="number" name="welfare_discount_total" min="0" placeholder="복지할인 (원)">
-      </div>
-      <div class="form-group" style="align-self:end;">
-        <label style="visibility:hidden;">중복 처리</label>
-        <label class="checkbox-wrapper"><input type="checkbox" name="overwrite"><span>기존 정산 덮어쓰기</span></label>
-      </div>
-    </div>
-    <div style="margin-top:12px;">
-      <button type="submit" class="btn btn-primary">수도요금 계산 저장</button>
-    </div>
-  </form>
-</div>
-
-<!-- 공동 공과금 탭 -->
-<div id="common-tab" class="tab-content" style="display:none;">
-  <h2>🏘️ 공동 공과금 계산</h2>
-
-  <div style="background:#fff3cd;padding:15px;border-radius:8px;margin-bottom:20px;border-left:4px solid #f59e0b;">
-    <div style="display:flex;align-items:start;gap:10px;">
-      <span style="font-size:20px;">💡</span>
-      <div style="flex:1;">
-        <strong style="color:#92400e;">공동 공과금이란?</strong>
-        <p style="color:#92400e;margin:5px 0 0 0;font-size:14px;line-height:1.6;">
-          청소비, 엘리베이터 유지보수비, 공용 전기세, 정화조 관리비 등 건물 전체에 부과되는 비용을 말합니다.<br>
-          인원수 비례 또는 세대 균등 분배 방식을 선택할 수 있습니다.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <form id="commonForm">
-    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-    <div class="grid grid-2">
-      <div class="form-group">
-        <label>정산월</label>
-        <input type="month" name="billing_month" required>
-      </div>
-      <div class="form-group">
-        <label>항목 설명</label>
-        <input type="text" name="description" placeholder="예: 청소비, 엘리베이터 유지보수 등" required>
-      </div>
-      <div class="form-group">
-        <label>총액</label>
-        <input type="number" name="total_amount" min="0" placeholder="공과금 총액 (원)" required>
-      </div>
-      <div class="form-group">
-        <label>분배 방식</label>
-        <select name="distribution_method">
-          <option value="BY_RESIDENTS">인원수 비례</option>
-          <option value="BY_UNITS">세대 균등</option>
-        </select>
-      </div>
-    </div>
-
-    <div style="background:#f8fafc;padding:15px;border-radius:8px;margin:20px 0;">
-      <h4 style="margin:0 0 10px 0;color:#334155;">📊 분배 방식 설명</h4>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
-        <div style="background:white;padding:12px;border-radius:6px;border:1px solid #e2e8f0;">
-          <div style="font-weight:600;color:#667eea;margin-bottom:5px;">👥 인원수 비례</div>
-          <div style="font-size:13px;color:#64748b;line-height:1.5;">
-            각 세대의 거주 인원수에 비례하여 금액을 분배합니다.
-            인원이 많은 세대가 더 많이 부담합니다.
+        <div class="grid grid-3">
+          <div class="form-group">
+            <label>정산월</label>
+            <input type="month" name="billing_month" id="billing_month" required>
+          </div>
+          <div class="form-group">
+            <label>층</label>
+            <select name="floor_id" id="electric_floor_id" required></select>
+          </div>
+          <div class="form-group">
+            <label>TV 수신료 배분</label>
+            <select name="tv_distribution_mode" id="tv_mode">
+              <option value="INDIVIDUAL">개별 부과 (TV 보유 세대만)</option>
+              <option value="EQUAL">균등 분배 (재실 세대 전체)</option>
+            </select>
           </div>
         </div>
-        <div style="background:white;padding:12px;border-radius:6px;border:1px solid #e2e8f0;">
-          <div style="font-weight:600;color:#667eea;margin-bottom:5px;">🏠 세대 균등</div>
-          <div style="font-size:13px;color:#64748b;line-height:1.5;">
-            재실 세대수로 균등하게 분배합니다.
-            인원수와 관계없이 모든 세대가 동일하게 부담합니다.
+
+        <div style="margin-top:20px; background:#f0f4f8; padding:15px; border-radius:8px;">
+          <h4>월별 고지 내역 입력</h4>
+          <div id="monthlyBillsContainer"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+            <button type="button" class="btn btn-secondary" onclick="addMonthBillRow()">+ 월 추가</button>
+          </div>
+          <div style="margin-top:15px; padding:10px; background:#e7f3ff; border-radius:5px;">
+            <strong>합계:</strong>
+            총액 <span id="totalAmount">0</span>원 |
+            복지할인 <span id="totalWelfare">0</span>원 |
+            바우처할인 <span id="totalVoucher">0</span>원 |
+            TV수신료 <span id="totalTvFee">0</span>원
+          </div>
+          <small style="color:#64748b;display:block;margin-top:8px;">
+            <strong>개별 부과 모드:</strong> TV 보유 세대만 설정의 TV 단가 × 개월수가 부과됩니다. TV수신료 입력칸은 비활성화됩니다.<br>
+            <strong>균등 분배 모드:</strong> TV수신료 입력칸에 월별 총 TV 수신료를 입력하면, 공실을 제외한 모든 재실 세대가 균등 분담합니다.
+          </small>
+        </div>
+
+        <div class="form-group" style="margin-top:10px;">
+          <label class="checkbox-wrapper">
+            <input type="checkbox" name="overwrite">
+            <span>기존 정산 덮어쓰기</span>
+          </label>
+        </div>
+
+        <div id="unitsInfoCardContainer" style="margin-top:20px;"></div>
+        <div id="readingTableWrap" style="margin-top:16px;"></div>
+
+        <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;">
+          <button type="button" class="btn" onclick="loadPreviousReadings()">이전 정산 현월값 불러오기</button>
+          <button type="submit" class="btn btn-primary">전기요금 계산 저장</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 수도요금 탭 -->
+    <div id="water-tab" class="tab-content">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+        <h2 style="margin:0;">💧 수도요금 계산</h2>
+        {% if water_bill_url %}
+        <button type="button" class="btn btn-secondary" onclick="window.open('{{ water_bill_url }}', '_blank')" style="padding:8px 16px;">
+          🔍 요금 조회
+        </button>
+        {% endif %}
+      </div>
+
+      <!-- 통합된 세대 선택 및 정산 안내 -->
+      <div style="background:#e0f2fe;padding:20px;border-radius:12px;margin-bottom:20px;border-left:4px solid #0284c7;">
+        {% if water_customer_number %}
+        <div style="margin-bottom:15px;padding-bottom:15px;border-bottom:1px solid rgba(255,255,255,0.5);">
+          <div style="font-size:13px;color:#0369a1;font-weight:600;margin-bottom:5px;">🏠 주택 수도 고객번호</div>
+          <div style="font-size:18px;font-weight:bold;color:#0c4a6e;font-family:monospace;">{{ water_customer_number }}</div>
+        </div>
+        {% endif %}
+        <div id="waterUnitsSelection"></div>
+      </div>
+
+      <form id="waterForm">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="excluded_units" id="excluded_units" value="[]">
+
+        <div class="grid grid-4">
+          <div class="form-group">
+            <label>정산월</label>
+            <input type="month" name="billing_month" required>
+          </div>
+          <div class="form-group">
+            <label>수도 총액 (주택)</label>
+            <input type="number" name="total_amount" min="0" placeholder="수도요금 (원)" required>
+          </div>
+          <div class="form-group">
+            <label>복지 할인 총액</label>
+            <input type="number" name="welfare_discount_total" min="0" placeholder="복지할인 (원)">
+          </div>
+          <div class="form-group" style="align-self:end;">
+            <label style="visibility:hidden;">중복 처리</label>
+            <label class="checkbox-wrapper"><input type="checkbox" name="overwrite"><span>기존 정산 덮어쓰기</span></label>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <button type="submit" class="btn btn-primary">수도요금 계산 저장</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- 공동 공과금 탭 -->
+    <div id="common-tab" class="tab-content">
+      <h2>🏘️ 공동 공과금 계산</h2>
+
+      <div style="background:#fff3cd;padding:15px;border-radius:8px;margin-bottom:20px;border-left:4px solid #f59e0b;">
+        <div style="display:flex;align-items:start;gap:10px;">
+          <span style="font-size:20px;">💡</span>
+          <div style="flex:1;">
+            <strong style="color:#92400e;">공동 공과금이란?</strong>
+            <p style="color:#92400e;margin:5px 0 0 0;font-size:14px;line-height:1.6;">
+              청소비, 엘리베이터 유지보수비, 공용 전기세, 정화조 관리비 등 건물 전체에 부과되는 비용을 말합니다.<br>
+              인원수 비례 또는 세대 균등 분배 방식을 선택할 수 있습니다.
+            </p>
           </div>
         </div>
       </div>
-    </div>
 
-    <div style="margin-top:12px;">
-      <button type="submit" class="btn btn-primary">공동 공과금 저장</button>
+      <form id="commonForm">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+        <div class="grid grid-2">
+          <div class="form-group">
+            <label>정산월</label>
+            <input type="month" name="billing_month" required>
+          </div>
+          <div class="form-group">
+            <label>항목 설명</label>
+            <input type="text" name="description" placeholder="예: 청소비, 엘리베이터 유지보수 등" required>
+          </div>
+          <div class="form-group">
+            <label>총액</label>
+            <input type="number" name="total_amount" min="0" placeholder="공과금 총액 (원)" required>
+          </div>
+          <div class="form-group">
+            <label>분배 방식</label>
+            <select name="distribution_method">
+              <option value="BY_RESIDENTS">인원수 비례</option>
+              <option value="BY_UNITS">세대 균등</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="background:#f8fafc;padding:15px;border-radius:8px;margin:20px 0;">
+          <h4 style="margin:0 0 10px 0;color:#334155;">📊 분배 방식 설명</h4>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
+            <div style="background:white;padding:12px;border-radius:6px;border:1px solid #e2e8f0;">
+              <div style="font-weight:600;color:#667eea;margin-bottom:5px;">👥 인원수 비례</div>
+              <div style="font-size:13px;color:#64748b;line-height:1.5;">
+                각 세대의 거주 인원수에 비례하여 금액을 분배합니다.
+                인원이 많은 세대가 더 많이 부담합니다.
+              </div>
+            </div>
+            <div style="background:white;padding:12px;border-radius:6px;border:1px solid #e2e8f0;">
+              <div style="font-weight:600;color:#667eea;margin-bottom:5px;">🏠 세대 균등</div>
+              <div style="font-size:13px;color:#64748b;line-height:1.5;">
+                재실 세대수로 균등하게 분배합니다.
+                인원수와 관계없이 모든 세대가 동일하게 부담합니다.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <button type="submit" class="btn btn-primary">공동 공과금 저장</button>
+        </div>
+      </form>
     </div>
-  </form>
 </div>
 
 {% endblock %}
@@ -437,9 +438,9 @@ function renderWaterUnitsSelection(){
   let html = '';
 
   html += `
-    <div style="margin-bottom:20px;">
-      <h3 style="margin:0 0 12px 0;color:#0c4a6e;font-size:18px;">🏘️ 정산 대상 세대 선택</h3>
-      <p style="color:#0c4a6e;font-size:14px;margin:0;line-height:1.6;">
+    <div style="margin-bottom:var(--space-xl);">
+      <h3 style="margin:0 0 var(--space-md) 0;color:var(--info-dark);font-size:var(--font-large);">🏘️ 정산 대상 세대 선택</h3>
+      <p style="color:var(--info-dark);font-size:var(--font-base);margin:0;line-height:1.6;">
         💡 수도세 정산에 포함할 세대를 선택하세요. 장기 출장 등으로 해당 월에 수도를 사용하지 않은 세대는 선택 해제할 수 있습니다.
       </p>
     </div>

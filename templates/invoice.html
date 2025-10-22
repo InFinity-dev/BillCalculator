@@ -7,36 +7,36 @@
 .step-indicator {
   display: flex;
   justify-content: center;
-  gap: 20px;
-  margin: 30px 0;
+  gap: var(--space-xl);
+  margin: var(--space-2xl) 0;
 }
 
 .step {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 20px;
-  background: #e2e8f0;
+  padding: 10px var(--space-xl);
+  background: var(--gray-200);
   border-radius: 25px;
-  transition: all 0.3s;
+  transition: var(--transition-base);
 }
 
 .step.active {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--primary-gradient);
   color: white;
 }
 
 .step.completed {
-  background: #10b981;
+  background: var(--success-color);
   color: white;
 }
 
 .step-number {
   width: 30px;
   height: 30px;
-  border-radius: 50%;
+  border-radius: var(--radius-full);
   background: white;
-  color: #334155;
+  color: var(--gray-700);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -51,15 +51,15 @@
 
 .unit-card {
   background: #ffffff;
-  border: 2px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 16px;
-  transition: all 0.3s ease;
+  border: 2px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-lg);
+  transition: var(--transition-base);
 }
 
 .unit-card:hover {
-  border-color: #667eea;
+  border-color: var(--primary-color);
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
@@ -67,417 +67,338 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 2px solid #f1f5f9;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 2px solid var(--gray-100);
 }
 
 .unit-name {
-  font-size: 18px;
+  font-size: var(--font-large);
   font-weight: 700;
-  color: #1e293b;
+  color: var(--gray-800);
 }
 
 .unit-memo-tag {
-  font-size: 13px;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 4px 12px;
-  border-radius: 12px;
+  font-size: var(--font-small);
+  color: var(--gray-600);
+  background: var(--gray-100);
+  padding: var(--space-xs) var(--space-md);
+  border-radius: var(--radius-lg);
   font-weight: 500;
-  margin-left: 8px;
+  margin-left: var(--space-sm);
+}
+
+.section-title {
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-base);
 }
 
 .additional-charge-row {
   display: grid;
-  grid-template-columns: 100px 1fr 150px 80px;
-  gap: 10px;
-  margin-bottom: 10px;
-  align-items: center;
-}
-
-.section-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.confirm-section {
-  background: #f8fafc;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-left: 4px solid #667eea;
-}
-
-.confirm-section h3 {
-  color: #334155;
-  margin-top: 0;
-  margin-bottom: 16px;
-  font-size: 16px;
-}
-
-.confirm-item {
-  background: white;
-  padding: 12px 16px;
-  border-radius: 8px;
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid #e2e8f0;
-}
-
-.confirm-item-icon {
-  font-size: 18px;
-}
-
-.confirm-item-text {
-  flex: 1;
-  font-size: 14px;
-  color: #475569;
-}
-
-.unit-summary-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 12px;
-}
-
-.unit-summary-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.unit-summary-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-}
-
-.unit-summary-memo {
-  font-size: 12px;
-  color: #64748b;
-  background: #f8fafc;
-  padding: 3px 10px;
-  border-radius: 10px;
-}
-
-.unit-summary-details {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 10px;
-  font-size: 13px;
+  grid-template-columns: 2fr 1fr 0.5fr;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+  align-items: start;
 }
 
 .unit-summary-row {
   display: flex;
   justify-content: space-between;
-  padding: 4px 0;
-  color: #64748b;
+  align-items: center;
+  padding: var(--space-md);
+  background: var(--gray-50);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-sm);
+  font-size: var(--font-small);
+  color: var(--gray-600);
 }
 
 .unit-summary-row strong {
-  color: #334155;
-}
-
-/* 테이블 스타일 개선 */
-table th.text-right {
-  text-align: right !important;
-}
-
-table td.text-right {
-  text-align: right !important;
-  font-weight: 500;
+  color: var(--gray-700);
 }
 </style>
 {% endblock %}
 
 {% block content %}
-<h1>📄 정산 조합</h1>
+<h1><span class="emoji">📄</span> 정산 조합</h1>
 
 <div class="tabs">
     <button class="tab active" onclick="showTab('create-tab')">➕ 새 정산 생성</button>
     <button class="tab" onclick="showTab('history-tab')">📋 정산 내역</button>
 </div>
-
-<!-- 새 정산 생성 탭 -->
-<div id="create-tab" class="tab-content">
-    <div class="step-indicator">
-        <div class="step active" id="step1-indicator">
-            <div class="step-number">1</div>
-            <span>항목 선택</span>
-        </div>
-        <div class="step" id="step2-indicator">
-            <div class="step-number">2</div>
-            <span>기타금액/메모</span>
-        </div>
-        <div class="step" id="step3-indicator">
-            <div class="step-number">3</div>
-            <span>최종 확인</span>
-        </div>
-    </div>
-
-    <!-- Step 1: 항목 선택 -->
-    <div id="step1" class="step-content">
-        <h2>Step 1: 청구 항목 선택</h2>
-
-        <div class="form-group">
-            <label>정산서 이름</label>
-            <input type="text" id="invoiceName" placeholder="예: 2024년 3월 정산" required>
+<div class="tabs-container">
+    <!-- 새 정산 생성 탭 -->
+    <div id="create-tab" class="tab-content">
+        <div class="step-indicator">
+            <div class="step active" id="step1-indicator">
+                <div class="step-number">1</div>
+                <span>항목 선택</span>
+            </div>
+            <div class="step" id="step2-indicator">
+                <div class="step-number">2</div>
+                <span>기타금액/메모</span>
+            </div>
+            <div class="step" id="step3-indicator">
+                <div class="step-number">3</div>
+                <span>최종 확인</span>
+            </div>
         </div>
 
-        <div class="form-group">
-            <label>추가 메모 (선택)</label>
-            <textarea id="invoiceMemo" rows="3" placeholder="고정 메모 외에 추가로 안내할 내용이 있으면 입력하세요"></textarea>
-            <small style="color:#64748b;">
-                💡 설정에서 등록한 고정 메모가 자동으로 포함됩니다. 여기에 입력한 내용은 고정 메모 뒤에 추가됩니다.
-            </small>
-        </div>
+        <!-- Step 1: 항목 선택 -->
+        <div id="step1" class="step-content">
+            <h2>Step 1: 청구 항목 선택</h2>
 
-        <!-- 전기요금 선택 -->
-        <div style="margin: 30px 0;">
-            <h3>⚡ 전기요금 선택</h3>
-            {% if electric_bills %}
-            <table>
-                <thead>
-                    <tr>
-                        <th width="50">선택</th>
-                        <th>정산월</th>
-                        <th>포함 고지월</th>
-                        <th>층</th>
-                        <th class="text-right">총액</th>
-                        <th class="text-right">복지할인</th>
-                        <th class="text-right">바우처할인</th>
-                        <th class="text-right">TV수신료</th>
-                        <th>세대수</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for bill in electric_bills %}
-                    <tr>
-                        <td>
-                            <input type="checkbox" class="electric-item"
-                                   data-id="{{ bill.id }}"
-                                   data-month="{{ bill.billing_month }}"
-                                   data-desc="{{ bill.billing_month.strftime('%Y년 %m월') }} {{ bill.floor_ref.name }} 전기요금">
-                        </td>
-                        <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
-                        <td style="min-width:200px;">
-                            {% if bill.monthly_details %}
-                                {% set months = bill.monthly_details | map(attribute='month') | select | list %}
-                                {% if months|length > 1 %}
-                                    <div style="display:flex;align-items:center;gap:8px;">
-                                        <span class="badge badge-primary">{{ months|length }}개월 묶음</span>
-                                        <span style="font-size:12px;color:#64748b;">
-                                            {% for detail in bill.monthly_details %}
-                                                {% if detail.month %}
-                                                    {{ detail.month[:7] }}{% if not loop.last %}, {% endif %}
-                                                {% endif %}
-                                            {% endfor %}
-                                        </span>
-                                    </div>
+            <div class="form-group">
+                <label>정산서 이름</label>
+                <input type="text" id="invoiceName" placeholder="예: 2024년 3월 정산" required>
+            </div>
+
+            <div class="form-group">
+                <label>추가 메모 (선택)</label>
+                <textarea id="invoiceMemo" rows="3" placeholder="고정 메모 외에 추가로 안내할 내용이 있으면 입력하세요"></textarea>
+                <small style="color:#64748b;">
+                    💡 설정에서 등록한 고정 메모가 자동으로 포함됩니다. 여기에 입력한 내용은 고정 메모 뒤에 추가됩니다.
+                </small>
+            </div>
+
+            <!-- 전기요금 선택 -->
+            <div style="margin: 30px 0;">
+                <h3>⚡ 전기요금 선택</h3>
+                {% if electric_bills %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="50">선택</th>
+                            <th>정산월</th>
+                            <th>포함 고지월</th>
+                            <th>층</th>
+                            <th class="text-right">총액</th>
+                            <th class="text-right">복지할인</th>
+                            <th class="text-right">바우처할인</th>
+                            <th class="text-right">TV수신료</th>
+                            <th>세대수</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in electric_bills %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="electric-item"
+                                       data-id="{{ bill.id }}"
+                                       data-month="{{ bill.billing_month }}"
+                                       data-desc="{{ bill.billing_month.strftime('%Y년 %m월') }} {{ bill.floor_ref.name }} 전기요금">
+                            </td>
+                            <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
+                            <td style="min-width:200px;">
+                                {% if bill.monthly_details %}
+                                    {% set months = bill.monthly_details | map(attribute='month') | select | list %}
+                                    {% if months|length > 1 %}
+                                        <div style="display:flex;align-items:center;gap:8px;">
+                                            <span class="badge badge-primary">{{ months|length }}개월 묶음</span>
+                                            <span style="font-size:12px;color:#64748b;">
+                                                {% for detail in bill.monthly_details %}
+                                                    {% if detail.month %}
+                                                        {{ detail.month[:7] }}{% if not loop.last %}, {% endif %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </span>
+                                        </div>
+                                    {% else %}
+                                        <span style="color:#64748b;">단일 월</span>
+                                    {% endif %}
                                 {% else %}
-                                    <span style="color:#64748b;">단일 월</span>
+                                    <span style="color:#94a3b8;">-</span>
                                 {% endif %}
-                            {% else %}
-                                <span style="color:#94a3b8;">-</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ bill.floor_ref.name }}</td>
-                        <td class="text-right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
-                        <td class="text-right" style="color:#059669;">
-                            {% if bill.welfare_discount > 0 %}
-                                -{{ "{:,.0f}".format(bill.welfare_discount) }}원
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td class="text-right" style="color:#059669;">
-                            {% if bill.voucher_discount > 0 %}
-                                -{{ "{:,.0f}".format(bill.voucher_discount) }}원
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td class="text-right" style="color:#dc2626;">
-                            {% if bill.tv_fee_total > 0 %}
-                                +{{ "{:,.0f}".format(bill.tv_fee_total) }}원
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>{{ bill.details|length }}세대</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p style="color: #94a3b8;">선택 가능한 전기요금이 없습니다.</p>
-            {% endif %}
+                            </td>
+                            <td>{{ bill.floor_ref.name }}</td>
+                            <td class="text-right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                            <td class="text-right" style="color:#059669;">
+                                {% if bill.welfare_discount > 0 %}
+                                    -{{ "{:,.0f}".format(bill.welfare_discount) }}원
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="text-right" style="color:#059669;">
+                                {% if bill.voucher_discount > 0 %}
+                                    -{{ "{:,.0f}".format(bill.voucher_discount) }}원
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td class="text-right" style="color:#dc2626;">
+                                {% if bill.tv_fee_total > 0 %}
+                                    +{{ "{:,.0f}".format(bill.tv_fee_total) }}원
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ bill.details|length }}세대</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color: #94a3b8;">선택 가능한 전기요금이 없습니다.</p>
+                {% endif %}
+            </div>
+
+            <!-- 수도요금 선택 -->
+            <div style="margin: 30px 0;">
+                <h3>💧 수도요금 선택</h3>
+                {% if water_bills %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="50">선택</th>
+                            <th>정산월</th>
+                            <th class="text-right">총액</th>
+                            <th class="text-right">복지할인합계</th>
+                            <th>세대수</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in water_bills %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="water-item"
+                                       data-id="{{ bill.id }}"
+                                       data-month="{{ bill.billing_month }}"
+                                       data-desc="{{ bill.billing_month.strftime('%Y년 %m월') }} 수도요금">
+                            </td>
+                            <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
+                            <td class="text-right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                            <td class="text-right" style="color:#059669;">
+                                {% if bill.welfare_discount_total > 0 %}
+                                    -{{ "{:,.0f}".format(bill.welfare_discount_total) }}원
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ bill.details|length }}세대</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color: #94a3b8;">선택 가능한 수도요금이 없습니다.</p>
+                {% endif %}
+            </div>
+
+            <!-- 공동 공과금 선택 -->
+            <div style="margin: 30px 0;">
+                <h3>🏘️ 공동 공과금 선택</h3>
+                {% if common_bills %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="50">선택</th>
+                            <th>정산월</th>
+                            <th>항목</th>
+                            <th class="text-right">총액</th>
+                            <th>분배방식</th>
+                            <th>세대수</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in common_bills %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="common-item"
+                                       data-id="{{ bill.id }}"
+                                       data-month="{{ bill.billing_month }}"
+                                       data-desc="{{ bill.description }}">
+                            </td>
+                            <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
+                            <td>{{ bill.description }}</td>
+                            <td class="text-right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                            <td>
+                                {% if bill.distribution_method == 'BY_RESIDENTS' %}
+                                    인원수 비례
+                                {% else %}
+                                    세대 균등
+                                {% endif %}
+                            </td>
+                            <td>{{ bill.details|length }}세대</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p style="color: #94a3b8;">선택 가능한 공동 공과금이 없습니다.</p>
+                {% endif %}
+            </div>
+
+            <div style="margin-top: 30px;">
+                <button class="btn btn-primary" onclick="goToStep2()">다음 단계: 세대별 설정</button>
+            </div>
         </div>
 
-        <!-- 수도요금 선택 -->
-        <div style="margin: 30px 0;">
-            <h3>💧 수도요금 선택</h3>
-            {% if water_bills %}
-            <table>
-                <thead>
-                    <tr>
-                        <th width="50">선택</th>
-                        <th>정산월</th>
-                        <th class="text-right">총액</th>
-                        <th class="text-right">복지할인합계</th>
-                        <th>세대수</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for bill in water_bills %}
-                    <tr>
-                        <td>
-                            <input type="checkbox" class="water-item"
-                                   data-id="{{ bill.id }}"
-                                   data-month="{{ bill.billing_month }}"
-                                   data-desc="{{ bill.billing_month.strftime('%Y년 %m월') }} 수도요금">
-                        </td>
-                        <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
-                        <td class="text-right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
-                        <td class="text-right" style="color:#059669;">
-                            {% if bill.welfare_discount_total > 0 %}
-                                -{{ "{:,.0f}".format(bill.welfare_discount_total) }}원
-                            {% else %}
-                                -
-                            {% endif %}
-                        </td>
-                        <td>{{ bill.details|length }}세대</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p style="color: #94a3b8;">선택 가능한 수도요금이 없습니다.</p>
-            {% endif %}
+        <!-- Step 2: 세대별 기타금액 및 메모 -->
+        <div id="step2" class="step-content" style="display:none;">
+            <h2>Step 2: 세대별 기타금액 및 메모</h2>
+            <p style="color:#64748b;margin-bottom:20px;">
+                💡 특정 세대에만 부과되는 기타 항목(미납금, 수리비 등) 또는 환급액과 세대별 특별 안내사항을 입력하세요.
+            </p>
+
+            <div id="unitsAdditionalContainer"></div>
+
+            <div style="margin-top: 30px;display:flex;gap:10px;">
+                <button class="btn btn-secondary" onclick="goToStep1()">이전: 항목 선택</button>
+                <button class="btn btn-primary" onclick="goToStep3()">다음: 최종 확인</button>
+                <button class="btn" onclick="skipToFinal()">기타금액 없이 바로 생성</button>
+            </div>
         </div>
 
-        <!-- 공동 공과금 선택 -->
-        <div style="margin: 30px 0;">
-            <h3>🏘️ 공동 공과금 선택</h3>
-            {% if common_bills %}
-            <table>
-                <thead>
-                    <tr>
-                        <th width="50">선택</th>
-                        <th>정산월</th>
-                        <th>항목</th>
-                        <th class="text-right">총액</th>
-                        <th>분배방식</th>
-                        <th>세대수</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for bill in common_bills %}
-                    <tr>
-                        <td>
-                            <input type="checkbox" class="common-item"
-                                   data-id="{{ bill.id }}"
-                                   data-month="{{ bill.billing_month }}"
-                                   data-desc="{{ bill.description }}">
-                        </td>
-                        <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
-                        <td>{{ bill.description }}</td>
-                        <td class="text-right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
-                        <td>
-                            {% if bill.distribution_method == 'BY_RESIDENTS' %}
-                                인원수 비례
-                            {% else %}
-                                세대 균등
-                            {% endif %}
-                        </td>
-                        <td>{{ bill.details|length }}세대</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p style="color: #94a3b8;">선택 가능한 공동 공과금이 없습니다.</p>
-            {% endif %}
-        </div>
+        <!-- Step 3: 최종 확인 -->
+        <div id="step3" class="step-content" style="display:none;">
+            <h2>Step 3: 최종 확인</h2>
+            <div id="finalConfirmation"></div>
 
-        <div style="margin-top: 30px;">
-            <button class="btn btn-primary" onclick="goToStep2()">다음 단계: 세대별 설정</button>
-        </div>
-    </div>
-
-    <!-- Step 2: 세대별 기타금액 및 메모 -->
-    <div id="step2" class="step-content" style="display:none;">
-        <h2>Step 2: 세대별 기타금액 및 메모</h2>
-        <p style="color:#64748b;margin-bottom:20px;">
-            💡 특정 세대에만 부과되는 기타 항목(미납금, 수리비 등) 또는 환급액과 세대별 특별 안내사항을 입력하세요.
-        </p>
-
-        <div id="unitsAdditionalContainer"></div>
-
-        <div style="margin-top: 30px;display:flex;gap:10px;">
-            <button class="btn btn-secondary" onclick="goToStep1()">이전: 항목 선택</button>
-            <button class="btn btn-primary" onclick="goToStep3()">다음: 최종 확인</button>
-            <button class="btn" onclick="skipToFinal()">기타금액 없이 바로 생성</button>
-        </div>
-    </div>
-
-    <!-- Step 3: 최종 확인 -->
-    <div id="step3" class="step-content" style="display:none;">
-        <h2>Step 3: 최종 확인</h2>
-        <div id="finalConfirmation"></div>
-
-        <div style="margin-top: 30px;display:flex;gap:10px;">
-            <button class="btn btn-secondary" onclick="goToStep2()">이전: 세대별 설정</button>
-            <button class="btn btn-primary" onclick="createInvoiceFinal()">✅ 정산서 생성</button>
+            <div style="margin-top: 30px;display:flex;gap:10px;">
+                <button class="btn btn-secondary" onclick="goToStep2()">이전: 세대별 설정</button>
+                <button class="btn btn-primary" onclick="createInvoiceFinal()">✅ 정산서 생성</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- 정산 내역 탭 -->
-<div id="history-tab" class="tab-content" style="display: none;">
-    <h2>정산 내역</h2>
+    <!-- 정산 내역 탭 -->
+    <div id="history-tab" class="tab-content">
+        <h2>정산 내역</h2>
 
-    {% if combinations %}
-    <table>
-        <thead>
-            <tr>
-                <th>생성일</th>
-                <th>정산서명</th>
-                <th>메모</th>
-                <th>포함 항목수</th>
-                <th>작업</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for combo in combinations %}
-            <tr>
-                <td>{{ combo.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td><strong>{{ combo.invoice_name }}</strong></td>
-                <td>{{ combo.memo[:50] if combo.memo else '-' }}{% if combo.memo and combo.memo|length > 50 %}...{% endif %}</td>
-                <td>{{ combo.items|length }}개</td>
-                <td>
-                    <a href="{{ url_for('view_invoice', combination_id=combo.id) }}" class="btn btn-secondary" style="padding: 5px 10px;">조회</a>
-                    <a href="{{ url_for('print_invoice', combination_id=combo.id) }}" target="_blank" class="btn btn-primary" style="padding: 5px 10px;">인쇄</a>
-                    <button class="btn btn-danger" style="padding: 5px 10px;" onclick="deleteInvoice({{ combo.id }})">삭제</button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-    {% else %}
-    <p style="color: #94a3b8; text-align: center; padding: 40px;">생성된 정산서가 없습니다.</p>
-    {% endif %}
+        {% if combinations %}
+        <table>
+            <thead>
+                <tr>
+                    <th>생성일</th>
+                    <th>정산서명</th>
+                    <th>메모</th>
+                    <th>포함 항목수</th>
+                    <th>작업</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for combo in combinations %}
+                <tr>
+                    <td>{{ combo.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td><strong>{{ combo.invoice_name }}</strong></td>
+                    <td>{{ combo.memo[:50] if combo.memo else '-' }}{% if combo.memo and combo.memo|length > 50 %}...{% endif %}</td>
+                    <td>{{ combo.items|length }}개</td>
+                    <td>
+                        <a href="{{ url_for('view_invoice', combination_id=combo.id) }}" class="btn btn-secondary" style="padding: 5px 10px;">조회</a>
+                        <a href="{{ url_for('print_invoice', combination_id=combo.id) }}" target="_blank" class="btn btn-primary" style="padding: 5px 10px;">인쇄</a>
+                        <button class="btn btn-danger" style="padding: 5px 10px;" onclick="deleteInvoice({{ combo.id }})">삭제</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p style="color: #94a3b8; text-align: center; padding: 40px;">생성된 정산서가 없습니다.</p>
+        {% endif %}
+    </div>
 </div>
 
 {% endblock %}

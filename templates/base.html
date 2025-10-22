@@ -5,6 +5,74 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}공과금 정산 시스템{% endblock %}</title>
     <style>
+        /* ============================================
+           🎨 Design System Variables
+           ============================================ */
+        :root {
+            /* Colors - Primary */
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --primary-color: #667eea;
+            --primary-dark: #764ba2;
+
+            /* Colors - Neutral */
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+
+            /* Colors - Semantic */
+            --success-color: #10b981;
+            --success-dark: #059669;
+            --danger-color: #ef4444;
+            --danger-dark: #dc2626;
+            --warning-color: #f59e0b;
+            --info-color: #0284c7;
+            --info-bg: #e0f2fe;
+            --info-dark: #0c4a6e;
+
+            /* Typography */
+            --font-base: 14px;
+            --font-small: 13px;
+            --font-xs: 12px;
+            --font-large: 18px;
+            --font-xlarge: 22px;
+            --font-2xl: 28px;
+
+            /* Spacing */
+            --space-xs: 4px;
+            --space-sm: 8px;
+            --space-md: 12px;
+            --space-lg: 16px;
+            --space-xl: 20px;
+            --space-2xl: 30px;
+
+            /* Border Radius */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 15px;
+            --radius-2xl: 20px;
+            --radius-full: 50%;
+
+            /* Shadows */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+            /* Transitions */
+            --transition-fast: 0.2s ease;
+            --transition-base: 0.3s ease;
+        }
+
+        /* ============================================
+           🎯 Base Styles
+           ============================================ */
         * {
             margin: 0;
             padding: 0;
@@ -13,81 +81,112 @@
 
         body {
             font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             min-height: 100vh;
+            font-size: var(--font-base);
+            color: var(--gray-800);
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-            padding: 20px;
+            padding: var(--space-xl);
         }
 
+        /* ============================================
+           🧭 Navigation
+           ============================================ */
         .navbar {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 15px;
+            border-radius: var(--radius-xl);
             padding: 15px 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: var(--space-2xl);
+            box-shadow: var(--shadow-lg);
         }
 
         .navbar ul {
             list-style: none;
             display: flex;
-            gap: 30px;
+            gap: var(--space-2xl);
             align-items: center;
         }
 
         .navbar a {
             text-decoration: none;
-            color: #333;
+            color: var(--gray-700);
             font-weight: 500;
-            padding: 8px 16px;
-            border-radius: 8px;
-            transition: all 0.3s ease;
+            padding: var(--space-sm) var(--space-lg);
+            border-radius: var(--radius-md);
+            transition: var(--transition-base);
         }
 
         .navbar a:hover, .navbar a.active {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: var(--primary-gradient);
             color: white;
         }
 
+        /* ============================================
+           📦 Content Card
+           ============================================ */
         .content-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            border-radius: var(--radius-2xl);
+            padding: var(--space-2xl);
+            box-shadow: var(--shadow-lg);
         }
 
+        /* ============================================
+           📝 Typography
+           ============================================ */
         h1, h2, h3 {
-            color: #333;
-            margin-bottom: 20px;
+            color: var(--gray-800);
+            margin-bottom: var(--space-xl);
+            font-weight: 700;
         }
 
         h1 {
             font-size: 2rem;
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: var(--primary-gradient);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+        h1 .emoji {
+          color: revert;
+          color: initial;
+          -webkit-text-fill-color: initial;
+          font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji", sans-serif;
+        }
 
+        h2 {
+            font-size: var(--font-xlarge);
+            color: var(--gray-700);
+        }
+
+        h3 {
+            font-size: var(--font-large);
+            color: var(--gray-700);
+        }
+
+        /* ============================================
+           🔘 Buttons - Unified System
+           ============================================ */
         .btn {
             padding: 10px 20px;
             border: none;
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: var(--radius-md);
+            font-size: var(--font-base);
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: var(--transition-base);
             text-decoration: none;
             display: inline-block;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
+            background: var(--primary-gradient);
             color: white;
         }
 
@@ -97,65 +196,108 @@
         }
 
         .btn-secondary {
-            background: #e2e8f0;
-            color: #334155;
+            background: var(--gray-200);
+            color: var(--gray-700);
         }
 
         .btn-secondary:hover {
-            background: #cbd5e1;
+            background: var(--gray-300);
         }
 
         .btn-danger {
-            background: #ef4444;
+            background: var(--danger-color);
             color: white;
         }
 
         .btn-danger:hover {
-            background: #dc2626;
+            background: var(--danger-dark);
         }
 
         .btn-success {
-            background: #10b981;
+            background: var(--success-color);
             color: white;
         }
 
         .btn-success:hover {
-            background: #059669;
+            background: var(--success-dark);
         }
 
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: var(--font-small);
+        }
+
+        /* ============================================
+           📊 Tables - Unified System
+           ============================================ */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: var(--space-xl) 0;
+            background: white;
+            border-radius: var(--radius-md);
+            overflow: hidden;
         }
 
         th {
-            background: #f8fafc;
-            padding: 12px;
+            background: var(--gray-100) !important;
+            padding: var(--space-md);
             text-align: left;
             font-weight: 600;
-            color: #475569;
-            border-bottom: 2px solid #e2e8f0;
+            color: var(--gray-700) !important;
+            border-bottom: 2px solid var(--gray-300) !important;
+            white-space: nowrap;
+        }
+
+        th.text-right {
+            text-align: right !important;
         }
 
         td {
-            padding: 12px;
-            border-bottom: 1px solid #e2e8f0;
+            padding: var(--space-md);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        td.text-right {
+            text-align: right !important;
+            font-weight: 500;
         }
 
         tr:hover {
-            background: #f8fafc;
+            background: var(--gray-50) !important;
+            transition: var(--transition-fast);
         }
 
+        /* 금액 스타일링 */
+        .amount-positive {
+            color: var(--success-dark);
+            font-weight: 500;
+        }
+
+        .amount-negative {
+            color: var(--danger-dark);
+            font-weight: 500;
+        }
+
+        /* 작업 버튼 */
+        .action-buttons {
+            white-space: nowrap;
+            display: flex;
+            gap: var(--space-xs);
+        }
+
+        /* ============================================
+           📋 Forms - Unified System
+           ============================================ */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: var(--space-xl);
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: var(--space-sm);
             font-weight: 500;
-            color: #334155;
+            color: var(--gray-700);
         }
 
         input[type="text"],
@@ -166,24 +308,24 @@
         textarea {
             width: 100%;
             padding: 10px 15px;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s ease;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-md);
+            font-size: var(--font-base);
+            transition: var(--transition-base);
         }
 
         input:focus,
         select:focus,
         textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--primary-color);
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
         .checkbox-wrapper {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: var(--space-sm);
         }
 
         input[type="checkbox"] {
@@ -192,33 +334,113 @@
             cursor: pointer;
         }
 
-        .alert {
-            padding: 15px 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: flex;
+        /* ============================================
+           🏷️ Badges - Unified System
+           ============================================ */
+        .badge {
+            display: inline-flex;
             align-items: center;
-            gap: 10px;
+            padding: var(--space-xs) 10px;
+            font-size: var(--font-xs);
+            font-weight: 600;
+            white-space: nowrap;
+            border-radius: var(--radius-sm);
+        }
+
+        .badge-primary {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-info {
+            background: var(--info-bg);
+            color: var(--info-dark);
+        }
+
+        /* ============================================
+           📑 Tabs - Unified System
+           ============================================ */
+        .tabs {
+            display: flex;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-xl);
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        .tab {
+            padding: var(--space-md) var(--space-xl);
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--gray-600);
+            border-bottom: 3px solid transparent;
+            transition: var(--transition-base);
+            font-size: var(--font-base);
+        }
+
+        .tab:hover {
+            color: var(--primary-color);
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tabs-container > .tab-content {
+            display: none;
+        }
+
+        .tabs-container > .tab-content:first-child {
+            display: block;
+        }
+
+        /* ============================================
+           💬 Alerts & Messages
+           ============================================ */
+        .alert {
+            padding: var(--space-md) var(--space-lg);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-xl);
         }
 
         .alert-success {
             background: #d1fae5;
             color: #065f46;
-            border: 1px solid #a7f3d0;
+            border-left: 4px solid var(--success-color);
         }
 
         .alert-error {
             background: #fee2e2;
             color: #991b1b;
-            border: 1px solid #fecaca;
+            border-left: 4px solid var(--danger-color);
         }
 
         .alert-info {
-            background: #dbeafe;
-            color: #1e40af;
-            border: 1px solid #bfdbfe;
+            background: var(--info-bg);
+            color: var(--info-dark);
+            border-left: 4px solid var(--info-color);
         }
 
+        /* ============================================
+           🪟 Modal System
+           ============================================ */
         .modal {
             display: none;
             position: fixed;
@@ -239,13 +461,20 @@
 
         .modal-content {
             background: white;
-            border-radius: 20px;
-            padding: 30px;
+            border-radius: var(--radius-2xl);
+            padding: var(--space-2xl);
             max-width: 500px;
             width: 90%;
             max-height: 90vh;
             overflow-y: auto;
             animation: modalSlideIn 0.3s ease;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            margin-bottom: var(--space-xl);
+            color: var(--gray-800);
         }
 
         @keyframes modalSlideIn {
@@ -259,9 +488,45 @@
             }
         }
 
+        /* 모달 배경 클릭 시 닫기 */
+        .modal::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+
+        /* ============================================
+           📱 Responsive Design
+           ============================================ */
+        @media (max-width: 768px) {
+            .container {
+                padding: var(--space-md);
+            }
+
+            .navbar ul {
+                flex-direction: column;
+                gap: var(--space-sm);
+            }
+
+            table {
+                font-size: var(--font-small);
+            }
+
+            th, td {
+                padding: var(--space-sm);
+            }
+        }
+
+        /* ============================================
+           📐 Grid Layouts
+           ============================================ */
         .grid {
             display: grid;
-            gap: 20px;
+            gap: var(--space-xl);
         }
 
         .grid-2 {
@@ -272,12 +537,25 @@
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
         }
 
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+
+        /* ============================================
+           📊 Stat Cards
+           ============================================ */
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--primary-gradient);
             color: white;
-            padding: 20px;
-            border-radius: 15px;
+            padding: var(--space-xl);
+            border-radius: var(--radius-xl);
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            transition: var(--transition-base);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
 
         .stat-card h3 {
@@ -285,75 +563,60 @@
             font-size: 1rem;
             margin-bottom: 10px;
             opacity: 0.9;
+            font-weight: 500;
         }
 
         .stat-card .value {
             font-size: 2rem;
             font-weight: bold;
+            color: white;
         }
 
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #e2e8f0;
+        /* ============================================
+           📱 Responsive Grid
+           ============================================ */
+        @media (max-width: 768px) {
+            .grid-2,
+            .grid-3,
+            .grid-4 {
+                grid-template-columns: 1fr;
+            }
         }
 
-        .tab {
-            padding: 10px 20px;
-            background: none;
-            border: none;
-            color: #64748b;
-            cursor: pointer;
-            font-weight: 500;
-            position: relative;
-            transition: all 0.3s ease;
-        }
+        /* ============================================
+           🎨 Utility Classes
+           ============================================ */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
 
-        .tab:hover {
-            color: #334155;
-        }
+        .mt-1 { margin-top: var(--space-sm); }
+        .mt-2 { margin-top: var(--space-md); }
+        .mt-3 { margin-top: var(--space-xl); }
 
-        .tab.active {
-            color: #667eea;
-        }
+        .mb-1 { margin-bottom: var(--space-sm); }
+        .mb-2 { margin-bottom: var(--space-md); }
+        .mb-3 { margin-bottom: var(--space-xl); }
 
-        .tab.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-        }
+        .p-1 { padding: var(--space-sm); }
+        .p-2 { padding: var(--space-md); }
+        .p-3 { padding: var(--space-xl); }
 
-        .badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-        }
+        .font-bold { font-weight: 600; }
+        .font-semibold { font-weight: 500; }
 
-        .badge-primary {
-            background: #dbeafe;
-            color: #1e40af;
-        }
+        .text-sm { font-size: var(--font-small); }
+        .text-xs { font-size: var(--font-xs); }
 
-        .badge-success {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .badge-warning {
-            background: #fed7aa;
-            color: #92400e;
-        }
-
-        .badge-danger {
-            background: #fee2e2;
-            color: #991b1b;
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
         }
 
         @media (max-width: 768px) {
@@ -416,12 +679,27 @@
 
         // 모달 관련 함수
         function openModal(modalId) {
-            document.getElementById(modalId).classList.add('active');
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+            } else {
+                console.error('Modal not found:', modalId);
+            }
         }
 
         function closeModal(modalId) {
-            document.getElementById(modalId).classList.remove('active');
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+            }
         }
+
+        // 모달 배경 클릭 시 닫기
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                closeModal(e.target.id);
+            }
+        });
 
         // 숫자 포맷팅
         function formatNumber(num) {
@@ -451,5 +729,8 @@
         }
     </script>
     {% block scripts %}{% endblock %}
+
+    <!-- 모달 영역 (body 직계 자식) -->
+    {% block modals %}{% endblock %}
 </body>
 </html>

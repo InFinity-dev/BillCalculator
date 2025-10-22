@@ -93,59 +93,60 @@
 {% endblock %}
 
 {% block content %}
-<h1>📊 전체 조회</h1>
+    <h1><span class="emoji">📊</span> 전체 조회</h1>
 
 <div class="tabs">
   <button class="tab active" onclick="showTab('tab-electric', event)">⚡ 전기</button>
   <button class="tab" onclick="showTab('tab-water', event)">💧 수도</button>
   <button class="tab" onclick="showTab('tab-common', event)">🏘️ 공동 공과금</button>
 </div>
+<div class="tabs-container">
+    <!-- 전기요금 탭 -->
+    <div id="tab-electric" class="tab-content">
+      <h2>⚡ 전기요금</h2>
 
-<!-- 전기요금 탭 -->
-<div id="tab-electric" class="tab-content">
-  <h2>⚡ 전기요금</h2>
+      <!-- 전기 그래프 섹션 -->
+      <div style="background:white;padding:20px;border-radius:12px;margin-bottom:30px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+        <h3>📈 고지월별 전기요금 추이 (층별)</h3>
 
-  <!-- 전기 그래프 섹션 -->
-  <div style="background:white;padding:20px;border-radius:12px;margin-bottom:30px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-    <h3>📈 고지월별 전기요금 추이 (층별)</h3>
+        <div class="chart-info">
+          <p>
+            💡 각 정산월에 포함된 고지월별 순수 전기요금(TV수신료 제외)을 층별로 표시합니다.<br>
+            📊 <strong>범례를 클릭</strong>하여 특정 층의 데이터를 숨기거나 표시할 수 있습니다.
+          </p>
+        </div>
 
-    <div class="chart-info">
-      <p>
-        💡 각 정산월에 포함된 고지월별 순수 전기요금(TV수신료 제외)을 층별로 표시합니다.<br>
-        📊 <strong>범례를 클릭</strong>하여 특정 층의 데이터를 숨기거나 표시할 수 있습니다.
-      </p>
+        <div class="chart-container">
+          <canvas id="electricChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 전기요금 목록 -->
+      <div id="electricList"></div>
     </div>
 
-    <div class="chart-container">
-      <canvas id="electricChart"></canvas>
+    <!-- 수도요금 탭 -->
+    <div id="tab-water" class="tab-content">
+      <h2>💧 수도요금</h2>
+
+      <!-- 수도 그래프 섹션 -->
+      <div style="background:white;padding:20px;border-radius:12px;margin-bottom:30px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+        <h3>📈 요금 추이</h3>
+
+        <div class="chart-container">
+          <canvas id="waterChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 수도요금 목록 -->
+      <div id="waterList"></div>
     </div>
-  </div>
 
-  <!-- 전기요금 목록 -->
-  <div id="electricList"></div>
-</div>
-
-<!-- 수도요금 탭 -->
-<div id="tab-water" class="tab-content" style="display:none;">
-  <h2>💧 수도요금</h2>
-
-  <!-- 수도 그래프 섹션 -->
-  <div style="background:white;padding:20px;border-radius:12px;margin-bottom:30px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-    <h3>📈 요금 추이</h3>
-
-    <div class="chart-container">
-      <canvas id="waterChart"></canvas>
+    <!-- 공동 공과금 탭 -->
+    <div id="tab-common" class="tab-content">
+      <h2>🏘️ 공동 공과금</h2>
+      <div id="commonList"></div>
     </div>
-  </div>
-
-  <!-- 수도요금 목록 -->
-  <div id="waterList"></div>
-</div>
-
-<!-- 공동 공과금 탭 -->
-<div id="tab-common" class="tab-content" style="display:none;">
-  <h2>🏘️ 공동 공과금</h2>
-  <div id="commonList"></div>
 </div>
 
 {% endblock %}
