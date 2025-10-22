@@ -317,12 +317,13 @@
                                                     {% endfor %}
                                                 </span>
                                             {% else %}
-                                                {# 단일 고지월인 경우 #}
+                                                {# 단일 고지월인 경우 - 고지월 명확히 표시 #}
                                                 {% set first_month = months[0] if months|length > 0 else '' %}
+                                                <span class="floor-info">{{ floor_name }}</span> 전기요금
                                                 {% if first_month %}
-                                                    {{ first_month[:7] }} <span class="floor-info">{{ floor_name }}</span> 전기요금
+                                                    (고지월: {{ first_month[:7] }})
                                                 {% else %}
-                                                    {{ item.billing_month.strftime('%Y년 %m월') }} <span class="floor-info">{{ floor_name }}</span> 전기요금
+                                                    (고지월: {{ item.billing_month.strftime('%Y-%m') }})
                                                 {% endif %}
                                             {% endif %}
                                         {% else %}

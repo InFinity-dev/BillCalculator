@@ -200,16 +200,23 @@
                                             <span style="font-size:12px;color:#64748b;">
                                                 {% for detail in bill.monthly_details %}
                                                     {% if detail.month %}
-                                                        {{ detail.month[:7] }}{% if not loop.last %}, {% endif %}
+                                                        {{ detail.month[:7] }}
+                                                        {% if not loop.last %}, {% endif %}
                                                     {% endif %}
                                                 {% endfor %}
                                             </span>
                                         </div>
                                     {% else %}
-                                        <span style="color:#64748b;">단일 월</span>
+                                        {# 단일 고지월인 경우 명확한 월 표시 #}
+                                        {% set first_month = months[0] if months|length > 0 else '' %}
+                                        {% if first_month %}
+                                            <span style="font-size:13px;color:#64748b;">{{ first_month[:7] }}</span>
+                                        {% else %}
+                                            <span style="font-size:13px;color:#64748b;">{{ bill.billing_month.strftime('%Y-%m') }}</span>
+                                        {% endif %}
                                     {% endif %}
                                 {% else %}
-                                    <span style="color:#94a3b8;">-</span>
+                                    <span style="font-size:13px;color:#64748b;">{{ bill.billing_month.strftime('%Y-%m') }}</span>
                                 {% endif %}
                             </td>
                             <td>{{ bill.floor_ref.name }}</td>
