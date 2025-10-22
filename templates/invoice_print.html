@@ -386,10 +386,14 @@
 
                     {% if invoice.additional_charges %}
                         {% for charge in invoice.additional_charges %}
-                        <tr>
+                        <tr {% if charge.description.startswith('[이월]') %}style="background:#fef3c7;"{% endif %}>
                             {% set is_refund = charge.amount < 0 %}
+                            {% set is_carryover = charge.description.startswith('[이월]') %}
                             <td class="additional-item {{ 'refund-item' if is_refund else 'charge-item' }}">
                                 {{ '환급' if is_refund else '기타' }} - {{ charge.description }}
+                                {% if is_carryover %}
+                                    <span style="font-size:11px;color:#92400e;margin-left:4px;">(참고용)</span>
+                                {% endif %}
                             </td>
                             <td class="amount" style="color:{{ '#059669' if is_refund else '#c53030' }};">
                                 {{ "-" if is_refund else "+" }}{{ "{:,.0f}".format(charge.amount|abs) }}원

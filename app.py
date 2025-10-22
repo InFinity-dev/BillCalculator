@@ -1362,7 +1362,7 @@ def payments():
 
 @app.route('/payments/unit_history/<int:unit_id>')
 def payment_unit_history(unit_id):
-    """특정 세대의 전체 정산 및 납부 이력"""
+    """특정 세대의 전체 정산 및 납부 이력 (이월 항목 제외 계산)"""
     try:
         unit = Unit.query.get_or_404(unit_id)
 
@@ -1382,14 +1382,27 @@ def payment_unit_history(unit_id):
             ).order_by(Payment.payment_date).all()
 
             total_paid = sum(float(p.payment_amount) for p in payments)
-            billed = float(invoice.total_amount)
+
+            # ✅ 이월 항목을 제외한 실제 고지액 계산
+            base_amount = float(invoice.electric_amount + invoice.water_amount + invoice.common_amount)
+
+            # additional_charges에서 이월 항목 제외
+            additional_real = 0
+            if invoice.additional_charges:
+                for charge in invoice.additional_charges:
+                    desc = charge.get('description', '').lower()
+                    # 이월 관련 키워드가 없는 경우만 합산
+                    if not any(keyword in desc for keyword in ['미납', '초과납부', '환급', '이월']):
+                        additional_real += charge.get('amount', 0)
+
+            billed = base_amount + additional_real
             balance = billed - total_paid
 
             result.append({
                 'combination_id': combination.id,
                 'invoice_name': combination.invoice_name,
                 'created_at': combination.created_at.strftime('%Y-%m-%d'),
-                'billed_amount': billed,
+                'billed_amount': billed,  # 이월 항목 제외된 실제 고지액
                 'paid_amount': total_paid,
                 'balance': balance,
                 'payments': [{
@@ -1416,12 +1429,25 @@ def payment_unit_history(unit_id):
 
 @app.route('/payments/balance/<int:unit_id>')
 def payment_balance(unit_id):
-    """세대의 누적 미납/초과 금액 계산"""
+    """세대의 누적 미납/초과 금액 계산 (미납금 이월 항목 제외)"""
     try:
-        # 모든 정산의 고지액 합계
-        total_billed = db.session.query(func.sum(FinalInvoice.total_amount)).filter_by(
-            unit_id=unit_id
-        ).scalar() or 0
+        # 모든 정산 조회
+        invoices = FinalInvoice.query.filter_by(unit_id=unit_id).all()
+
+        total_billed = dec(0)
+        for invoice in invoices:
+            # 기본 금액 (전기, 수도, 공동)
+            base_amount = invoice.electric_amount + invoice.water_amount + invoice.common_amount
+
+            # additional_charges에서 미납금/초과납부 항목 제외
+            if invoice.additional_charges:
+                for charge in invoice.additional_charges:
+                    desc = charge.get('description', '').lower()
+                    # 미납금/초과납부 관련 키워드가 없는 경우만 합산
+                    if not any(keyword in desc for keyword in ['미납', '초과납부', '환급', '이월']):
+                        total_billed += dec(charge.get('amount', 0))
+
+            total_billed += base_amount
 
         # 모든 납부액 합계
         total_paid = db.session.query(func.sum(Payment.payment_amount)).filter_by(
@@ -1503,16 +1529,29 @@ def delete_payment(payment_id):
 
 @app.route('/payments/all_units_balance')
 def all_units_balance():
-    """전체 세대의 누적 잔액 조회 (정산서 작성시 사용)"""
+    """전체 세대의 누적 잔액 조회 (정산서 작성시 사용, 미납금 이월 항목 제외)"""
     try:
         units = Unit.query.filter_by(is_vacant=False).all()
         result = {}
 
         for unit in units:
-            # 총 고지액
-            total_billed = db.session.query(func.sum(FinalInvoice.total_amount)).filter_by(
-                unit_id=unit.id
-            ).scalar() or 0
+            # 모든 정산 조회
+            invoices = FinalInvoice.query.filter_by(unit_id=unit.id).all()
+
+            total_billed = dec(0)
+            for invoice in invoices:
+                # 기본 금액 (전기, 수도, 공동)
+                base_amount = invoice.electric_amount + invoice.water_amount + invoice.common_amount
+
+                # additional_charges에서 미납금/초과납부 항목 제외
+                if invoice.additional_charges:
+                    for charge in invoice.additional_charges:
+                        desc = charge.get('description', '').lower()
+                        # 미납금/초과납부 관련 키워드가 없는 경우만 합산
+                        if not any(keyword in desc for keyword in ['미납', '초과납부', '환급', '이월']):
+                            total_billed += dec(charge.get('amount', 0))
+
+                total_billed += base_amount
 
             # 총 납부액
             total_paid = db.session.query(func.sum(Payment.payment_amount)).filter_by(
@@ -1529,6 +1568,60 @@ def all_units_balance():
                 }
 
         return jsonify({'success': True, 'balances': result})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/admin/validate_balances')
+def validate_balances():
+    """전체 세대의 잔액 정합성 검증 (관리자용)"""
+    try:
+        units = Unit.query.filter_by(is_vacant=False).order_by(Unit.floor_id, Unit.unit_name).all()
+        report = []
+
+        for unit in units:
+            # 모든 정산 조회
+            invoices = FinalInvoice.query.filter_by(unit_id=unit.id).all()
+
+            total_billed = dec(0)
+            carryover_total = dec(0)  # 이월 항목 합계 (참고용)
+
+            for invoice in invoices:
+                # 기본 금액 (전기, 수도, 공동)
+                base_amount = invoice.electric_amount + invoice.water_amount + invoice.common_amount
+                total_billed += base_amount
+
+                # additional_charges 처리
+                if invoice.additional_charges:
+                    for charge in invoice.additional_charges:
+                        desc = charge.get('description', '').lower()
+                        amount = dec(charge.get('amount', 0))
+
+                        # 이월 관련 키워드 확인
+                        if any(keyword in desc for keyword in ['미납', '초과납부', '환급', '이월']):
+                            carryover_total += amount  # 참고용 합계
+                        else:
+                            total_billed += amount  # 실제 청구액에 포함
+
+            # 총 납부액
+            total_paid = db.session.query(func.sum(Payment.payment_amount)).filter_by(
+                unit_id=unit.id
+            ).scalar() or 0
+
+            balance = float(total_billed) - float(total_paid)
+
+            report.append({
+                'unit_id': unit.id,
+                'unit_name': unit.unit_name,
+                'floor_name': unit.floor.name if unit.floor else '',
+                'total_billed': float(total_billed),
+                'total_paid': float(total_paid),
+                'balance': balance,
+                'carryover_total': float(carryover_total),  # 참고: 이월 항목 합계
+                'invoice_count': len(invoices)
+            })
+
+        return jsonify({'success': True, 'report': report})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
