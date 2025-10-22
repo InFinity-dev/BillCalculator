@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% block title %}납부 내역 관리 - 공과금 정산 시스템{% endblock %}
+{% block extra_css %}
+<style>
+  .unit-row {
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .unit-row:hover {
+    background: #f8fafc !important;
+    transform: translateX(4px);
+  }
+  .unit-row.selected {
+    background: #e0e7ff !important;
+    border-left: 4px solid #667eea;
+  }
+
+  .history-month {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.2s;
+  }
+  .history-month:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+  }
+
+  .balance-positive { color: #dc2626; font-weight: 700; }
+  .balance-negative { color: #059669; font-weight: 700; }
+  .balance-zero { color: #64748b; }
+
+  .payment-record {
+    background: #f8fafc;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-top: 8px;
+    border-left: 3px solid #667eea;
+  }
+
+  .summary-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<h1><span class="emoji">💳</span> 납부 내역 관리</h1>
+
+<div class="grid grid-2" style="gap: 20px;">
+  <!-- 좌측: 세대 목록 -->
+  <div class="content-card">
+    <h2 style="margin-bottom: 20px;">세대 목록</h2>
+    <div style="margin-bottom: 15px;">
+      <input type="text" id="unitSearch" placeholder="🔍 세대 검색..."
+             style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+    </div>
+
+    <table id="unitsTable">
+      <thead>
+        <tr>
+          <th>세대</th>
+          <th class="text-right">누적 잔액</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for unit in units %}
+        <tr class="unit-row" onclick="loadUnitHistory({{ unit.id }}, '{{ unit.unit_name }}', '{{ unit.floor.name if unit.floor else '' }}', this)" data-unit-name="{{ unit.unit_name }}">
+          <td>
+            <strong>{{ unit.floor.name if unit.floor else '' }} {{ unit.unit_name }}</strong>
+            {% if unit.memo %}
+            <div style="font-size: 12px; color: #64748b; margin-top: 4px;">{{ unit.memo }}</div>
+            {% endif %}
+          </td>
+          <td class="text-right balance-cell" id="balance-{{ unit.id }}">
+            <span style="color: #94a3b8;">로딩중...</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 우측: 선택 세대의 정산 이력 -->
+  <div class="content-card">
+    <div id="historySection" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h2 style="margin: 0;" id="historyTitle"></h2>
+      </div>
+
+      <!-- 요약 카드 -->
+      <div class="summary-card" style="margin-bottom: 30px;">
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+          <div>
+            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">총 고지액</div>
+            <div style="font-size: 24px; font-weight: bold;" id="summaryBilled">0원</div>
+          </div>
+          <div>
+            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">총 입금액</div>
+            <div style="font-size: 24px; font-weight: bold;" id="summaryPaid">0원</div>
+          </div>
+          <div>
+            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">잔액</div>
+            <div style="font-size: 28px; font-weight: bold;" id="summaryBalance">0원</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 정산월별 이력 -->
+      <div id="historyList"></div>
+    </div>
+
+    <div id="emptyState" style="text-align: center; padding: 80px 20px; color: #94a3b8;">
+      <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+      <p style="font-size: 16px;">세대를 선택하면 정산 이력이 표시됩니다</p>
+    </div>
+  </div>
+</div>
+
+<!-- 입금 등록 모달 -->
+<div id="paymentModal" class="modal" style="display: none;">
+  <div class="modal-content" style="max-width: 500px;">
+    <h2 id="modalTitle">입금 등록</h2>
+    <form id="paymentForm">
+      <input type="hidden" id="paymentId">
+      <input type="hidden" id="modalCombinationId">
+      <input type="hidden" id="modalUnitId">
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600;">입금일</label>
+        <input type="date" id="paymentDate" required class="form-control"
+               style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600;">입금액</label>
+        <input type="number" id="paymentAmount" required class="form-control"
+               placeholder="0" step="1"
+               style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600;">입금방법</label>
+        <select id="paymentMethod" class="form-control"
+                style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <option value="계좌이체">계좌이체</option>
+          <option value="현금">현금</option>
+          <option value="카드">카드</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+
+      <div style="margin-bottom: 20px;">
+        <label style="display: block; margin-bottom: 8px; font-weight: 600;">메모</label>
+        <textarea id="paymentMemo" class="form-control" rows="3"
+                  style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;"></textarea>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">취소</button>
+        <button type="submit" class="btn btn-primary">저장</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+let currentUnitId = null;
+let currentHistory = [];
+
+function getCsrfToken() {
+  return '{{ csrf_token() }}';
+}
+
+// 페이지 로드 시 모든 세대의 잔액 로드
+window.addEventListener('DOMContentLoaded', async () => {
+  const cells = document.querySelectorAll('.balance-cell');
+
+  for (const cell of cells) {
+    const unitId = cell.id.split('-')[1];
+    try {
+      const res = await fetch(`/payments/balance/${unitId}`);
+      const data = await res.json();
+
+      if (data.success) {
+        const balance = data.balance;
+        let html = '';
+        let className = '';
+
+        if (balance > 0) {
+          html = `<span style="color: #dc2626; font-weight: 600;">미납 ${balance.toLocaleString()}원</span>`;
+        } else if (balance < 0) {
+          html = `<span style="color: #059669; font-weight: 600;">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
+        } else {
+          html = `<span style="color: #64748b;">완납</span>`;
+        }
+
+        cell.innerHTML = html;
+      }
+    } catch (error) {
+      console.error(`Error loading balance for unit ${unitId}:`, error);
+      cell.innerHTML = `<span style="color: #dc2626;">오류</span>`;
+    }
+  }
+});
+
+// 세대 검색
+document.getElementById('unitSearch').addEventListener('input', (e) => {
+  const keyword = e.target.value.toLowerCase();
+  const rows = document.querySelectorAll('.unit-row');
+
+  rows.forEach(row => {
+    const unitName = row.dataset.unitName.toLowerCase();
+    row.style.display = unitName.includes(keyword) ? '' : 'none';
+  });
+});
+
+// 세대 정산 이력 로드
+async function loadUnitHistory(unitId, unitName, floorName, eventTarget) {
+  currentUnitId = unitId;
+
+  // 선택된 행 표시
+  document.querySelectorAll('.unit-row').forEach(row => row.classList.remove('selected'));
+  if (eventTarget) {
+    eventTarget.classList.add('selected');
+  }
+
+  try {
+    const res = await fetch(`/payments/unit_history/${unitId}`);
+    const data = await res.json();
+
+    if (!data.success) {
+      alert(data.message);
+      return;
+    }
+
+    currentHistory = data.history;
+
+    // 제목 업데이트
+    document.getElementById('historyTitle').textContent = `${floorName} ${unitName} 정산 이력`;
+
+    // 요약 정보 업데이트
+    const totalBilled = currentHistory.reduce((sum, h) => sum + h.billed_amount, 0);
+    const totalPaid = currentHistory.reduce((sum, h) => sum + h.paid_amount, 0);
+    const totalBalance = totalBilled - totalPaid;
+
+    document.getElementById('summaryBilled').textContent = totalBilled.toLocaleString() + '원';
+    document.getElementById('summaryPaid').textContent = totalPaid.toLocaleString() + '원';
+
+    const balanceEl = document.getElementById('summaryBalance');
+    balanceEl.textContent = Math.abs(totalBalance).toLocaleString() + '원';
+    if (totalBalance > 0) {
+      balanceEl.style.color = '#fca5a5';
+      balanceEl.textContent = '미납 ' + balanceEl.textContent;
+    } else if (totalBalance < 0) {
+      balanceEl.style.color = '#86efac';
+      balanceEl.textContent = '초과 ' + balanceEl.textContent;
+    } else {
+      balanceEl.style.color = 'white';
+    }
+
+    // 이력 렌더링
+    renderHistory();
+
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('historySection').style.display = 'block';
+
+  } catch (error) {
+    console.error('Error:', error);
+    alert('정산 이력을 불러오는데 실패했습니다.');
+  }
+}
+
+// 이력 렌더링
+function renderHistory() {
+  const container = document.getElementById('historyList');
+
+  if (currentHistory.length === 0) {
+    container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px 0;">정산 내역이 없습니다.</p>';
+    return;
+  }
+
+  container.innerHTML = currentHistory.map(history => {
+    const balance = history.balance;
+    let balanceHtml = '';
+    let balanceClass = '';
+
+    if (balance > 0) {
+      balanceHtml = `미납 ${balance.toLocaleString()}원`;
+      balanceClass = 'balance-positive';
+    } else if (balance < 0) {
+      balanceHtml = `초과납부 ${Math.abs(balance).toLocaleString()}원`;
+      balanceClass = 'balance-negative';
+    } else {
+      balanceHtml = '완납';
+      balanceClass = 'balance-zero';
+    }
+
+    const paymentsHtml = history.payments.length > 0
+      ? history.payments.map(p => `
+          <div class="payment-record">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+              <div style="flex: 1;">
+                <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">
+                  ${p.payment_amount.toLocaleString()}원
+                </div>
+                <div style="font-size: 13px; color: #64748b;">
+                  📅 ${p.payment_date} | 💳 ${p.payment_method}
+                </div>
+                ${p.memo ? `<div style="font-size: 13px; color: #475569; margin-top: 4px;">${p.memo}</div>` : ''}
+              </div>
+              <div style="display: flex; gap: 5px;">
+                <button class="btn btn-secondary btn-sm" onclick='editPayment(${JSON.stringify(p)}, ${history.combination_id})'>수정</button>
+                <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})">삭제</button>
+              </div>
+            </div>
+          </div>
+        `).join('')
+      : '<p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">입금 내역 없음</p>';
+
+    return `
+      <div class="history-month">
+        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+          <div>
+            <h3 style="margin: 0 0 8px 0; color: #1e293b;">${history.invoice_name}</h3>
+            <div style="font-size: 14px; color: #64748b;">${history.created_at}</div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="showAddPaymentModal(${history.combination_id})">
+            + 입금 등록
+          </button>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; margin-bottom: 12px;">
+          <div>
+            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">고지액</div>
+            <div style="font-size: 18px; font-weight: 600; color: #1e293b;">${history.billed_amount.toLocaleString()}원</div>
+          </div>
+          <div>
+            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">입금액</div>
+            <div style="font-size: 18px; font-weight: 600; color: #667eea;">${history.paid_amount.toLocaleString()}원</div>
+          </div>
+          <div>
+            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">잔액</div>
+            <div style="font-size: 18px; font-weight: 600;" class="${balanceClass}">${balanceHtml}</div>
+          </div>
+        </div>
+
+        ${paymentsHtml}
+      </div>
+    `;
+  }).join('');
+}
+
+// 입금 등록 모달 열기
+function showAddPaymentModal(combinationId) {
+  document.getElementById('modalTitle').textContent = '입금 등록';
+  document.getElementById('paymentId').value = '';
+  document.getElementById('modalCombinationId').value = combinationId;
+  document.getElementById('modalUnitId').value = currentUnitId;
+  document.getElementById('paymentDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('paymentAmount').value = '';
+  document.getElementById('paymentMethod').value = '계좌이체';
+  document.getElementById('paymentMemo').value = '';
+  document.getElementById('paymentModal').style.display = 'flex';
+}
+
+// 입금 수정
+function editPayment(payment, combinationId) {
+  document.getElementById('modalTitle').textContent = '입금 수정';
+  document.getElementById('paymentId').value = payment.id;
+  document.getElementById('modalCombinationId').value = combinationId;
+  document.getElementById('modalUnitId').value = currentUnitId;
+  document.getElementById('paymentDate').value = payment.payment_date;
+  document.getElementById('paymentAmount').value = payment.payment_amount;
+  document.getElementById('paymentMethod').value = payment.payment_method;
+  document.getElementById('paymentMemo').value = payment.memo;
+  document.getElementById('paymentModal').style.display = 'flex';
+}
+
+// 입금 삭제
+async function deletePayment(id) {
+  if (!confirm('이 입금 내역을 삭제하시겠습니까?')) return;
+
+  try {
+    const res = await fetch(`/payments/delete/${id}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ _csrf_token: getCsrfToken() })
+    });
+
+    const data = await res.json();
+    alert(data.message);
+
+    if (data.success) {
+      const titleText = document.getElementById('historyTitle').textContent;
+      const parts = titleText.split(' ');
+      const floorName = parts[0] || '';
+      const name = parts[1] || '';
+      await loadUnitHistory(currentUnitId, name, floorName, null);
+
+      // 잔액 업데이트
+      const balanceRes = await fetch(`/payments/balance/${currentUnitId}`);
+      const balanceData = await balanceRes.json();
+      if (balanceData.success) {
+        const cell = document.getElementById(`balance-${currentUnitId}`);
+        const balance = balanceData.balance;
+        if (balance > 0) {
+          cell.innerHTML = `<span style="color: #dc2626; font-weight: 600;">미납 ${balance.toLocaleString()}원</span>`;
+        } else if (balance < 0) {
+          cell.innerHTML = `<span style="color: #059669; font-weight: 600;">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
+        } else {
+          cell.innerHTML = `<span style="color: #64748b;">완납</span>`;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('삭제에 실패했습니다.');
+  }
+}
+
+// 모달 닫기
+function closePaymentModal() {
+  document.getElementById('paymentModal').style.display = 'none';
+}
+
+// 폼 제출
+document.getElementById('paymentForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const paymentId = document.getElementById('paymentId').value;
+  const data = {
+    combination_id: parseInt(document.getElementById('modalCombinationId').value),
+    unit_id: parseInt(document.getElementById('modalUnitId').value),
+    payment_date: document.getElementById('paymentDate').value,
+    payment_amount: parseFloat(document.getElementById('paymentAmount').value),
+    payment_method: document.getElementById('paymentMethod').value,
+    memo: document.getElementById('paymentMemo').value,
+    _csrf_token: getCsrfToken()
+  };
+
+  const url = paymentId ? `/payments/update/${paymentId}` : '/payments/add';
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+    alert(result.message);
+
+    if (result.success) {
+      closePaymentModal();
+
+      const titleText = document.getElementById('historyTitle').textContent;
+      const parts = titleText.split(' ');
+      const floorName = parts[0] || '';
+      const name = parts[1] || '';
+      await loadUnitHistory(currentUnitId, name, floorName, null);
+
+      // 잔액 업데이트
+      const balanceRes = await fetch(`/payments/balance/${currentUnitId}`);
+      const balanceData = await balanceRes.json();
+      if (balanceData.success) {
+        const cell = document.getElementById(`balance-${currentUnitId}`);
+        const balance = balanceData.balance;
+        if (balance > 0) {
+          cell.innerHTML = `<span style="color: #dc2626; font-weight: 600;">미납 ${balance.toLocaleString()}원</span>`;
+        } else if (balance < 0) {
+          cell.innerHTML = `<span style="color: #059669; font-weight: 600;">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
+        } else {
+          cell.innerHTML = `<span style="color: #64748b;">완납</span>`;
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    alert('저장에 실패했습니다.');
+  }
+});
+
+// 모달 외부 클릭 시 닫기
+document.getElementById('paymentModal').addEventListener('click', (e) => {
+  if (e.target.id === 'paymentModal') closePaymentModal();
+});
+</script>
+{% endblock %}

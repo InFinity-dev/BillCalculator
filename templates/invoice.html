@@ -97,10 +97,10 @@
 
 .additional-charge-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 0.5fr;
+  grid-template-columns: minmax(100px, 120px) 1fr minmax(120px, 150px) minmax(70px, 80px);
   gap: var(--space-sm);
   margin-bottom: var(--space-sm);
-  align-items: start;
+  align-items: center;
 }
 
 .unit-summary-row {
@@ -491,9 +491,21 @@ function goToStep2() {
     updateStepIndicators(2);
 }
 
-function renderStep2() {
+async function renderStep2() {
     const container = document.getElementById('unitsAdditionalContainer');
     const occupiedUnits = UNITS.filter(u => !u.is_vacant);
+
+    // 전체 세대 잔액 가져오기
+    let balances = {};
+    try {
+        const res = await fetch('/payments/all_units_balance');
+        const data = await res.json();
+        if (data.success) {
+            balances = data.balances;
+        }
+    } catch (error) {
+        console.error('잔액 조회 실패:', error);
+    }
 
     // 층별로 그룹화
     const floorGroups = {};
@@ -523,6 +535,31 @@ function renderStep2() {
         group.units.forEach(unit => {
             const unitMemo = unit.memo ? `<span class="unit-memo-tag">${unit.memo}</span>` : '';
 
+            // 해당 세대의 잔액 확인
+            const balance = balances[unit.id];
+            let balanceAlert = '';
+
+            if (balance && balance.balance !== 0) {
+                const balanceAmount = Math.abs(balance.balance);
+                const balanceType = balance.balance > 0 ? '미납' : '초과납부';
+                const balanceColor = balance.balance > 0 ? '#dc2626' : '#059669';
+
+                balanceAlert = `
+                    <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;border-radius:6px;margin-bottom:12px;">
+                        <div style="display:flex;align-items:center;justify-content:space-between;">
+                            <div>
+                                <strong style="color:#78350f;">⚠️ ${balanceType} 감지</strong>
+                                <div style="font-size:13px;color:#92400e;margin-top:4px;">
+                                    이전 정산 ${balanceType} 금액: <strong style="color:${balanceColor};">${balanceAmount.toLocaleString()}원</strong>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary" style="padding:6px 12px;font-size:12px;"
+                                    onclick="applyBalance(${unit.id}, ${balance.balance})">자동 적용</button>
+                        </div>
+                    </div>
+                `;
+            }
+
             html += `
                 <div class="unit-card">
                     <div class="unit-card-header">
@@ -531,6 +568,8 @@ function renderStep2() {
                             ${unitMemo}
                         </div>
                     </div>
+
+                    ${balanceAlert}
 
                     <div style="margin-bottom:16px;">
                         <div class="section-title">💰 기타 항목 (부과 / 환급)</div>
@@ -577,6 +616,35 @@ function addChargeRow(unitId) {
 
 function removeChargeRow(rowId) {
     document.getElementById(rowId).remove();
+}
+
+// 잔액 자동 적용 함수
+function applyBalance(unitId, balance) {
+    const container = document.getElementById(`charges-${unitId}`);
+    const rowId = `charge-${unitId}-${chargeCounter++}`;
+
+    const row = document.createElement('div');
+    row.className = 'additional-charge-row';
+    row.id = rowId;
+
+    const type = balance > 0 ? 'charge' : 'refund';
+    const amount = Math.abs(balance);
+    const description = balance > 0 ? '전월 미납금' : '전월 초과납부 환급';
+
+    row.innerHTML = `
+        <select class="charge-type" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
+            <option value="charge" ${type === 'charge' ? 'selected' : ''}>부과 (+)</option>
+            <option value="refund" ${type === 'refund' ? 'selected' : ''}>환급 (-)</option>
+        </select>
+        <input type="text" placeholder="항목명" class="charge-desc" value="${description}" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
+        <input type="number" placeholder="금액" class="charge-amount" value="${amount}" min="0" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
+        <button type="button" class="btn btn-danger" style="padding:6px 12px;font-size:12px;"
+                onclick="removeChargeRow('${rowId}')">삭제</button>
+    `;
+
+    container.appendChild(row);
+
+    alert(`${description} ${amount.toLocaleString()}원이 자동으로 추가되었습니다.\n필요시 수정 또는 삭제할 수 있습니다.`);
 }
 
 function goToStep3() {

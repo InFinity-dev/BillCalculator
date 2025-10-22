@@ -8,8 +8,8 @@ from functools import wraps
 import mysql.connector
 from mysql.connector import Error
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import relationship
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, relationship
+from sqlalchemy import func
 import json
 
 # =========================
@@ -307,6 +307,21 @@ class FinalInvoice(db.Model):
     unit_memo = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     unit = db.relationship('Unit', backref='final_invoices')
+
+# 납부 내역
+class Payment(db.Model):
+    __tablename__ = 'payments'
+    id = db.Column(db.Integer, primary_key=True)
+    combination_id = db.Column(db.Integer, db.ForeignKey('invoice_combinations.id'), nullable=False)
+    unit_id = db.Column(db.Integer, db.ForeignKey('units.id'), nullable=False)
+    payment_date = db.Column(db.Date, nullable=False)
+    payment_amount = db.Column(db.Numeric(10, 2), nullable=False)
+    payment_method = db.Column(db.String(50), default='계좌이체')
+    memo = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    unit = db.relationship('Unit', backref='payments')
+    combination = db.relationship('InvoiceCombination', backref='payments')
 
 
 # ======================================================
@@ -1328,6 +1343,192 @@ def get_previous_readings(floor_id, billing_month):
             for r in prev_bill.readings:
                 readings[r.unit_id] = float(r.current_reading)
         return jsonify({'success': True, 'readings': readings})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+# ======================================================
+# Payment Management (세대 중심 통합 관리)
+# ======================================================
+@app.route('/payments')
+def payments():
+    """납부 내역 통합 관리 페이지"""
+    units = Unit.query.filter_by(is_vacant=False).order_by(Unit.floor_id, Unit.unit_name).all()
+    combinations = InvoiceCombination.query.order_by(InvoiceCombination.created_at.desc()).all()
+
+    return render_template('payments.html',
+                           units=units,
+                           combinations=combinations)
+
+
+@app.route('/payments/unit_history/<int:unit_id>')
+def payment_unit_history(unit_id):
+    """특정 세대의 전체 정산 및 납부 이력"""
+    try:
+        unit = Unit.query.get_or_404(unit_id)
+
+        # 해당 세대의 모든 정산 내역
+        invoices = db.session.query(FinalInvoice, InvoiceCombination).join(
+            InvoiceCombination, FinalInvoice.combination_id == InvoiceCombination.id
+        ).filter(
+            FinalInvoice.unit_id == unit_id
+        ).order_by(InvoiceCombination.created_at).all()
+
+        result = []
+        for invoice, combination in invoices:
+            # 해당 정산의 납부 내역
+            payments = Payment.query.filter_by(
+                combination_id=combination.id,
+                unit_id=unit_id
+            ).order_by(Payment.payment_date).all()
+
+            total_paid = sum(float(p.payment_amount) for p in payments)
+            billed = float(invoice.total_amount)
+            balance = billed - total_paid
+
+            result.append({
+                'combination_id': combination.id,
+                'invoice_name': combination.invoice_name,
+                'created_at': combination.created_at.strftime('%Y-%m-%d'),
+                'billed_amount': billed,
+                'paid_amount': total_paid,
+                'balance': balance,
+                'payments': [{
+                    'id': p.id,
+                    'payment_date': p.payment_date.strftime('%Y-%m-%d'),
+                    'payment_amount': float(p.payment_amount),
+                    'payment_method': p.payment_method,
+                    'memo': p.memo or ''
+                } for p in payments]
+            })
+
+        return jsonify({
+            'success': True,
+            'unit': {
+                'id': unit.id,
+                'name': unit.unit_name,
+                'floor': unit.floor.name if unit.floor else ''
+            },
+            'history': result
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/payments/balance/<int:unit_id>')
+def payment_balance(unit_id):
+    """세대의 누적 미납/초과 금액 계산"""
+    try:
+        # 모든 정산의 고지액 합계
+        total_billed = db.session.query(func.sum(FinalInvoice.total_amount)).filter_by(
+            unit_id=unit_id
+        ).scalar() or 0
+
+        # 모든 납부액 합계
+        total_paid = db.session.query(func.sum(Payment.payment_amount)).filter_by(
+            unit_id=unit_id
+        ).scalar() or 0
+
+        balance = float(total_billed) - float(total_paid)
+
+        return jsonify({
+            'success': True,
+            'total_billed': float(total_billed),
+            'total_paid': float(total_paid),
+            'balance': balance
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/payments/add', methods=['POST'])
+@csrf_protect
+def add_payment():
+    """납부 내역 추가"""
+    try:
+        data = request.get_json()
+
+        payment = Payment(
+            combination_id=data['combination_id'],
+            unit_id=data['unit_id'],
+            payment_date=datetime.strptime(data['payment_date'], '%Y-%m-%d').date(),
+            payment_amount=dec(data['payment_amount']),
+            payment_method=data.get('payment_method', '계좌이체'),
+            memo=data.get('memo', '')
+        )
+
+        db.session.add(payment)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': '납부 내역이 추가되었습니다.', 'id': payment.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/payments/update/<int:payment_id>', methods=['POST'])
+@csrf_protect
+def update_payment(payment_id):
+    """납부 내역 수정"""
+    try:
+        payment = Payment.query.get_or_404(payment_id)
+        data = request.get_json()
+
+        payment.payment_date = datetime.strptime(data['payment_date'], '%Y-%m-%d').date()
+        payment.payment_amount = dec(data['payment_amount'])
+        payment.payment_method = data.get('payment_method', '계좌이체')
+        payment.memo = data.get('memo', '')
+
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': '납부 내역이 수정되었습니다.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/payments/delete/<int:payment_id>', methods=['POST'])
+@csrf_protect
+def delete_payment(payment_id):
+    """납부 내역 삭제"""
+    try:
+        payment = Payment.query.get_or_404(payment_id)
+        db.session.delete(payment)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': '납부 내역이 삭제되었습니다.'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+
+@app.route('/payments/all_units_balance')
+def all_units_balance():
+    """전체 세대의 누적 잔액 조회 (정산서 작성시 사용)"""
+    try:
+        units = Unit.query.filter_by(is_vacant=False).all()
+        result = {}
+
+        for unit in units:
+            # 총 고지액
+            total_billed = db.session.query(func.sum(FinalInvoice.total_amount)).filter_by(
+                unit_id=unit.id
+            ).scalar() or 0
+
+            # 총 납부액
+            total_paid = db.session.query(func.sum(Payment.payment_amount)).filter_by(
+                unit_id=unit.id
+            ).scalar() or 0
+
+            balance = float(total_billed) - float(total_paid)
+
+            if balance != 0:  # 잔액이 있는 세대만
+                result[str(unit.id)] = {
+                    'unit_name': unit.unit_name,
+                    'floor_name': unit.floor.name if unit.floor else '',
+                    'balance': balance
+                }
+
+        return jsonify({'success': True, 'balances': result})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 

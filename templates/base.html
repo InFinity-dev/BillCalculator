@@ -644,6 +644,7 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
+{#------------------------------------------------GNB------------------------------------------------#}
 <body>
     <div class="container">
         <nav class="navbar">
@@ -653,6 +654,7 @@
                 <li><a href="{{ url_for('calculator') }}" class="{% if request.endpoint == 'calculator' %}active{% endif %}">🧮 계산기</a></li>
                 <li><a href="{{ url_for('view_bills') }}" class="{% if request.endpoint == 'view_bills' %}active{% endif %}">📊 조회</a></li>
                 <li><a href="{{ url_for('invoice_combination') }}" class="{% if request.endpoint == 'invoice_combination' %}active{% endif %}">📄 정산</a></li>
+                <li><a href="{{ url_for('payments') }}" class="{% if request.endpoint == 'payments' %}active{% endif %}">💳 납부 내역</a></li>
             </ul>
         </nav>
 
@@ -665,7 +667,7 @@
                 {% endfor %}
             {% endif %}
         {% endwith %}
-
+{#------------------------------------------------GNB ENDS HERE----------------------------------------#}
         <div class="content-card">
             {% block content %}{% endblock %}
         </div>
