@@ -3,63 +3,86 @@
 {% block content %}
     <h1><span class="emoji">⚙️</span> 시스템 설정</h1>
 
-<div class="tabs">
-  <button class="tab active" onclick="showTab('floors-tab', event)">층/세대 관리</button>
-  <button class="tab" onclick="showTab('settings-tab', event)">요금 설정</button>
-  <button class="tab" onclick="showTab('bill-inquiry-tab', event)">요금 조회 설정</button>
-  <button class="tab" onclick="showTab('invoice-settings-tab', event)">정산서 설정</button>
-  <button class="tab" onclick="showTab('import-export-tab', event)">가져오기/내보내기</button>
-</div>
-<div class="tabs-container">
-    <!-- 층/세대 관리 탭 -->
-    <div id="floors-tab" class="tab-content">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-        <h2>층 및 세대 관리</h2>
-        <button class="btn btn-primary" data-open-modal="addFloorModal">+ 층 추가</button>
-      </div>
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('floors-tab', event)">층/세대 관리</button>
+        <button class="tab" onclick="showTab('settings-tab', event)">요금 설정</button>
+        <button class="tab" onclick="showTab('bill-inquiry-tab', event)">요금 조회 설정</button>
+        <button class="tab" onclick="showTab('invoice-settings-tab', event)">정산서 설정</button>
+        <button class="tab" onclick="showTab('import-export-tab', event)">가져오기/내보내기</button>
+    </div>
+    <div class="tabs-container">
+        <!-- 층/세대 관리 탭 -->
+        <div id="floors-tab" class="tab-content">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                <h2>층 및 세대 관리</h2>
+                <button class="btn btn-primary" data-open-modal="addFloorModal">+ 층 추가</button>
+            </div>
 
-      {% for floor in floors %}
-      <div style="background:#f8fafc;padding:20px;border-radius:12px;margin-bottom:20px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
-          <div>
-            <h3 style="margin-bottom:5px;">
-              {% set label = ('B' ~ (0 - floor.floor_number) ~ '층') if floor.floor_number < 0 else (floor.floor_number ~ '층') %}
-              {{ label }}{% if floor.name %} ({{ floor.name }}){% endif %}
-            </h3>
-            {% if floor.electric_contract_number %}
-            <small style="color:#667eea;font-weight:500;">⚡ 계약번호: {{ floor.electric_contract_number }}</small>
-            {% endif %}
-          </div>
-          <div>
-            <button class="btn btn-secondary" data-open-add-unit data-floor-id="{{ floor.id }}">+ 세대 추가</button>
-            <button class="btn" data-open-rename-floor data-floor-id="{{ floor.id }}" data-floor-number="{{ floor.floor_number }}" data-floor-name="{{ floor.name|default('') }}" data-floor-contract="{{ floor.electric_contract_number|default('') }}">이름 수정</button>
-            <button class="btn btn-danger" data-delete-floor data-floor-id="{{ floor.id }}">층 삭제</button>
-          </div>
-        </div>
+            {% for floor in floors %}
+                <div style="background:#f8fafc;padding:20px;border-radius:12px;margin-bottom:20px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                        <div>
+                            <h3 style="margin-bottom:5px;">
+                                {% set label = ('B' ~ (0 - floor.floor_number) ~ '층') if floor.floor_number < 0 else (floor.floor_number ~ '층') %}
+                                {{ label }}{% if floor.name %} ({{ floor.name }}){% endif %}
+                            </h3>
+                            {% if floor.electric_contract_number %}
+                                <small style="color:#667eea;font-weight:500;">⚡
+                                    계약번호: {{ floor.electric_contract_number }}</small>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <button class="btn btn-secondary" data-open-add-unit data-floor-id="{{ floor.id }}">+ 세대
+                                추가
+                            </button>
+                            <button class="btn" data-open-rename-floor data-floor-id="{{ floor.id }}"
+                                    data-floor-number="{{ floor.floor_number }}"
+                                    data-floor-name="{{ floor.name|default('') }}"
+                                    data-floor-contract="{{ floor.electric_contract_number|default('') }}">이름 수정
+                            </button>
+                            <button class="btn btn-danger" data-delete-floor data-floor-id="{{ floor.id }}">층 삭제
+                            </button>
+                        </div>
+                    </div>
 
-        {% if floor.units %}
-        <table>
-          <thead>
-          <tr>
-            <th>세대명</th><th>거주인원</th><th>전기복지</th><th>전기바우처</th><th>TV보유</th><th>수도복지</th><th>공실</th><th>비고</th><th>작업</th>
-          </tr>
-          </thead>
-          <tbody>
-          {% for unit in floor.units %}
-          <tr>
-            <td><strong>{{ unit.unit_name }}</strong></td>
-            <td>{{ unit.residents_count }}명</td>
-            <td>{% if unit.electric_welfare %}<span class="badge badge-success">적용</span>{% else %}<span class="badge badge-warning">미적용</span>{% endif %}</td>
-            <td>{% if unit.electric_voucher %}<span class="badge badge-success">적용</span>{% else %}<span class="badge badge-warning">미적용</span>{% endif %}</td>
-            <td>{% if unit.has_tv %}<span class="badge badge-primary">보유</span>{% else %}<span class="badge badge-warning">미보유</span>{% endif %}</td>
-            <td>{% if unit.water_welfare %}<span class="badge badge-success">적용</span>{% else %}<span class="badge badge-warning">미적용</span>{% endif %}</td>
-            <td>{% if unit.is_vacant %}<span class="badge badge-danger">공실</span>{% else %}<span class="badge badge-success">재실</span>{% endif %}</td>
-            <td>{{ unit.memo or '-' }}</td>
-            <td>
-              <button class="btn btn-secondary" style="padding:5px 10px;"
-                data-edit-unit
-                data-unit-id="{{ unit.id }}"
-                data-unit='{{ {
+                    {% if floor.units %}
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>세대명</th>
+                                <th>거주인원</th>
+                                <th>전기복지</th>
+                                <th>전기바우처</th>
+                                <th>TV보유</th>
+                                <th>수도복지</th>
+                                <th>공실</th>
+                                <th>비고</th>
+                                <th>작업</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for unit in floor.units %}
+                                <tr>
+                                    <td><strong>{{ unit.unit_name }}</strong></td>
+                                    <td>{{ unit.residents_count }}명</td>
+                                    <td>{% if unit.electric_welfare %}
+                                        <span class="badge badge-success">적용</span>{% else %}
+                                        <span class="badge badge-warning">미적용</span>{% endif %}</td>
+                                    <td>{% if unit.electric_voucher %}
+                                        <span class="badge badge-success">적용</span>{% else %}
+                                        <span class="badge badge-warning">미적용</span>{% endif %}</td>
+                                    <td>{% if unit.has_tv %}<span class="badge badge-primary">보유</span>{% else %}
+                                        <span class="badge badge-warning">미보유</span>{% endif %}</td>
+                                    <td>{% if unit.water_welfare %}<span class="badge badge-success">적용</span>{% else %}
+                                        <span class="badge badge-warning">미적용</span>{% endif %}</td>
+                                    <td>{% if unit.is_vacant %}<span class="badge badge-danger">공실</span>{% else %}
+                                        <span class="badge badge-success">재실</span>{% endif %}</td>
+                                    <td>{{ unit.memo or '-' }}</td>
+                                    <td>
+                                        <button class="btn btn-secondary" style="padding:5px 10px;"
+                                                data-edit-unit
+                                                data-unit-id="{{ unit.id }}"
+                                                data-unit='{{ {
                   "unit_name": unit.unit_name,
                   "residents_count": unit.residents_count or 0,
                   "electric_welfare": unit.electric_welfare,
@@ -69,476 +92,550 @@
                   "is_vacant": unit.is_vacant,
                   "memo": unit.memo or ""
                 } | tojson | e }}'
-              >수정</button>
-              <button class="btn btn-danger" style="padding:5px 10px;" data-delete-unit data-unit-id="{{ unit.id }}">삭제</button>
-            </td>
-          </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <p style="color:#94a3b8;text-align:center;padding:20px;">세대가 없습니다. 세대를 추가해주세요.</p>
-        {% endif %}
-      </div>
-      {% endfor %}
+                                        >수정
+                                        </button>
+                                        <button class="btn btn-danger" style="padding:5px 10px;" data-delete-unit
+                                                data-unit-id="{{ unit.id }}">삭제
+                                        </button>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    {% else %}
+                        <p style="color:#94a3b8;text-align:center;padding:20px;">세대가 없습니다. 세대를 추가해주세요.</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
 
-      {% if not floors %}
-      <div style="text-align:center;padding:40px;color:#94a3b8;">
-        <p>등록된 층이 없습니다.</p>
-        <button class="btn btn-primary" style="margin-top:20px;" data-open-modal="addFloorModal">첫 층 추가하기</button>
-      </div>
-      {% endif %}
-    </div>
-
-    <!-- 요금 설정 탭 -->
-    <div id="settings-tab" class="tab-content">
-      <h2>요금 설정</h2>
-      <form action="{{ url_for('save_settings') }}" method="POST">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-        <!-- 정산서 설정값도 함께 전송 -->
-        <input type="hidden" name="invoice_default_memo" value="{{ invoice_default_memo }}">
-        <input type="hidden" name="invoice_footer" value="{{ invoice_footer }}">
-        <!-- 요금 조회 설정값도 함께 전송 -->
-        <input type="hidden" name="electric_bill_url" value="{{ electric_bill_url }}">
-        <input type="hidden" name="water_bill_url" value="{{ water_bill_url }}">
-        <input type="hidden" name="water_customer_number" value="{{ water_customer_number }}">
-
-        <div class="grid grid-2">
-          <div class="form-group">
-            <label>TV 수신료 (세대당)</label>
-            <input type="number" name="tv_fee" value="{{ tv_fee }}" required>
-            <small style="color:#94a3b8;">기본값: 2,500원</small>
-          </div>
-          <div class="form-group">
-            <label>전기 복지 할인 금액</label>
-            <input type="number" name="electric_welfare_amount" value="{{ electric_welfare_amount }}" required>
-            <small style="color:#94a3b8;">기본값: 0원</small>
-          </div>
-          <div class="form-group">
-            <label>전기 바우처 할인 금액</label>
-            <input type="number" name="electric_voucher_amount" value="{{ electric_voucher_amount }}" required>
-            <small style="color:#94a3b8;">기본값: 0원</small>
-          </div>
-          <div class="form-group">
-            <label>수도 복지 할인 금액</label>
-            <input type="number" name="water_welfare_amount" value="{{ water_welfare_amount }}" required>
-            <small style="color:#94a3b8;">기본값: 0원</small>
-          </div>
-        </div>
-        <button type="submit" class="btn btn-primary">설정 저장</button>
-      </form>
-    </div>
-
-    <!-- 요금 조회 설정 탭 -->
-    <div id="bill-inquiry-tab" class="tab-content">
-      <h2>💻 요금 조회 설정</h2>
-      <p style="color:#64748b;margin-bottom:20px;">
-        전기요금 및 수도요금 조회를 위한 웹사이트 URL을 설정하세요. 계산기 페이지에서 빠르게 접근할 수 있습니다.
-      </p>
-
-      <form action="{{ url_for('save_settings') }}" method="POST">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-        <!-- 요금 설정값도 함께 전송 -->
-        <input type="hidden" name="tv_fee" value="{{ tv_fee }}">
-        <input type="hidden" name="electric_welfare_amount" value="{{ electric_welfare_amount }}">
-        <input type="hidden" name="electric_voucher_amount" value="{{ electric_voucher_amount }}">
-        <input type="hidden" name="water_welfare_amount" value="{{ water_welfare_amount }}">
-        <!-- 정산서 설정값도 함께 전송 -->
-        <input type="hidden" name="invoice_default_memo" value="{{ invoice_default_memo }}">
-        <input type="hidden" name="invoice_footer" value="{{ invoice_footer }}">
-
-        <div class="form-group">
-          <label>⚡ 전기요금 조회 URL</label>
-          <input type="url" name="electric_bill_url" value="{{ electric_bill_url }}" placeholder="https://example.com/electric">
-          <small style="color:#94a3b8;">
-            예: 한국전력공사 요금 조회 페이지 URL
-          </small>
+            {% if not floors %}
+                <div style="text-align:center;padding:40px;color:#94a3b8;">
+                    <p>등록된 층이 없습니다.</p>
+                    <button class="btn btn-primary" style="margin-top:20px;" data-open-modal="addFloorModal">첫 층 추가하기
+                    </button>
+                </div>
+            {% endif %}
         </div>
 
-        <div class="form-group">
-          <label>💧 수도요금 조회 URL</label>
-          <input type="url" name="water_bill_url" value="{{ water_bill_url }}" placeholder="https://example.com/water">
-          <small style="color:#94a3b8;">
-            예: 지역 상수도사업소 요금 조회 페이지 URL
-          </small>
+        <!-- 요금 설정 탭 -->
+        <div id="settings-tab" class="tab-content">
+            <h2>요금 설정</h2>
+            <form action="{{ url_for('save_settings') }}" method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <!-- 정산서 설정값도 함께 전송 -->
+                <input type="hidden" name="invoice_default_memo" value="{{ invoice_default_memo }}">
+                <input type="hidden" name="invoice_footer" value="{{ invoice_footer }}">
+                <!-- 요금 조회 설정값도 함께 전송 -->
+                <input type="hidden" name="electric_bill_url" value="{{ electric_bill_url }}">
+                <input type="hidden" name="water_bill_url" value="{{ water_bill_url }}">
+                <input type="hidden" name="water_customer_number" value="{{ water_customer_number }}">
+
+                <div class="grid grid-2">
+                    <div class="form-group">
+                        <label>TV 수신료 (세대당)</label>
+                        <input type="number" name="tv_fee" value="{{ tv_fee }}" required>
+                        <small style="color:#94a3b8;">기본값: 2,500원</small>
+                    </div>
+                    <div class="form-group">
+                        <label>전기 복지 할인 금액</label>
+                        <input type="number" name="electric_welfare_amount" value="{{ electric_welfare_amount }}"
+                               required>
+                        <small style="color:#94a3b8;">기본값: 0원</small>
+                    </div>
+                    <div class="form-group">
+                        <label>전기 바우처 할인 금액</label>
+                        <input type="number" name="electric_voucher_amount" value="{{ electric_voucher_amount }}"
+                               required>
+                        <small style="color:#94a3b8;">기본값: 0원</small>
+                    </div>
+                    <div class="form-group">
+                        <label>수도 복지 할인 금액</label>
+                        <input type="number" name="water_welfare_amount" value="{{ water_welfare_amount }}" required>
+                        <small style="color:#94a3b8;">기본값: 0원</small>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">설정 저장</button>
+            </form>
         </div>
 
-        <div class="form-group">
-          <label>🏠 주택 수도 고객번호</label>
-          <input type="text" name="water_customer_number" value="{{ water_customer_number }}" placeholder="예: 12345-67890">
-          <small style="color:#94a3b8;">
-            주택 전체에 적용되는 수도 고객번호입니다. 계산기 페이지에서 참조용으로 표시됩니다.
-          </small>
+        <!-- 요금 조회 설정 탭 -->
+        <div id="bill-inquiry-tab" class="tab-content">
+            <h2>💻 요금 조회 설정</h2>
+            <p style="color:#64748b;margin-bottom:20px;">
+                전기요금 및 수도요금 조회를 위한 웹사이트 URL을 설정하세요. 계산기 페이지에서 빠르게 접근할 수 있습니다.
+            </p>
+
+            <form action="{{ url_for('save_settings') }}" method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <!-- 요금 설정값도 함께 전송 -->
+                <input type="hidden" name="tv_fee" value="{{ tv_fee }}">
+                <input type="hidden" name="electric_welfare_amount" value="{{ electric_welfare_amount }}">
+                <input type="hidden" name="electric_voucher_amount" value="{{ electric_voucher_amount }}">
+                <input type="hidden" name="water_welfare_amount" value="{{ water_welfare_amount }}">
+                <!-- 정산서 설정값도 함께 전송 -->
+                <input type="hidden" name="invoice_default_memo" value="{{ invoice_default_memo }}">
+                <input type="hidden" name="invoice_footer" value="{{ invoice_footer }}">
+
+                <div class="form-group">
+                    <label>⚡ 전기요금 조회 URL</label>
+                    <input type="url" name="electric_bill_url" value="{{ electric_bill_url }}"
+                           placeholder="https://example.com/electric">
+                    <small style="color:#94a3b8;">
+                        예: 한국전력공사 요금 조회 페이지 URL
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label>💧 수도요금 조회 URL</label>
+                    <input type="url" name="water_bill_url" value="{{ water_bill_url }}"
+                           placeholder="https://example.com/water">
+                    <small style="color:#94a3b8;">
+                        예: 지역 상수도사업소 요금 조회 페이지 URL
+                    </small>
+                </div>
+
+                <div class="form-group">
+                    <label>🏠 주택 수도 고객번호</label>
+                    <input type="text" name="water_customer_number" value="{{ water_customer_number }}"
+                           placeholder="예: 12345-67890">
+                    <small style="color:#94a3b8;">
+                        주택 전체에 적용되는 수도 고객번호입니다. 계산기 페이지에서 참조용으로 표시됩니다.
+                    </small>
+                </div>
+
+                <div style="background:#e0f2fe;padding:15px;border-radius:8px;margin:20px 0;">
+                    <h4 style="margin:0 0 10px 0;color:#0c4a6e;">💡 사용 방법</h4>
+                    <ul style="color:#0c4a6e;font-size:14px;line-height:1.8;margin:0;padding-left:20px;">
+                        <li>계산기 페이지에서 "요금 조회" 버튼을 클릭하면 여기서 설정한 URL이 새 창으로 열립니다.</li>
+                        <li>수도 고객번호는 수도요금 계산 시 참조용으로 표시됩니다.</li>
+                        <li>URL을 비워두면 해당 버튼이 표시되지 않습니다.</li>
+                    </ul>
+                </div>
+
+                <button type="submit" class="btn btn-primary">설정 저장</button>
+            </form>
         </div>
 
-        <div style="background:#e0f2fe;padding:15px;border-radius:8px;margin:20px 0;">
-          <h4 style="margin:0 0 10px 0;color:#0c4a6e;">💡 사용 방법</h4>
-          <ul style="color:#0c4a6e;font-size:14px;line-height:1.8;margin:0;padding-left:20px;">
-            <li>계산기 페이지에서 "요금 조회" 버튼을 클릭하면 여기서 설정한 URL이 새 창으로 열립니다.</li>
-            <li>수도 고객번호는 수도요금 계산 시 참조용으로 표시됩니다.</li>
-            <li>URL을 비워두면 해당 버튼이 표시되지 않습니다.</li>
-          </ul>
+        <!-- 정산서 설정 탭 -->
+        <div id="invoice-settings-tab" class="tab-content">
+            <h2>📄 정산서 설정</h2>
+            <p style="color:#64748b;margin-bottom:20px;">
+                정산서에 항상 포함될 고정 메모와 인쇄 시 하단에 표시될 안내문을 설정할 수 있습니다.
+            </p>
+            <form action="{{ url_for('save_settings') }}" method="POST">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <!-- 요금 설정값도 함께 전송 -->
+                <input type="hidden" name="tv_fee" value="{{ tv_fee }}">
+                <input type="hidden" name="electric_welfare_amount" value="{{ electric_welfare_amount }}">
+                <input type="hidden" name="electric_voucher_amount" value="{{ electric_voucher_amount }}">
+                <input type="hidden" name="water_welfare_amount" value="{{ water_welfare_amount }}">
+                <!-- 요금 조회 설정값도 함께 전송 -->
+                <input type="hidden" name="electric_bill_url" value="{{ electric_bill_url }}">
+                <input type="hidden" name="water_bill_url" value="{{ water_bill_url }}">
+                <input type="hidden" name="water_customer_number" value="{{ water_customer_number }}">
+
+                <div class="form-group">
+                    <label>정산서 고정 메모</label>
+                    <textarea name="invoice_default_memo" rows="8"
+                              placeholder="예:&#10;&#10;입금 계좌: OO은행 123-456-789 (예금주: 홍길동)&#10;납부 기한: 매월 말일까지&#10;문의: 010-1234-5678"
+                              style="font-family: monospace;">{{ invoice_default_memo }}</textarea>
+                    <small style="color:#94a3b8;">
+                        이 메모는 모든 정산서 생성 시 자동으로 포함됩니다. 정산서 생성 시 추가 메모를 입력하면 이 고정 메모 뒤에 추가됩니다.
+                    </small>
+                </div>
+
+                <!-- 고정 메모 미리보기 (invoice_print.html 스타일 적용) -->
+                <div style="background:#dbeafe;padding:15px;border-radius:8px;margin-bottom:20px;">
+                    <h4 style="margin:0 0 10px 0;color:#1e40af;">💡 인쇄 시 표시되는 형태</h4>
+                    <div style="background:white;padding:20px;border-radius:5px;">
+                        <div style="background:#f8f9fa;padding:12px;border-radius:8px;margin:12px 0;border:1px solid #e0e0e0;">
+                            <h3 style="margin-bottom:12px;color:#333;font-size:16px;font-family:'Malgun Gothic','맑은 고딕',sans-serif;">
+                                안내사항</h3>
+                            <p style="white-space:pre-wrap;margin:0;color:#444;line-height:1.8;font-family:'Malgun Gothic','맑은 고딕',sans-serif;">{{ invoice_default_memo if invoice_default_memo else '(아직 설정된 고정 메모가 없습니다)' }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:30px;">
+                    <label>인쇄용 하단 안내문 (Footer)</label>
+                    <textarea name="invoice_footer" rows="4"
+                              placeholder="예:&#10;* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.&#10;* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다."
+                              style="font-family: monospace;">{{ invoice_footer }}</textarea>
+                    <small style="color:#94a3b8;">
+                        정산서 인쇄 시 각 페이지 하단에 표시될 안내문입니다. 납부 안내, 문의처 등을 입력하세요.
+                    </small>
+                </div>
+
+                <!-- Footer 미리보기 (invoice_print.html 스타일 적용) -->
+                <div style="background:#dbeafe;padding:15px;border-radius:8px;margin-top:15px;">
+                    <h4 style="margin:0 0 10px 0;color:#1e40af;">💡 인쇄 시 표시되는 형태</h4>
+                    <div style="background:white;padding:20px;border-radius:5px;">
+                        <div style="margin-top:20px;padding-top:20px;border-top:2px solid #ddd;font-size:13px;color:#666;text-align:center;white-space:pre-wrap;line-height:1.8;font-family:'Malgun Gothic','맑은 고딕',sans-serif;">{{ invoice_footer if invoice_footer else '* Footer 문구를 설정에서 커스텀 할 수 있습니다.' }}</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">설정 저장</button>
+            </form>
         </div>
 
-        <button type="submit" class="btn btn-primary">설정 저장</button>
-      </form>
-    </div>
-
-    <!-- 정산서 설정 탭 -->
-    <div id="invoice-settings-tab" class="tab-content">
-      <h2>📄 정산서 설정</h2>
-      <p style="color:#64748b;margin-bottom:20px;">
-        정산서에 항상 포함될 고정 메모와 인쇄 시 하단에 표시될 안내문을 설정할 수 있습니다.
-      </p>
-      <form action="{{ url_for('save_settings') }}" method="POST">
-        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-        <!-- 요금 설정값도 함께 전송 -->
-        <input type="hidden" name="tv_fee" value="{{ tv_fee }}">
-        <input type="hidden" name="electric_welfare_amount" value="{{ electric_welfare_amount }}">
-        <input type="hidden" name="electric_voucher_amount" value="{{ electric_voucher_amount }}">
-        <input type="hidden" name="water_welfare_amount" value="{{ water_welfare_amount }}">
-        <!-- 요금 조회 설정값도 함께 전송 -->
-        <input type="hidden" name="electric_bill_url" value="{{ electric_bill_url }}">
-        <input type="hidden" name="water_bill_url" value="{{ water_bill_url }}">
-        <input type="hidden" name="water_customer_number" value="{{ water_customer_number }}">
-
-        <div class="form-group">
-          <label>정산서 고정 메모</label>
-          <textarea name="invoice_default_memo" rows="8" placeholder="예:&#10;&#10;입금 계좌: OO은행 123-456-789 (예금주: 홍길동)&#10;납부 기한: 매월 말일까지&#10;문의: 010-1234-5678" style="font-family: monospace;">{{ invoice_default_memo }}</textarea>
-          <small style="color:#94a3b8;">
-            이 메모는 모든 정산서 생성 시 자동으로 포함됩니다. 정산서 생성 시 추가 메모를 입력하면 이 고정 메모 뒤에 추가됩니다.
-          </small>
-        </div>
-
-        <!-- 고정 메모 미리보기 (invoice_print.html 스타일 적용) -->
-        <div style="background:#dbeafe;padding:15px;border-radius:8px;margin-bottom:20px;">
-          <h4 style="margin:0 0 10px 0;color:#1e40af;">💡 인쇄 시 표시되는 형태</h4>
-          <div style="background:white;padding:20px;border-radius:5px;">
-            <div style="background:#f8f9fa;padding:12px;border-radius:8px;margin:12px 0;border:1px solid #e0e0e0;">
-              <h3 style="margin-bottom:12px;color:#333;font-size:16px;font-family:'Malgun Gothic','맑은 고딕',sans-serif;">안내사항</h3>
-              <p style="white-space:pre-wrap;margin:0;color:#444;line-height:1.8;font-family:'Malgun Gothic','맑은 고딕',sans-serif;">{{ invoice_default_memo if invoice_default_memo else '(아직 설정된 고정 메모가 없습니다)' }}</p>
+        <!-- 가져오기/내보내기 탭 -->
+        <div id="import-export-tab" class="tab-content">
+            <h2>데이터 가져오기/내보내기</h2>
+            <div class="grid grid-2">
+                <div style="background:#f8fafc;padding:20px;border-radius:12px;">
+                    <h3>📤 내보내기</h3>
+                    <p style="color:#64748b;margin:15px 0;">현재 층/세대 설정을 JSON 파일로 내보냅니다.</p>
+                    <button class="btn btn-primary" id="exportBtn">설정 내보내기</button>
+                </div>
+                <div style="background:#f8fafc;padding:20px;border-radius:12px;">
+                    <h3>📥 가져오기</h3>
+                    <p style="color:#64748b;margin:15px 0;">JSON 파일에서 층/세대 설정을 가져옵니다.</p>
+                    <input type="file" id="importFile" accept=".json" style="margin-bottom:15px;">
+                    <button class="btn btn-success" id="importBtn">설정 가져오기</button>
+                </div>
             </div>
-          </div>
         </div>
-
-        <div class="form-group" style="margin-top:30px;">
-          <label>인쇄용 하단 안내문 (Footer)</label>
-          <textarea name="invoice_footer" rows="4" placeholder="예:&#10;* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.&#10;* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다." style="font-family: monospace;">{{ invoice_footer }}</textarea>
-          <small style="color:#94a3b8;">
-            정산서 인쇄 시 각 페이지 하단에 표시될 안내문입니다. 납부 안내, 문의처 등을 입력하세요.
-          </small>
-        </div>
-
-        <!-- Footer 미리보기 (invoice_print.html 스타일 적용) -->
-        <div style="background:#dbeafe;padding:15px;border-radius:8px;margin-top:15px;">
-          <h4 style="margin:0 0 10px 0;color:#1e40af;">💡 인쇄 시 표시되는 형태</h4>
-          <div style="background:white;padding:20px;border-radius:5px;">
-            <div style="margin-top:20px;padding-top:20px;border-top:2px solid #ddd;font-size:13px;color:#666;text-align:center;white-space:pre-wrap;line-height:1.8;font-family:'Malgun Gothic','맑은 고딕',sans-serif;">{{ invoice_footer if invoice_footer else '* Footer 문구를 설정에서 커스텀 할 수 있습니다.' }}</div>
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-primary">설정 저장</button>
-      </form>
     </div>
-
-    <!-- 가져오기/내보내기 탭 -->
-    <div id="import-export-tab" class="tab-content">
-      <h2>데이터 가져오기/내보내기</h2>
-      <div class="grid grid-2">
-        <div style="background:#f8fafc;padding:20px;border-radius:12px;">
-          <h3>📤 내보내기</h3>
-          <p style="color:#64748b;margin:15px 0;">현재 층/세대 설정을 JSON 파일로 내보냅니다.</p>
-          <button class="btn btn-primary" id="exportBtn">설정 내보내기</button>
-        </div>
-        <div style="background:#f8fafc;padding:20px;border-radius:12px;">
-          <h3>📥 가져오기</h3>
-          <p style="color:#64748b;margin:15px 0;">JSON 파일에서 층/세대 설정을 가져옵니다.</p>
-          <input type="file" id="importFile" accept=".json" style="margin-bottom:15px;">
-          <button class="btn btn-success" id="importBtn">설정 가져오기</button>
-        </div>
-      </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block modals %}
-<!-- 층 추가 모달 -->
-<div id="addFloorModal" class="modal">
-  <div class="modal-content">
-    <h2>층 추가</h2>
-    <form id="addFloorForm">
-      <div class="form-group">
-        <label>층 번호</label>
-        <input type="number" name="floor_number" required>
-        <small style="color:#94a3b8;">지하층은 음수로 입력 (예: -1)</small>
-      </div>
-      <div class="form-group">
-        <label>층 이름 (선택)</label>
-        <input type="text" name="name" placeholder="예: 1층">
-      </div>
-      <div class="form-group">
-        <label>⚡ 전기 계약번호 (선택)</label>
-        <input type="text" name="electric_contract_number" placeholder="예: 1234-5678-9012">
-        <small style="color:#94a3b8;">이 층의 전기 계약번호입니다. 계산기에서 참조용으로 표시됩니다.</small>
-      </div>
-      <div style="display:flex;gap:10px;">
-        <button type="submit" class="btn btn-primary">추가</button>
-        <button type="button" class="btn btn-secondary" data-close-modal="addFloorModal">취소</button>
-      </div>
-    </form>
-  </div>
-</div>
+    <!-- 층 추가 모달 -->
+    <div id="addFloorModal" class="modal">
+        <div class="modal-content">
+            <h2>층 추가</h2>
+            <form id="addFloorForm">
+                <div class="form-group">
+                    <label>층 번호</label>
+                    <input type="number" name="floor_number" required>
+                    <small style="color:#94a3b8;">지하층은 음수로 입력 (예: -1)</small>
+                </div>
+                <div class="form-group">
+                    <label>층 이름 (선택)</label>
+                    <input type="text" name="name" placeholder="예: 1층">
+                </div>
+                <div class="form-group">
+                    <label>⚡ 전기 계약번호 (선택)</label>
+                    <input type="text" name="electric_contract_number" placeholder="예: 1234-5678-9012">
+                    <small style="color:#94a3b8;">이 층의 전기 계약번호입니다. 계산기에서 참조용으로 표시됩니다.</small>
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <button type="submit" class="btn btn-primary">추가</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal="addFloorModal">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-<!-- 세대 추가 모달 -->
-<div id="addUnitModal" class="modal">
-  <div class="modal-content">
-    <h2>세대 추가</h2>
-    <form id="addUnitForm">
-      <input type="hidden" name="floor_id" id="unit_floor_id">
-      <div class="form-group">
-        <label>세대명</label>
-        <input type="text" name="unit_name" required>
-      </div>
-      <div class="form-group">
-        <label>거주 인원</label>
-        <input type="number" name="residents_count" value="1" min="0" required>
-      </div>
-      <div class="grid grid-2">
-        <div class="checkbox-wrapper"><input type="checkbox" name="electric_welfare" id="electric_welfare"><label for="electric_welfare">전기 복지 대상</label></div>
-        <div class="checkbox-wrapper"><input type="checkbox" name="electric_voucher" id="electric_voucher"><label for="electric_voucher">전기 바우처 대상</label></div>
-        <div class="checkbox-wrapper"><input type="checkbox" name="has_tv" id="has_tv" checked><label for="has_tv">TV 보유</label></div>
-        <div class="checkbox-wrapper"><input type="checkbox" name="water_welfare" id="water_welfare"><label for="water_welfare">수도 복지 대상</label></div>
-        <div class="checkbox-wrapper"><input type="checkbox" name="is_vacant" id="is_vacant"><label for="is_vacant">공실</label></div>
-      </div>
-      <div class="form-group">
-        <label>비고</label>
-        <textarea name="memo" rows="2"></textarea>
-      </div>
-      <div style="display:flex;gap:10px;">
-        <button type="submit" class="btn btn-primary">추가</button>
-        <button type="button" class="btn btn-secondary" data-close-modal="addUnitModal">취소</button>
-      </div>
-    </form>
-  </div>
-</div>
+    <!-- 세대 추가 모달 -->
+    <div id="addUnitModal" class="modal">
+        <div class="modal-content">
+            <h2>세대 추가</h2>
+            <form id="addUnitForm">
+                <input type="hidden" name="floor_id" id="unit_floor_id">
+                <div class="form-group">
+                    <label>세대명</label>
+                    <input type="text" name="unit_name" required>
+                </div>
+                <div class="form-group">
+                    <label>거주 인원</label>
+                    <input type="number" name="residents_count" value="1" min="0" required>
+                </div>
+                <div class="grid grid-2">
+                    <div class="checkbox-wrapper"><input type="checkbox" name="electric_welfare"
+                                                         id="electric_welfare"><label for="electric_welfare">전기 복지
+                        대상</label></div>
+                    <div class="checkbox-wrapper"><input type="checkbox" name="electric_voucher"
+                                                         id="electric_voucher"><label for="electric_voucher">전기 바우처
+                        대상</label></div>
+                    <div class="checkbox-wrapper"><input type="checkbox" name="has_tv" id="has_tv" checked><label
+                            for="has_tv">TV 보유</label></div>
+                    <div class="checkbox-wrapper"><input type="checkbox" name="water_welfare" id="water_welfare"><label
+                            for="water_welfare">수도 복지 대상</label></div>
+                    <div class="checkbox-wrapper"><input type="checkbox" name="is_vacant" id="is_vacant"><label
+                            for="is_vacant">공실</label></div>
+                </div>
+                <div class="form-group">
+                    <label>비고</label>
+                    <textarea name="memo" rows="2"></textarea>
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <button type="submit" class="btn btn-primary">추가</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal="addUnitModal">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-<!-- 세대 수정 모달 -->
-<div id="editUnitModal" class="modal">
-  <div class="modal-content">
-    <h2>세대 수정</h2>
-    <form id="editUnitForm">
-      <input type="hidden" name="unit_id" id="edit_unit_id">
-      <div class="form-group">
-        <label>세대명</label>
-        <input type="text" name="unit_name" id="edit_unit_name" required>
-      </div>
-      <div class="form-group">
-        <label>거주 인원</label>
-        <input type="number" name="residents_count" id="edit_residents_count" value="1" min="0" required>
-      </div>
-      <div class="grid grid-2">
-        <div class="checkbox-wrapper"><input type="checkbox" name="electric_welfare" id="edit_electric_welfare"><label for="edit_electric_welfare">전기 복지 대상</label></div>
-        <div class="checkbox-wrapper"><input type="checkbox" name="electric_voucher" id="edit_electric_voucher"><label for="edit_electric_voucher">전기 바우처 대상</label></div>
-        <div class="checkbox-wrapper"><input type="checkbox" name="has_tv" id="edit_has_tv"><label for="edit_has_tv">TV 보유</label></div>
-        <div class="checkbox-wrapper"><input type="checkbox" name="water_welfare" id="edit_water_welfare"><label for="edit_water_welfare">수도 복지 대상</label></div>
-        <div class="checkbox-wrapper"><input type="checkbox" name="is_vacant" id="edit_is_vacant"><label for="edit_is_vacant">공실</label></div>
-      </div>
-      <div class="form-group">
-        <label>비고</label>
-        <textarea name="memo" id="edit_memo" rows="2"></textarea>
-      </div>
-      <div style="display:flex;gap:10px;">
-        <button type="submit" class="btn btn-primary">수정</button>
-        <button type="button" class="btn btn-secondary" data-close-modal="editUnitModal">취소</button>
-      </div>
-    </form>
-  </div>
-</div>
+    <!-- 세대 수정 모달 -->
+    <div id="editUnitModal" class="modal">
+        <div class="modal-content">
+            <h2>세대 수정</h2>
+            <form id="editUnitForm">
+                <input type="hidden" name="unit_id" id="edit_unit_id">
+                <div class="form-group">
+                    <label>세대명</label>
+                    <input type="text" name="unit_name" id="edit_unit_name" required>
+                </div>
+                <div class="form-group">
+                    <label>거주 인원</label>
+                    <input type="number" name="residents_count" id="edit_residents_count" value="1" min="0" required>
+                </div>
+                <div class="grid grid-2">
+                    <div class="checkbox-wrapper"><input type="checkbox" name="electric_welfare"
+                                                         id="edit_electric_welfare"><label for="edit_electric_welfare">전기
+                        복지 대상</label></div>
+                    <div class="checkbox-wrapper"><input type="checkbox" name="electric_voucher"
+                                                         id="edit_electric_voucher"><label for="edit_electric_voucher">전기
+                        바우처 대상</label></div>
+                    <div class="checkbox-wrapper"><input type="checkbox" name="has_tv" id="edit_has_tv"><label
+                            for="edit_has_tv">TV 보유</label></div>
+                    <div class="checkbox-wrapper"><input type="checkbox" name="water_welfare"
+                                                         id="edit_water_welfare"><label for="edit_water_welfare">수도 복지
+                        대상</label></div>
+                    <div class="checkbox-wrapper"><input type="checkbox" name="is_vacant" id="edit_is_vacant"><label
+                            for="edit_is_vacant">공실</label></div>
+                </div>
+                <div class="form-group">
+                    <label>비고</label>
+                    <textarea name="memo" id="edit_memo" rows="2"></textarea>
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <button type="submit" class="btn btn-primary">수정</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal="editUnitModal">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-<!-- 층 이름 수정 모달 -->
-<div id="renameFloorModal" class="modal">
-  <div class="modal-content">
-    <h2>층 정보 수정</h2>
-    <form id="renameFloorForm">
-      <input type="hidden" name="floor_id" id="rename_floor_id">
-      <div class="form-group">
-        <label>층 번호</label>
-        <input type="number" name="floor_number" id="rename_floor_number" required>
-      </div>
-      <div class="form-group">
-        <label>층 이름</label>
-        <input type="text" name="name" id="rename_floor_name" placeholder="예: B1층" required>
-      </div>
-      <div class="form-group">
-        <label>⚡ 전기 계약번호 (선택)</label>
-        <input type="text" name="electric_contract_number" id="rename_floor_contract" placeholder="예: 1234-5678-9012">
-        <small style="color:#94a3b8;">이 층의 전기 계약번호입니다.</small>
-      </div>
-      <div style="display:flex;gap:10px;">
-        <button type="submit" class="btn btn-primary">저장</button>
-        <button type="button" class="btn btn-secondary" data-close-modal="renameFloorModal">취소</button>
-      </div>
-    </form>
-  </div>
-</div>
+    <!-- 층 이름 수정 모달 -->
+    <div id="renameFloorModal" class="modal">
+        <div class="modal-content">
+            <h2>층 정보 수정</h2>
+            <form id="renameFloorForm">
+                <input type="hidden" name="floor_id" id="rename_floor_id">
+                <div class="form-group">
+                    <label>층 번호</label>
+                    <input type="number" name="floor_number" id="rename_floor_number" required>
+                </div>
+                <div class="form-group">
+                    <label>층 이름</label>
+                    <input type="text" name="name" id="rename_floor_name" placeholder="예: B1층" required>
+                </div>
+                <div class="form-group">
+                    <label>⚡ 전기 계약번호 (선택)</label>
+                    <input type="text" name="electric_contract_number" id="rename_floor_contract"
+                           placeholder="예: 1234-5678-9012">
+                    <small style="color:#94a3b8;">이 층의 전기 계약번호입니다.</small>
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <button type="submit" class="btn btn-primary">저장</button>
+                    <button type="button" class="btn btn-secondary" data-close-modal="renameFloorModal">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
 {% endblock %}
 
 {% block scripts %}
-<script>
-function showTab(tabId, ev){
-  document.querySelectorAll('.tab-content').forEach(t=>t.style.display='none');
-  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-  document.getElementById(tabId).style.display='block';
-  if(ev && ev.target) ev.target.classList.add('active');
-}
+    <script>
+        function showTab(tabId, ev) {
+            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).style.display = 'block';
+            if (ev && ev.target) ev.target.classList.add('active');
+        }
 
-// Modal helpers
-document.addEventListener('click', (e)=>{
-  const open = e.target.closest('[data-open-modal]');
-  if(open){ openModal(open.getAttribute('data-open-modal')); }
+        // Modal helpers
+        document.addEventListener('click', (e) => {
+            const open = e.target.closest('[data-open-modal]');
+            if (open) {
+                openModal(open.getAttribute('data-open-modal'));
+            }
 
-  const close = e.target.closest('[data-close-modal]');
-  if(close){ closeModal(close.getAttribute('data-close-modal')); }
+            const close = e.target.closest('[data-close-modal]');
+            if (close) {
+                closeModal(close.getAttribute('data-close-modal'));
+            }
 
-  const addUnitBtn = e.target.closest('[data-open-add-unit]');
-  if(addUnitBtn){
-    document.getElementById('unit_floor_id').value = addUnitBtn.getAttribute('data-floor-id');
-    openModal('addUnitModal');
-  }
+            const addUnitBtn = e.target.closest('[data-open-add-unit]');
+            if (addUnitBtn) {
+                document.getElementById('unit_floor_id').value = addUnitBtn.getAttribute('data-floor-id');
+                openModal('addUnitModal');
+            }
 
-  const renameBtn = e.target.closest('[data-open-rename-floor]');
-  if(renameBtn){
-    document.getElementById('rename_floor_id').value = renameBtn.getAttribute('data-floor-id');
-    document.getElementById('rename_floor_name').value = renameBtn.getAttribute('data-floor-name') || '';
-    document.getElementById('rename_floor_number').value = renameBtn.getAttribute('data-floor-number') || '';
-    document.getElementById('rename_floor_contract').value = renameBtn.getAttribute('data-floor-contract') || '';
-    openModal('renameFloorModal');
-  }
+            const renameBtn = e.target.closest('[data-open-rename-floor]');
+            if (renameBtn) {
+                document.getElementById('rename_floor_id').value = renameBtn.getAttribute('data-floor-id');
+                document.getElementById('rename_floor_name').value = renameBtn.getAttribute('data-floor-name') || '';
+                document.getElementById('rename_floor_number').value = renameBtn.getAttribute('data-floor-number') || '';
+                document.getElementById('rename_floor_contract').value = renameBtn.getAttribute('data-floor-contract') || '';
+                openModal('renameFloorModal');
+            }
 
-  const editBtn = e.target.closest('[data-edit-unit]');
-  if(editBtn){
-    const unitId = editBtn.getAttribute('data-unit-id');
-    const data = editBtn.getAttribute('data-unit');
-    try{
-      const unit = JSON.parse(data);
-      document.getElementById('edit_unit_id').value = unitId;
-      document.getElementById('edit_unit_name').value = unit.unit_name || '';
-      document.getElementById('edit_residents_count').value = unit.residents_count ?? 0;
-      document.getElementById('edit_electric_welfare').checked = !!unit.electric_welfare;
-      document.getElementById('edit_electric_voucher').checked = !!unit.electric_voucher;
-      document.getElementById('edit_has_tv').checked = !!unit.has_tv;
-      document.getElementById('edit_water_welfare').checked = !!unit.water_welfare;
-      document.getElementById('edit_is_vacant').checked = !!unit.is_vacant;
-      document.getElementById('edit_memo').value = unit.memo || '';
-      openModal('editUnitModal');
-    }catch(err){
-      alert('수정 데이터를 읽는 중 오류가 발생했습니다.');
-      console.error(err);
-    }
-  }
+            const editBtn = e.target.closest('[data-edit-unit]');
+            if (editBtn) {
+                const unitId = editBtn.getAttribute('data-unit-id');
+                const data = editBtn.getAttribute('data-unit');
+                try {
+                    const unit = JSON.parse(data);
+                    document.getElementById('edit_unit_id').value = unitId;
+                    document.getElementById('edit_unit_name').value = unit.unit_name || '';
+                    document.getElementById('edit_residents_count').value = unit.residents_count ?? 0;
+                    document.getElementById('edit_electric_welfare').checked = !!unit.electric_welfare;
+                    document.getElementById('edit_electric_voucher').checked = !!unit.electric_voucher;
+                    document.getElementById('edit_has_tv').checked = !!unit.has_tv;
+                    document.getElementById('edit_water_welfare').checked = !!unit.water_welfare;
+                    document.getElementById('edit_is_vacant').checked = !!unit.is_vacant;
+                    document.getElementById('edit_memo').value = unit.memo || '';
+                    openModal('editUnitModal');
+                } catch (err) {
+                    alert('수정 데이터를 읽는 중 오류가 발생했습니다.');
+                    console.error(err);
+                }
+            }
 
-  const deleteUnitBtn = e.target.closest('[data-delete-unit]');
-  if(deleteUnitBtn){ deleteUnit(deleteUnitBtn.getAttribute('data-unit-id')); }
+            const deleteUnitBtn = e.target.closest('[data-delete-unit]');
+            if (deleteUnitBtn) {
+                deleteUnit(deleteUnitBtn.getAttribute('data-unit-id'));
+            }
 
-  const deleteFloorBtn = e.target.closest('[data-delete-floor]');
-  if(deleteFloorBtn){ deleteFloor(deleteFloorBtn.getAttribute('data-floor-id')); }
-});
+            const deleteFloorBtn = e.target.closest('[data-delete-floor]');
+            if (deleteFloorBtn) {
+                deleteFloor(deleteFloorBtn.getAttribute('data-floor-id'));
+            }
+        });
 
-// Forms
-const addFloorForm = document.getElementById('addFloorForm');
-if(addFloorForm){
-  addFloorForm.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const fd = new FormData(e.target); fd.append('_csrf_token', getCsrfToken());
-    const res = await fetch('/floors/add',{method:'POST',body:fd}); const j=await res.json();
-    if(j.success) location.reload(); else alert(j.message || '추가 실패');
-  });
-}
+        // Forms
+        const addFloorForm = document.getElementById('addFloorForm');
+        if (addFloorForm) {
+            addFloorForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                fd.append('_csrf_token', getCsrfToken());
+                const res = await fetch('/floors/add', {method: 'POST', body: fd});
+                const j = await res.json();
+                if (j.success) location.reload(); else alert(j.message || '추가 실패');
+            });
+        }
 
-const addUnitForm = document.getElementById('addUnitForm');
-if(addUnitForm){
-  addUnitForm.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const fd = new FormData(e.target); fd.append('_csrf_token', getCsrfToken());
-    fd.set('electric_welfare', fd.has('electric_welfare') ? 'true' : 'false');
-    fd.set('electric_voucher', fd.has('electric_voucher') ? 'true' : 'false');
-    fd.set('has_tv', fd.has('has_tv') ? 'true' : 'false');
-    fd.set('water_welfare', fd.has('water_welfare') ? 'true' : 'false');
-    fd.set('is_vacant', fd.has('is_vacant') ? 'true' : 'false');
-    const res = await fetch('/units/add',{method:'POST',body:fd}); const j=await res.json();
-    if(j.success) location.reload(); else alert(j.message || '추가 실패');
-  });
-}
+        const addUnitForm = document.getElementById('addUnitForm');
+        if (addUnitForm) {
+            addUnitForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const fd = new FormData(e.target);
+                fd.append('_csrf_token', getCsrfToken());
+                fd.set('electric_welfare', fd.has('electric_welfare') ? 'true' : 'false');
+                fd.set('electric_voucher', fd.has('electric_voucher') ? 'true' : 'false');
+                fd.set('has_tv', fd.has('has_tv') ? 'true' : 'false');
+                fd.set('water_welfare', fd.has('water_welfare') ? 'true' : 'false');
+                fd.set('is_vacant', fd.has('is_vacant') ? 'true' : 'false');
+                const res = await fetch('/units/add', {method: 'POST', body: fd});
+                const j = await res.json();
+                if (j.success) location.reload(); else alert(j.message || '추가 실패');
+            });
+        }
 
-const editUnitForm = document.getElementById('editUnitForm');
-if(editUnitForm){
-  editUnitForm.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const id = document.getElementById('edit_unit_id').value;
-    const fd = new FormData(e.target); fd.append('_csrf_token', getCsrfToken());
-    fd.set('electric_welfare', fd.has('electric_welfare') ? 'true' : 'false');
-    fd.set('electric_voucher', fd.has('electric_voucher') ? 'true' : 'false');
-    fd.set('has_tv', fd.has('has_tv') ? 'true' : 'false');
-    fd.set('water_welfare', fd.has('water_welfare') ? 'true' : 'false');
-    fd.set('is_vacant', fd.has('is_vacant') ? 'true' : 'false');
-    const res = await fetch(`/units/${id}/update`, {method:'POST', body:fd}); const j=await res.json();
-    if(j.success) location.reload(); else alert(j.message || '수정 실패');
-  });
-}
+        const editUnitForm = document.getElementById('editUnitForm');
+        if (editUnitForm) {
+            editUnitForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('edit_unit_id').value;
+                const fd = new FormData(e.target);
+                fd.append('_csrf_token', getCsrfToken());
+                fd.set('electric_welfare', fd.has('electric_welfare') ? 'true' : 'false');
+                fd.set('electric_voucher', fd.has('electric_voucher') ? 'true' : 'false');
+                fd.set('has_tv', fd.has('has_tv') ? 'true' : 'false');
+                fd.set('water_welfare', fd.has('water_welfare') ? 'true' : 'false');
+                fd.set('is_vacant', fd.has('is_vacant') ? 'true' : 'false');
+                const res = await fetch(`/units/${id}/update`, {method: 'POST', body: fd});
+                const j = await res.json();
+                if (j.success) location.reload(); else alert(j.message || '수정 실패');
+            });
+        }
 
-const renameFloorForm = document.getElementById('renameFloorForm');
-if(renameFloorForm){
-  renameFloorForm.addEventListener('submit', async (e)=>{
-    e.preventDefault();
-    const id = document.getElementById('rename_floor_id').value;
-    const fd = new FormData(e.target); fd.append('_csrf_token', getCsrfToken());
-    const res = await fetch(`/floors/${id}/update`, {method:'POST', body: fd}); const j = await res.json();
-    if(j.success){ location.reload(); } else { alert(j.message || '수정 실패'); }
-  });
-}
+        const renameFloorForm = document.getElementById('renameFloorForm');
+        if (renameFloorForm) {
+            renameFloorForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('rename_floor_id').value;
+                const fd = new FormData(e.target);
+                fd.append('_csrf_token', getCsrfToken());
+                const res = await fetch(`/floors/${id}/update`, {method: 'POST', body: fd});
+                const j = await res.json();
+                if (j.success) {
+                    location.reload();
+                } else {
+                    alert(j.message || '수정 실패');
+                }
+            });
+        }
 
-// Delete helpers
-async function deleteUnit(unitId){
-  if(!confirm('정말 이 세대를 삭제하시겠습니까?')) return;
-  const fd = new FormData(); fd.append('_csrf_token', getCsrfToken());
-  const res = await fetch(`/units/${unitId}/delete`, {method:'POST', body:fd}); const j=await res.json();
-  if(j.success) location.reload(); else alert(j.message || '삭제 실패');
-}
+        // Delete helpers
+        async function deleteUnit(unitId) {
+            if (!confirm('정말 이 세대를 삭제하시겠습니까?')) return;
+            const fd = new FormData();
+            fd.append('_csrf_token', getCsrfToken());
+            const res = await fetch(`/units/${unitId}/delete`, {method: 'POST', body: fd});
+            const j = await res.json();
+            if (j.success) location.reload(); else alert(j.message || '삭제 실패');
+        }
 
-async function deleteFloor(floorId){
-  if(!confirm('정말 이 층을 삭제하시겠습니까? 모든 세대 정보도 함께 삭제됩니다.')) return;
-  const fd = new FormData(); fd.append('_csrf_token', getCsrfToken());
-  const res = await fetch(`/floors/${floorId}/delete`, {method:'POST', body:fd}); const j=await res.json();
-  if(j.success) location.reload(); else alert(j.message || '삭제 실패');
-}
+        async function deleteFloor(floorId) {
+            if (!confirm('정말 이 층을 삭제하시겠습니까? 모든 세대 정보도 함께 삭제됩니다.')) return;
+            const fd = new FormData();
+            fd.append('_csrf_token', getCsrfToken());
+            const res = await fetch(`/floors/${floorId}/delete`, {method: 'POST', body: fd});
+            const j = await res.json();
+            if (j.success) location.reload(); else alert(j.message || '삭제 실패');
+        }
 
-// Export / Import
-const exportBtn = document.getElementById('exportBtn');
-if(exportBtn){
-  exportBtn.addEventListener('click', async ()=>{
-    const res = await fetch('/settings/export'); const data = await res.json();
-    const blob = new Blob([JSON.stringify(data,null,2)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download=`settings_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
-  });
-}
+        // Export / Import
+        const exportBtn = document.getElementById('exportBtn');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', async () => {
+                const res = await fetch('/settings/export');
+                const data = await res.json();
+                const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `settings_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                URL.revokeObjectURL(url);
+            });
+        }
 
-const importBtn = document.getElementById('importBtn');
-if(importBtn){
-  importBtn.addEventListener('click', async ()=>{
-    const f = document.getElementById('importFile').files[0];
-    if(!f){ alert('파일을 선택해주세요.'); return; }
-    const text = await f.text();
-    try{
-      const data = JSON.parse(text);
-      if(!confirm('기존 설정을 모두 삭제하고 새로운 설정을 가져오시겠습니까?')) return;
-      data._csrf_token = getCsrfToken();
-      const res = await fetch('/settings/import', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data)});
-      const j = await res.json();
-      if(j.success){ alert('설정을 성공적으로 가져왔습니다.'); location.reload(); } else { alert(j.message || '가져오기 실패'); }
-    }catch(e){ alert('파일 형식이 올바르지 않습니다.'); }
-  });
-}
-</script>
+        const importBtn = document.getElementById('importBtn');
+        if (importBtn) {
+            importBtn.addEventListener('click', async () => {
+                const f = document.getElementById('importFile').files[0];
+                if (!f) {
+                    alert('파일을 선택해주세요.');
+                    return;
+                }
+                const text = await f.text();
+                try {
+                    const data = JSON.parse(text);
+                    if (!confirm('기존 설정을 모두 삭제하고 새로운 설정을 가져오시겠습니까?')) return;
+                    data._csrf_token = getCsrfToken();
+                    const res = await fetch('/settings/import', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(data)
+                    });
+                    const j = await res.json();
+                    if (j.success) {
+                        alert('설정을 성공적으로 가져왔습니다.');
+                        location.reload();
+                    } else {
+                        alert(j.message || '가져오기 실패');
+                    }
+                } catch (e) {
+                    alert('파일 형식이 올바르지 않습니다.');
+                }
+            });
+        }
+    </script>
 {% endblock %}

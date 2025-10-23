@@ -3,94 +3,116 @@
 {% block content %}
     <h1><span class="emoji">🏘️</span> 공동 공과금 상세 내역</h1>
 
-<div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-  <div>
-    <h2>{{ bill.billing_month.strftime('%Y년 %m월') }} - {{ bill.description|default('공동 공과금') }}</h2>
-    <p style="color:#64748b;">
-      분배 방식: {% if bill.distribution_method == 'BY_RESIDENTS' %}인원수 비례{% else %}세대 균등{% endif %}
-    </p>
-  </div>
-  <a href="{{ url_for('view_bills') }}" class="btn btn-secondary">목록으로</a>
-</div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+        <div>
+            <h2>{{ bill.billing_month.strftime('%Y년 %m월') }} - {{ bill.description|default('공동 공과금') }}</h2>
+            <p style="color:#64748b;">
+                분배 방식: {% if bill.distribution_method == 'BY_RESIDENTS' %}인원수 비례{% else %}세대 균등{% endif %}
+            </p>
+        </div>
+        <a href="{{ url_for('view_bills') }}" class="btn btn-secondary">목록으로</a>
+    </div>
 
-<div class="grid grid-2" style="margin-bottom:30px;">
-  <div style="background:#f8fafc; padding:20px; border-radius:12px;">
-    <h3>청구 정보</h3>
-    <table style="width:100%;">
-      <tr><td>항목:</td><td style="text-align:right"><strong>{{ bill.description|default('공동 공과금') }}</strong></td></tr>
-      <tr><td>총액:</td><td style="text-align:right"><strong>{{ "{:,.0f}".format(bill.total_amount) }}원</strong></td></tr>
-      <tr><td>분배 방식:</td><td style="text-align:right">
-        {% if bill.distribution_method == 'BY_RESIDENTS' %}
-          인원수 비례
-        {% else %}
-          세대 균등
-        {% endif %}
-      </td></tr>
+    <div class="grid grid-2" style="margin-bottom:30px;">
+        <div style="background:#f8fafc; padding:20px; border-radius:12px;">
+            <h3>청구 정보</h3>
+            <table style="width:100%;">
+                <tr>
+                    <td>항목:</td>
+                    <td style="text-align:right"><strong>{{ bill.description|default('공동 공과금') }}</strong></td>
+                </tr>
+                <tr>
+                    <td>총액:</td>
+                    <td style="text-align:right"><strong>{{ "{:,.0f}".format(bill.total_amount) }}원</strong></td>
+                </tr>
+                <tr>
+                    <td>분배 방식:</td>
+                    <td style="text-align:right">
+                        {% if bill.distribution_method == 'BY_RESIDENTS' %}
+                            인원수 비례
+                        {% else %}
+                            세대 균등
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div style="background:#f8fafc; padding:20px; border-radius:12px;">
+            <h3>정산 요약</h3>
+            <table style="width:100%;">
+                <tr>
+                    <td>정산 세대수:</td>
+                    <td style="text-align:right"><strong>{{ details|length }}세대</strong></td>
+                </tr>
+                {% if bill.distribution_method == 'BY_RESIDENTS' %}
+                    <tr>
+                        <td>총 거주 인원:</td>
+                        <td style="text-align:right">{{ details|sum(attribute='unit_snapshot.residents_count') }}명</td>
+                    </tr>
+                {% endif %}
+                <tr>
+                    <td>세대별 평균:</td>
+                    <td style="text-align:right">{{ "{:,.0f}".format((details|sum(attribute='charged_amount')) / (details|length) if details else 0) }}원</td>
+                </tr>
+                <tr>
+                    <td>최종 청구 총액:</td>
+                    <td style="text-align:right"><strong>{{ "{:,.0f}".format(details|sum(attribute='charged_amount')) }}원</strong>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <h3>세대별 상세 내역</h3>
+    <table>
+        <thead>
+        <tr style="background:#e2e8f0;">
+            <th>세대</th>
+            {% if bill.distribution_method == 'BY_RESIDENTS' %}
+                <th>거주 인원</th>
+            {% endif %}
+            <th>배분액</th>
+            <th style="background:#fef3c7;">청구 금액<br>(10원 단위)</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for detail in details %}
+            <tr>
+                <td><strong>{{ detail.unit.unit_name }}</strong></td>
+                {% if bill.distribution_method == 'BY_RESIDENTS' %}
+                    <td style="text-align:center">{{ detail.unit_snapshot.residents_count }}명</td>
+                {% endif %}
+                <td style="text-align:right">{{ "{:,.0f}".format(detail.amount) }}원</td>
+                <td style="text-align:right; background:#fef3c7; font-weight:bold; font-size:1.1em;">
+                    {{ "{:,.0f}".format(detail.charged_amount) }}원
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+        <tr style="background:#e2e8f0; font-weight:bold;">
+            <td>합계</td>
+            {% if bill.distribution_method == 'BY_RESIDENTS' %}
+                <td style="text-align:center">{{ details|sum(attribute='unit_snapshot.residents_count') }}명</td>
+            {% endif %}
+            <td style="text-align:right">{{ "{:,.0f}".format(details|sum(attribute='amount')) }}원</td>
+            <td style="text-align:right; background:#fbbf24; font-size:1.2em;">
+                {{ "{:,.0f}".format(details|sum(attribute='charged_amount')) }}원
+            </td>
+        </tr>
+        </tfoot>
     </table>
-  </div>
-  <div style="background:#f8fafc; padding:20px; border-radius:12px;">
-    <h3>정산 요약</h3>
-    <table style="width:100%;">
-      <tr><td>정산 세대수:</td><td style="text-align:right"><strong>{{ details|length }}세대</strong></td></tr>
-      {% if bill.distribution_method == 'BY_RESIDENTS' %}
-      <tr><td>총 거주 인원:</td><td style="text-align:right">{{ details|sum(attribute='unit_snapshot.residents_count') }}명</td></tr>
-      {% endif %}
-      <tr><td>세대별 평균:</td><td style="text-align:right">{{ "{:,.0f}".format((details|sum(attribute='charged_amount')) / (details|length) if details else 0) }}원</td></tr>
-      <tr><td>최종 청구 총액:</td><td style="text-align:right"><strong>{{ "{:,.0f}".format(details|sum(attribute='charged_amount')) }}원</strong></td></tr>
-    </table>
-  </div>
-</div>
 
-<h3>세대별 상세 내역</h3>
-<table>
-  <thead>
-    <tr style="background:#e2e8f0;">
-      <th>세대</th>
-      {% if bill.distribution_method == 'BY_RESIDENTS' %}
-      <th>거주 인원</th>
-      {% endif %}
-      <th>배분액</th>
-      <th style="background:#fef3c7;">청구 금액<br>(10원 단위)</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for detail in details %}
-    <tr>
-      <td><strong>{{ detail.unit.unit_name }}</strong></td>
-      {% if bill.distribution_method == 'BY_RESIDENTS' %}
-      <td style="text-align:center">{{ detail.unit_snapshot.residents_count }}명</td>
-      {% endif %}
-      <td style="text-align:right">{{ "{:,.0f}".format(detail.amount) }}원</td>
-      <td style="text-align:right; background:#fef3c7; font-weight:bold; font-size:1.1em;">
-        {{ "{:,.0f}".format(detail.charged_amount) }}원
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-  <tfoot>
-    <tr style="background:#e2e8f0; font-weight:bold;">
-      <td>합계</td>
-      {% if bill.distribution_method == 'BY_RESIDENTS' %}
-      <td style="text-align:center">{{ details|sum(attribute='unit_snapshot.residents_count') }}명</td>
-      {% endif %}
-      <td style="text-align:right">{{ "{:,.0f}".format(details|sum(attribute='amount')) }}원</td>
-      <td style="text-align:right; background:#fbbf24; font-size:1.2em;">
-        {{ "{:,.0f}".format(details|sum(attribute='charged_amount')) }}원
-      </td>
-    </tr>
-  </tfoot>
-</table>
-
-<div style="margin-top:30px; padding:20px; background:#dbeafe; border-radius:12px;">
-  <p style="color:#1e40af;">
-    💡 <strong>계산 방식 안내</strong><br>
-    {% if bill.distribution_method == 'BY_RESIDENTS' %}
-    • 배분액 = (세대 거주인원 ÷ 총 거주인원) × 총액<br>
-    {% else %}
-    • 배분액 = 총액 ÷ 정산 세대수<br>
-    {% endif %}
-    • 청구 금액 = 배분액을 10원 단위로 올림 처리
-  </p>
-</div>
+    <div style="margin-top:30px; padding:20px; background:#dbeafe; border-radius:12px;">
+        <p style="color:#1e40af;">
+            💡 <strong>계산 방식 안내</strong><br>
+            {% if bill.distribution_method == 'BY_RESIDENTS' %}
+                • 배분액 = (세대 거주인원 ÷ 총 거주인원) × 총액<br>
+            {% else %}
+                • 배분액 = 총액 ÷ 정산 세대수<br>
+            {% endif %}
+            • 청구 금액 = 배분액을 10원 단위로 올림 처리
+        </p>
+    </div>
 
 {% endblock %}

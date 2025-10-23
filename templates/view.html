@@ -2,411 +2,411 @@
 {% block title %}전체 조회 - 공과금 정산 시스템{% endblock %}
 
 {% block extra_css %}
-<style>
-  .chart-container {
-    position: relative;
-    height: 400px;
-    margin: 20px 0;
-    padding: 20px;
-    background: #f8fafc;
-    border-radius: 12px;
-  }
+    <style>
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin: var(--space-xl) 0;
+            padding: var(--space-xl);
+            background: var(--gray-50);
+            border-radius: var(--radius-lg);
+        }
 
-  .chart-info {
-    background: #e0f2fe;
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    border-left: 4px solid #0284c7;
-  }
+        .chart-info {
+            background: var(--info-bg);
+            padding: var(--space-md) var(--space-lg);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--space-lg);
+            border-left: 4px solid var(--info-color);
+        }
 
-  .chart-info p {
-    margin: 0;
-    color: #0c4a6e;
-    font-size: 13px;
-    line-height: 1.6;
-  }
+        .chart-info p {
+            margin: 0;
+            color: var(--info-dark);
+            font-size: var(--font-small);
+            line-height: 1.6;
+        }
 
-  /* 개선된 테이블 스타일 */
-  table th {
-    background: #f1f5f9 !important;
-    font-weight: 600 !important;
-    color: #334155 !important;
-    border-bottom: 2px solid #cbd5e1 !important;
-    white-space: nowrap;
-  }
+        /* 개선된 테이블 스타일 */
+        table th {
+            background: #f1f5f9 !important;
+            font-weight: 600 !important;
+            color: #334155 !important;
+            border-bottom: 2px solid #cbd5e1 !important;
+            white-space: nowrap;
+        }
 
-  /* 금액 컬럼 헤더도 우측 정렬 */
-  table th.text-right {
-    text-align: right !important;
-  }
+        /* 금액 컬럼 헤더도 우측 정렬 */
+        table th.text-right {
+            text-align: right !important;
+        }
 
-  /* 금액 데이터 우측 정렬 */
-  table td.text-right {
-    text-align: right !important;
-    font-weight: 500;
-  }
+        /* 금액 데이터 우측 정렬 */
+        table td.text-right {
+            text-align: right !important;
+            font-weight: 500;
+        }
 
-  /* 테이블 호버 효과 개선 */
-  table tbody tr:hover {
-    background: #f8fafc !important;
-    transition: background 0.2s ease;
-  }
+        /* 테이블 호버 효과 개선 */
+        table tbody tr:hover {
+            background: var(--gray-50) !important;
+            transition: var(--transition-fast);
+        }
 
-  /* 할인 금액 스타일 */
-  .discount-amount {
-    color: #059669;
-    font-weight: 500;
-  }
+        /* 할인 금액 스타일 */
+        .discount-amount {
+            color: var(--success-dark);
+            font-weight: 500;
+        }
 
-  /* TV 수신료 스타일 */
-  .tv-fee-amount {
-    color: #dc2626;
-    font-weight: 500;
-  }
+        /* TV 수신료 스타일 */
+        .tv-fee-amount {
+            color: var(--danger-dark);
+            font-weight: 500;
+        }
 
-  /* 작업 버튼 컨테이너 */
-  .action-buttons {
-    white-space: nowrap;
-    display: flex;
-    gap: 4px;
-  }
+        /* 작업 버튼 컨테이너 */
+        .action-buttons {
+            white-space: nowrap;
+            display: flex;
+            gap: var(--space-xs);
+        }
 
-  /* 고지월 정보 셀 스타일 */
-  td .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 10px;
-    font-size: 12px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
+        /* 고지월 정보 셀 스타일 */
+        td .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: var(--space-xs) var(--space-md);
+            font-size: var(--font-xs);
+            font-weight: 600;
+            white-space: nowrap;
+        }
 
-  /* 월 목록 래퍼 */
-  .month-list-wrapper {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 4px;
-    align-items: center;
-  }
-</style>
+        /* 월 목록 래퍼 */
+        .month-list-wrapper {
+            display: inline-flex;
+            flex-wrap: wrap;
+            gap: var(--space-xs);
+            align-items: center;
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
     <h1><span class="emoji">📊</span> 전체 조회</h1>
 
-<div class="tabs">
-  <button class="tab active" onclick="showTab('tab-electric', event)">⚡ 전기</button>
-  <button class="tab" onclick="showTab('tab-water', event)">💧 수도</button>
-  <button class="tab" onclick="showTab('tab-common', event)">🏘️ 공동 공과금</button>
-</div>
-<div class="tabs-container">
-    <!-- 전기요금 탭 -->
-    <div id="tab-electric" class="tab-content">
-      <h2>⚡ 전기요금</h2>
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('tab-electric', event)">⚡ 전기</button>
+        <button class="tab" onclick="showTab('tab-water', event)">💧 수도</button>
+        <button class="tab" onclick="showTab('tab-common', event)">🏘️ 공동 공과금</button>
+    </div>
+    <div class="tabs-container">
+        <!-- 전기요금 탭 -->
+        <div id="tab-electric" class="tab-content">
+            <h2>⚡ 전기요금</h2>
 
-      <!-- 전기 그래프 섹션 -->
-      <div style="background:white;padding:20px;border-radius:12px;margin-bottom:30px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-        <h3>📈 고지월별 전기요금 추이 (층별)</h3>
+            <!-- 전기 그래프 섹션 -->
+            <div style="background:white;padding:20px;border-radius:12px;margin-bottom:30px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <h3>📈 고지월별 전기요금 추이 (층별)</h3>
 
-        <div class="chart-info">
-          <p>
-            💡 각 정산월에 포함된 고지월별 순수 전기요금(TV수신료 제외)을 층별로 표시합니다.<br>
-            📊 <strong>범례를 클릭</strong>하여 특정 층의 데이터를 숨기거나 표시할 수 있습니다.
-          </p>
+                <div class="chart-info">
+                    <p>
+                        💡 각 정산월에 포함된 고지월별 순수 전기요금(TV수신료 제외)을 층별로 표시합니다.<br>
+                        📊 <strong>범례를 클릭</strong>하여 특정 층의 데이터를 숨기거나 표시할 수 있습니다.
+                    </p>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="electricChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 전기요금 목록 -->
+            <div id="electricList"></div>
         </div>
 
-        <div class="chart-container">
-          <canvas id="electricChart"></canvas>
+        <!-- 수도요금 탭 -->
+        <div id="tab-water" class="tab-content">
+            <h2>💧 수도요금</h2>
+
+            <!-- 수도 그래프 섹션 -->
+            <div style="background:white;padding:20px;border-radius:12px;margin-bottom:30px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <h3>📈 요금 추이</h3>
+
+                <div class="chart-container">
+                    <canvas id="waterChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 수도요금 목록 -->
+            <div id="waterList"></div>
         </div>
-      </div>
 
-      <!-- 전기요금 목록 -->
-      <div id="electricList"></div>
-    </div>
-
-    <!-- 수도요금 탭 -->
-    <div id="tab-water" class="tab-content">
-      <h2>💧 수도요금</h2>
-
-      <!-- 수도 그래프 섹션 -->
-      <div style="background:white;padding:20px;border-radius:12px;margin-bottom:30px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-        <h3>📈 요금 추이</h3>
-
-        <div class="chart-container">
-          <canvas id="waterChart"></canvas>
+        <!-- 공동 공과금 탭 -->
+        <div id="tab-common" class="tab-content">
+            <h2>🏘️ 공동 공과금</h2>
+            <div id="commonList"></div>
         </div>
-      </div>
-
-      <!-- 수도요금 목록 -->
-      <div id="waterList"></div>
     </div>
-
-    <!-- 공동 공과금 탭 -->
-    <div id="tab-common" class="tab-content">
-      <h2>🏘️ 공동 공과금</h2>
-      <div id="commonList"></div>
-    </div>
-</div>
 
 {% endblock %}
 
 {% block scripts %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-<script>
-function showTab(id, ev){
-  document.querySelectorAll('.tab-content').forEach(x=>x.style.display='none');
-  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-  document.getElementById(id).style.display='block';
-  if(ev && ev.target) ev.target.classList.add('active');
-}
-
-const electricBills = {{ (electric_bills_json|default([]))|tojson }};
-const waterBills = {{ (water_bills_json|default([]))|tojson }};
-const commonBills = {{ (common_bills_json|default([]))|tojson }};
-
-let electricChart = null;
-let waterChart = null;
-
-// 색상 팔레트
-const colors = [
-  '#667eea', '#764ba2', '#f093fb', '#4facfe',
-  '#43e97b', '#fa709a', '#fee140', '#30cfd0',
-  '#a8edea', '#fed6e3', '#ff9671', '#ffd93d'
-];
-
-// 전기 차트 데이터 준비 (층별 고지월 전기요금 추이)
-function prepareElectricChartData() {
-  if (electricBills.length === 0) {
-    return { labels: [], datasets: [] };
-  }
-
-  // 층별로 그룹화
-  const floorDataMap = new Map();
-
-  electricBills.forEach(bill => {
-    const floorId = bill.floor_id;
-    const floorName = bill.floor_name || `층 ${floorId}`;
-
-    if (!floorDataMap.has(floorId)) {
-      floorDataMap.set(floorId, {
-        floor_name: floorName,
-        monthlyData: new Map()
-      });
-    }
-
-    const floorData = floorDataMap.get(floorId);
-
-    if (bill.monthly_details && Array.isArray(bill.monthly_details)) {
-      bill.monthly_details.forEach(detail => {
-        if (detail.month) {
-          const monthKey = detail.month.substring(0, 7);
-          const amount = parseFloat(detail.amount || 0);
-
-          if (floorData.monthlyData.has(monthKey)) {
-            floorData.monthlyData.set(monthKey, floorData.monthlyData.get(monthKey) + amount);
-          } else {
-            floorData.monthlyData.set(monthKey, amount);
-          }
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        function showTab(id, ev){
+            document.querySelectorAll('.tab-content').forEach(x=>x.style.display='none');
+            document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+            document.getElementById(id).style.display='block';
+            if(ev && ev.target) ev.target.classList.add('active');
         }
-      });
-    }
-  });
 
-  const allMonths = new Set();
-  floorDataMap.forEach(floorData => {
-    floorData.monthlyData.forEach((amount, month) => {
-      allMonths.add(month);
-    });
-  });
-  const sortedMonths = Array.from(allMonths).sort();
+        const electricBills = {{ (electric_bills_json|default([]))|tojson }};
+        const waterBills = {{ (water_bills_json|default([]))|tojson }};
+        const commonBills = {{ (common_bills_json|default([]))|tojson }};
 
-  if (sortedMonths.length === 0) {
-    return { labels: [], datasets: [] };
-  }
+        let electricChart = null;
+        let waterChart = null;
 
-  const datasets = [];
-  let colorIndex = 0;
+        // 색상 팔레트
+        const colors = [
+            '#667eea', '#764ba2', '#f093fb', '#4facfe',
+            '#43e97b', '#fa709a', '#fee140', '#30cfd0',
+            '#a8edea', '#fed6e3', '#ff9671', '#ffd93d'
+        ];
 
-  floorDataMap.forEach((floorData, floorId) => {
-    const data = sortedMonths.map(month => {
-      return floorData.monthlyData.get(month) || 0;
-    });
-
-    datasets.push({
-      label: floorData.floor_name,
-      data: data,
-      borderColor: colors[colorIndex % colors.length],
-      backgroundColor: colors[colorIndex % colors.length] + '30',
-      borderWidth: 3,
-      tension: 0.4,
-      fill: false,
-      pointRadius: 5,
-      pointBackgroundColor: colors[colorIndex % colors.length],
-      pointBorderColor: '#fff',
-      pointBorderWidth: 2
-    });
-
-    colorIndex++;
-  });
-
-  return {
-    labels: sortedMonths,
-    datasets: datasets
-  };
-}
-
-// 수도 요금 추이
-function prepareWaterChartData() {
-  if (waterBills.length === 0) {
-    return { labels: [], datasets: [] };
-  }
-
-  const sortedBills = waterBills.sort((a, b) =>
-    new Date(a.billing_month) - new Date(b.billing_month)
-  );
-
-  const months = sortedBills.map(b => b.billing_month.slice(0, 7));
-  const amounts = sortedBills.map(b => parseFloat(b.total_amount) || 0);
-
-  return {
-    labels: months,
-    datasets: [
-      {
-        label: '수도요금',
-        data: amounts,
-        borderColor: colors[4],
-        backgroundColor: colors[4] + '40',
-        borderWidth: 3,
-        tension: 0.4,
-        fill: true,
-        pointRadius: 5,
-        pointBackgroundColor: colors[4]
-      }
-    ]
-  };
-}
-
-// 전기 차트 생성/업데이트
-function updateElectricChart() {
-  const ctx = document.getElementById('electricChart').getContext('2d');
-  const data = prepareElectricChartData();
-
-  if (electricChart) {
-    electricChart.destroy();
-  }
-
-  electricChart = new Chart(ctx, {
-    type: 'line',
-    data: data,
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: {
-        mode: 'index',
-        intersect: false,
-      },
-      plugins: {
-        legend: {
-          display: true,
-          position: 'top',
-          onClick: function(e, legendItem, legend) {
-            const index = legendItem.datasetIndex;
-            const chart = legend.chart;
-            const meta = chart.getDatasetMeta(index);
-
-            meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
-
-            chart.update();
-          },
-          labels: {
-            usePointStyle: true,
-            padding: 15,
-            font: {
-              size: 13
+        // 전기 차트 데이터 준비 (층별 고지월 전기요금 추이)
+        function prepareElectricChartData() {
+            if (electricBills.length === 0) {
+                return { labels: [], datasets: [] };
             }
-          }
-        },
-        tooltip: {
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          padding: 12,
-          titleFont: { size: 14 },
-          bodyFont: { size: 12 },
-          callbacks: {
-            label: function(context) {
-              return context.dataset.label + ': ' + Math.round(context.parsed.y).toLocaleString() + '원';
+
+            // 층별로 그룹화
+            const floorDataMap = new Map();
+
+            electricBills.forEach(bill => {
+                const floorId = bill.floor_id;
+                const floorName = bill.floor_name || `층 ${floorId}`;
+
+                if (!floorDataMap.has(floorId)) {
+                    floorDataMap.set(floorId, {
+                        floor_name: floorName,
+                        monthlyData: new Map()
+                    });
+                }
+
+                const floorData = floorDataMap.get(floorId);
+
+                if (bill.monthly_details && Array.isArray(bill.monthly_details)) {
+                    bill.monthly_details.forEach(detail => {
+                        if (detail.month) {
+                            const monthKey = detail.month.substring(0, 7);
+                            const amount = parseFloat(detail.amount || 0);
+
+                            if (floorData.monthlyData.has(monthKey)) {
+                                floorData.monthlyData.set(monthKey, floorData.monthlyData.get(monthKey) + amount);
+                            } else {
+                                floorData.monthlyData.set(monthKey, amount);
+                            }
+                        }
+                    });
+                }
+            });
+
+            const allMonths = new Set();
+            floorDataMap.forEach(floorData => {
+                floorData.monthlyData.forEach((amount, month) => {
+                    allMonths.add(month);
+                });
+            });
+            const sortedMonths = Array.from(allMonths).sort();
+
+            if (sortedMonths.length === 0) {
+                return { labels: [], datasets: [] };
             }
-          }
+
+            const datasets = [];
+            let colorIndex = 0;
+
+            floorDataMap.forEach((floorData, floorId) => {
+                const data = sortedMonths.map(month => {
+                    return floorData.monthlyData.get(month) || 0;
+                });
+
+                datasets.push({
+                    label: floorData.floor_name,
+                    data: data,
+                    borderColor: colors[colorIndex % colors.length],
+                    backgroundColor: colors[colorIndex % colors.length] + '30',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: false,
+                    pointRadius: 5,
+                    pointBackgroundColor: colors[colorIndex % colors.length],
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                });
+
+                colorIndex++;
+            });
+
+            return {
+                labels: sortedMonths,
+                datasets: datasets
+            };
         }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: function(value) {
-              return value.toLocaleString() + '원';
+
+        // 수도 요금 추이
+        function prepareWaterChartData() {
+            if (waterBills.length === 0) {
+                return { labels: [], datasets: [] };
             }
-          }
+
+            const sortedBills = waterBills.sort((a, b) =>
+                new Date(a.billing_month) - new Date(b.billing_month)
+            );
+
+            const months = sortedBills.map(b => b.billing_month.slice(0, 7));
+            const amounts = sortedBills.map(b => parseFloat(b.total_amount) || 0);
+
+            return {
+                labels: months,
+                datasets: [
+                    {
+                        label: '수도요금',
+                        data: amounts,
+                        borderColor: colors[4],
+                        backgroundColor: colors[4] + '40',
+                        borderWidth: 3,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 5,
+                        pointBackgroundColor: colors[4]
+                    }
+                ]
+            };
         }
-      }
-    }
-  });
-}
 
-// 수도 차트 생성
-function updateWaterChart() {
-  const ctx = document.getElementById('waterChart').getContext('2d');
-  const data = prepareWaterChartData();
+        // 전기 차트 생성/업데이트
+        function updateElectricChart() {
+            const ctx = document.getElementById('electricChart').getContext('2d');
+            const data = prepareElectricChartData();
 
-  if (waterChart) {
-    waterChart.destroy();
-  }
-
-  waterChart = new Chart(ctx, {
-    type: 'line',
-    data: data,
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          display: false
-        },
-        tooltip: {
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          padding: 12,
-          titleFont: { size: 14 },
-          bodyFont: { size: 12 },
-          callbacks: {
-            label: function(context) {
-              return context.dataset.label + ': ' + Math.round(context.parsed.y).toLocaleString() + '원';
+            if (electricChart) {
+                electricChart.destroy();
             }
-          }
+
+            electricChart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            onClick: function(e, legendItem, legend) {
+                                const index = legendItem.datasetIndex;
+                                const chart = legend.chart;
+                                const meta = chart.getDatasetMeta(index);
+
+                                meta.hidden = meta.hidden === null ? !chart.data.datasets[index].hidden : null;
+
+                                chart.update();
+                            },
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 13
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 12,
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + Math.round(context.parsed.y).toLocaleString() + '원';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + '원';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          ticks: {
-            callback: function(value) {
-              return value.toLocaleString() + '원';
+
+        // 수도 차트 생성
+        function updateWaterChart() {
+            const ctx = document.getElementById('waterChart').getContext('2d');
+            const data = prepareWaterChartData();
+
+            if (waterChart) {
+                waterChart.destroy();
             }
-          }
+
+            waterChart = new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 12,
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 12 },
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + Math.round(context.parsed.y).toLocaleString() + '원';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString() + '원';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
-      }
-    }
-  });
-}
 
-// 전기요금 목록 렌더링
-function renderElectric(){
-  const el = document.getElementById('electricList');
-  if(!electricBills.length){
-    el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
-    return;
-  }
+        // 전기요금 목록 렌더링
+        function renderElectric(){
+            const el = document.getElementById('electricList');
+            if(!electricBills.length){
+                el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
+                return;
+            }
 
-  el.innerHTML = `
+            el.innerHTML = `
     <table>
       <thead>
         <tr>
@@ -451,16 +451,16 @@ function renderElectric(){
       </tbody>
     </table>
   `;
-}
+        }
 
-// 수도요금 목록 렌더링
-function renderWater(){
-  const el = document.getElementById('waterList');
-  if(!waterBills.length){
-    el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
-    return;
-  }
-  el.innerHTML = `
+        // 수도요금 목록 렌더링
+        function renderWater(){
+            const el = document.getElementById('waterList');
+            if(!waterBills.length){
+                el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
+                return;
+            }
+            el.innerHTML = `
     <table>
       <thead>
         <tr>
@@ -491,16 +491,16 @@ function renderWater(){
       </tbody>
     </table>
   `;
-}
+        }
 
-// 공동 공과금 목록 렌더링
-function renderCommon(){
-  const el = document.getElementById('commonList');
-  if(!commonBills.length){
-    el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
-    return;
-  }
-  el.innerHTML = `
+        // 공동 공과금 목록 렌더링
+        function renderCommon(){
+            const el = document.getElementById('commonList');
+            if(!commonBills.length){
+                el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
+                return;
+            }
+            el.innerHTML = `
     <table>
       <thead>
         <tr>
@@ -531,27 +531,27 @@ function renderCommon(){
       </tbody>
     </table>
   `;
-}
+        }
 
-// 월별 정보 포맷팅
-function formatMonthlyDetails(bill) {
-  if (!bill.monthly_details || !Array.isArray(bill.monthly_details) || bill.monthly_details.length === 0) {
-    return '<span style="color:#94a3b8;">-</span>';
-  }
+        // 월별 정보 포맷팅
+        function formatMonthlyDetails(bill) {
+            if (!bill.monthly_details || !Array.isArray(bill.monthly_details) || bill.monthly_details.length === 0) {
+                return '<span style="color:#94a3b8;">-</span>';
+            }
 
-  const months = bill.monthly_details
-    .map(m => m.month ? m.month.substring(0, 7) : '-')
-    .filter(m => m !== '-');
+            const months = bill.monthly_details
+                .map(m => m.month ? m.month.substring(0, 7) : '-')
+                .filter(m => m !== '-');
 
-  if (months.length === 0) {
-    return '<span style="color:#94a3b8;">-</span>';
-  }
+            if (months.length === 0) {
+                return '<span style="color:#94a3b8;">-</span>';
+            }
 
-  if (months.length === 1) {
-    return `<span style="color:#64748b;">단일 월</span>`;
-  }
+            if (months.length === 1) {
+                return `<span style="color:#64748b;">단일 월</span>`;
+            }
 
-  return `
+            return `
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
       <span class="badge badge-primary" style="font-size:13px;">${months.length}개월 묶음</span>
       <div style="font-size:12px;color:#64748b;line-height:1.5;">
@@ -559,30 +559,30 @@ function formatMonthlyDetails(bill) {
       </div>
     </div>
   `;
-}
+        }
 
-// 삭제 함수
-async function deleteBill(type, id) {
-  if(!confirm('정말 삭제하시겠습니까?')) return;
+        // 삭제 함수
+        async function deleteBill(type, id) {
+            if(!confirm('정말 삭제하시겠습니까?')) return;
 
-  const fd = new FormData();
-  fd.append('_csrf_token', getCsrfToken());
+            const fd = new FormData();
+            fd.append('_csrf_token', getCsrfToken());
 
-  const res = await fetch(`/bills/delete/${type}/${id}`, {
-    method: 'POST',
-    body: fd
-  });
+            const res = await fetch(`/bills/delete/${type}/${id}`, {
+                method: 'POST',
+                body: fd
+            });
 
-  const j = await res.json();
-  alert(j.message || (j.success ? '삭제되었습니다.' : '삭제 실패'));
-  if(j.success) location.reload();
-}
+            const j = await res.json();
+            alert(j.message || (j.success ? '삭제되었습니다.' : '삭제 실패'));
+            if(j.success) location.reload();
+        }
 
-// 초기 렌더링
-renderElectric();
-renderWater();
-renderCommon();
-updateElectricChart();
-updateWaterChart();
-</script>
+        // 초기 렌더링
+        renderElectric();
+        renderWater();
+        renderCommon();
+        updateElectricChart();
+        updateWaterChart();
+    </script>
 {% endblock %}

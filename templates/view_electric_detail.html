@@ -3,172 +3,212 @@
 {% block content %}
     <h1><span class="emoji">⚡</span> 전기요금 상세 내역</h1>
 
-<div style="display:flex; justify-content:space-between; margin-bottom:20px;">
-  <div>
-    <h2>{{ bill.billing_month.strftime('%Y년 %m월') }} - {{ bill.floor_ref.name if bill.floor_ref else '' }}</h2>
-    <p style="color:#64748b;">
-      정산 개월수: <strong style="color:#667eea;">{{ bill.billing_months_count|default(1) }}개월</strong> |
-      TV 배분: {% if bill.tv_distribution_mode == 'EQUAL' %}균등 분배{% else %}개별 부과{% endif %}
-    </p>
-  </div>
-  <a href="{{ url_for('view_bills') }}" class="btn btn-secondary">목록으로</a>
-</div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+        <div>
+            <h2>{{ bill.billing_month.strftime('%Y년 %m월') }} - {{ bill.floor_ref.name if bill.floor_ref else '' }}</h2>
+            <p style="color:#64748b;">
+                정산 개월수: <strong style="color:#667eea;">{{ bill.billing_months_count|default(1) }}개월</strong> |
+                TV 배분: {% if bill.tv_distribution_mode == 'EQUAL' %}균등 분배{% else %}개별 부과{% endif %}
+            </p>
+        </div>
+        <a href="{{ url_for('view_bills') }}" class="btn btn-secondary">목록으로</a>
+    </div>
 
-<!-- 월별 고지 내역 -->
-{% if bill.monthly_details and bill.billing_months_count > 1 %}
-<div style="background:#e0e7ff; padding:20px; border-radius:12px; margin-bottom:30px; border-left:4px solid #667eea;">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;">
-    <h3 style="margin:0;color:#4338ca;">📋 포함된 고지월 상세</h3>
-    <span class="badge badge-primary" style="font-size:14px;">{{ bill.billing_months_count }}개월 묶음 정산</span>
-  </div>
-  <table style="background:white;">
-    <thead>
-      <tr>
-        <th>고지월</th>
-        <th>전기요금</th>
-        <th>복지할인</th>
-        <th>바우처할인</th>
-        <th>TV수신료</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for detail in bill.monthly_details %}
-      <tr>
-        <td><strong>{{ detail.month if detail.month else '-' }}</strong></td>
-        <td style="text-align:right">{{ "{:,.0f}".format(detail.amount|default(0)) }}원</td>
-        <td style="text-align:right;color:#059669;">
-          {% if detail.welfare|default(0) > 0 %}-{{ "{:,.0f}".format(detail.welfare) }}원{% else %}-{% endif %}
-        </td>
-        <td style="text-align:right;color:#059669;">
-          {% if detail.voucher|default(0) > 0 %}-{{ "{:,.0f}".format(detail.voucher) }}원{% else %}-{% endif %}
-        </td>
-        <td style="text-align:right;color:#dc2626;">
-          {% if detail.tv_fee|default(0) > 0 %}+{{ "{:,.0f}".format(detail.tv_fee) }}원{% else %}-{% endif %}
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
-      <tr style="background:#f3f4f6;font-weight:bold;">
-        <td>합계</td>
-        <td style="text-align:right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
-        <td style="text-align:right;color:#059669;">
-          {% if bill.welfare_discount|default(0) > 0 %}-{{ "{:,.0f}".format(bill.welfare_discount) }}원{% else %}-{% endif %}
-        </td>
-        <td style="text-align:right;color:#059669;">
-          {% if bill.voucher_discount|default(0) > 0 %}-{{ "{:,.0f}".format(bill.voucher_discount) }}원{% else %}-{% endif %}
-        </td>
-        <td style="text-align:right;color:#dc2626;">
-          {% if bill.tv_fee_total|default(0) > 0 %}+{{ "{:,.0f}".format(bill.tv_fee_total) }}원{% else %}-{% endif %}
-        </td>
-      </tr>
-    </tfoot>
-  </table>
-</div>
-{% endif %}
-
-<div class="grid grid-2" style="margin-bottom:30px;">
-  <div style="background:#f8fafc; padding:20px; border-radius:12px;">
-    <h3>청구 정보</h3>
-    <table style="width:100%;">
-      <tr><td>전기요금 총액:</td><td style="text-align:right"><strong>{{ "{:,.0f}".format(bill.total_amount) }}원</strong></td></tr>
-      <tr><td>복지 할인 총액:</td><td style="text-align:right;color:#059669;">-{{ "{:,.0f}".format(bill.welfare_discount|default(0)) }}원</td></tr>
-      <tr><td>바우처 할인 총액:</td><td style="text-align:right;color:#059669;">-{{ "{:,.0f}".format(bill.voucher_discount|default(0)) }}원</td></tr>
-      <tr><td>TV 수신료 총액:</td><td style="text-align:right;color:#dc2626;">+{{ "{:,.0f}".format(bill.tv_fee_total|default(0)) }}원</td></tr>
-    </table>
-  </div>
-  <div style="background:#f8fafc; padding:20px; border-radius:12px;">
-    <h3>정산 요약</h3>
-    <table style="width:100%;">
-      <tr><td>정산 세대수:</td><td style="text-align:right"><strong>{{ details|length }}세대</strong></td></tr>
-      <tr><td>총 사용량:</td><td style="text-align:right">{{ "{:,.2f}".format(details|sum(attribute='usage_amount')) }}</td></tr>
-      <tr><td>세대별 평균:</td><td style="text-align:right">{{ "{:,.0f}".format((details|sum(attribute='charged_amount')) / (details|length) if details else 0) }}원</td></tr>
-      <tr><td>최종 청구 총액:</td><td style="text-align:right"><strong>{{ "{:,.0f}".format(details|sum(attribute='charged_amount')) }}원</strong></td></tr>
-    </table>
-  </div>
-</div>
-
-<h3>세대별 상세 내역</h3>
-<table>
-  <thead>
-    <tr style="background:#e2e8f0;">
-      <th>세대</th>
-      <th>전월 검침</th>
-      <th>현월 검침</th>
-      <th>사용량</th>
-      <th>기본 배분액</th>
-      <th>복지 할인</th>
-      <th>바우처 할인</th>
-      <th>TV 수신료</th>
-      <th>최종 금액</th>
-      <th style="background:#fef3c7;">청구 금액<br>(10원 단위)</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for detail in details %}
-    {% set reading = readings_map.get(detail.unit_id) %}
-    <tr>
-      <td><strong>{{ detail.unit.unit_name }}</strong></td>
-      <td style="text-align:right">{{ "{:,.2f}".format(reading.previous_reading if reading else 0) }}</td>
-      <td style="text-align:right">{{ "{:,.2f}".format(reading.current_reading if reading else 0) }}</td>
-      <td style="text-align:right; font-weight:bold;">{{ "{:,.2f}".format(detail.usage_amount) }}</td>
-      <td style="text-align:right">{{ "{:,.0f}".format(detail.base_amount) }}원</td>
-      <td style="text-align:right; color:#059669;">
-        {% if detail.welfare_discount > 0 %}-{{ "{:,.0f}".format(detail.welfare_discount) }}원{% else %}-{% endif %}
-      </td>
-      <td style="text-align:right; color:#059669;">
-        {% if detail.voucher_discount > 0 %}-{{ "{:,.0f}".format(detail.voucher_discount) }}원{% else %}-{% endif %}
-      </td>
-      <td style="text-align:right; color:#dc2626;">
-        {% if detail.tv_fee > 0 %}+{{ "{:,.0f}".format(detail.tv_fee) }}원{% else %}-{% endif %}
-      </td>
-      <td style="text-align:right">{{ "{:,.0f}".format(detail.final_amount) }}원</td>
-      <td style="text-align:right; background:#fef3c7; font-weight:bold; font-size:1.1em;">
-        {{ "{:,.0f}".format(detail.charged_amount) }}원
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-  <tfoot>
-    <tr style="background:#e2e8f0; font-weight:bold;">
-      <td>합계</td>
-      <td colspan="2"></td>
-      <td style="text-align:right">{{ "{:,.2f}".format(details|sum(attribute='usage_amount')) }}</td>
-      <td style="text-align:right">{{ "{:,.0f}".format(details|sum(attribute='base_amount')) }}원</td>
-      <td style="text-align:right; color:#059669;">
-        {% set total_welfare = details|sum(attribute='welfare_discount') %}
-        {% if total_welfare > 0 %}-{{ "{:,.0f}".format(total_welfare) }}원{% else %}-{% endif %}
-      </td>
-      <td style="text-align:right; color:#059669;">
-        {% set total_voucher = details|sum(attribute='voucher_discount') %}
-        {% if total_voucher > 0 %}-{{ "{:,.0f}".format(total_voucher) }}원{% else %}-{% endif %}
-      </td>
-      <td style="text-align:right; color:#dc2626;">
-        {% set total_tv = details|sum(attribute='tv_fee') %}
-        {% if total_tv > 0 %}+{{ "{:,.0f}".format(total_tv) }}원{% else %}-{% endif %}
-      </td>
-      <td style="text-align:right">{{ "{:,.0f}".format(details|sum(attribute='final_amount')) }}원</td>
-      <td style="text-align:right; background:#fbbf24; font-size:1.2em;">
-        {{ "{:,.0f}".format(details|sum(attribute='charged_amount')) }}원
-      </td>
-    </tr>
-  </tfoot>
-</table>
-
-<div style="margin-top:30px; padding:20px; background:#dbeafe; border-radius:12px;">
-  <p style="color:#1e40af;">
-    💡 <strong>계산 방식 안내</strong><br>
-    • 기본 배분액 = (세대 사용량 ÷ 총 사용량) × (고지액 + 복지할인 + 바우처할인)<br>
-    • 최종 금액 = 기본 배분액 - 세대별 복지할인 - 세대별 바우처할인 + TV수신료<br>
-    • 청구 금액 = 최종 금액을 10원 단위로 올림 처리<br>
-    {% if bill.tv_distribution_mode == 'EQUAL' %}
-    • TV 수신료: 총 TV수신료({{ "{:,.0f}".format(bill.tv_fee_total|default(0)) }}원)를 재실 세대({{ details|length }}세대)가 균등 분담
-    {% else %}
-    • TV 수신료: TV 보유 세대만 설정 단가 × {{ bill.billing_months_count|default(1) }}개월 부과
+    <!-- 월별 고지 내역 -->
+    {% if bill.monthly_details and bill.billing_months_count > 1 %}
+        <div style="background:#e0e7ff; padding:20px; border-radius:12px; margin-bottom:30px; border-left:4px solid #667eea;">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;">
+                <h3 style="margin:0;color:#4338ca;">📋 포함된 고지월 상세</h3>
+                <span class="badge badge-primary" style="font-size:14px;">{{ bill.billing_months_count }}개월 묶음 정산</span>
+            </div>
+            <table style="background:white;">
+                <thead>
+                <tr>
+                    <th>고지월</th>
+                    <th>전기요금</th>
+                    <th>복지할인</th>
+                    <th>바우처할인</th>
+                    <th>TV수신료</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for detail in bill.monthly_details %}
+                    <tr>
+                        <td><strong>{{ detail.month if detail.month else '-' }}</strong></td>
+                        <td style="text-align:right">{{ "{:,.0f}".format(detail.amount|default(0)) }}원</td>
+                        <td style="text-align:right;color:#059669;">
+                            {% if detail.welfare|default(0) > 0 %}-{{ "{:,.0f}".format(detail.welfare) }}원{% else %}
+                                -{% endif %}
+                        </td>
+                        <td style="text-align:right;color:#059669;">
+                            {% if detail.voucher|default(0) > 0 %}-{{ "{:,.0f}".format(detail.voucher) }}원{% else %}
+                                -{% endif %}
+                        </td>
+                        <td style="text-align:right;color:#dc2626;">
+                            {% if detail.tv_fee|default(0) > 0 %}+{{ "{:,.0f}".format(detail.tv_fee) }}원{% else %}
+                                -{% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+                <tfoot>
+                <tr style="background:#f3f4f6;font-weight:bold;">
+                    <td>합계</td>
+                    <td style="text-align:right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
+                    <td style="text-align:right;color:#059669;">
+                        {% if bill.welfare_discount|default(0) > 0 %}-{{ "{:,.0f}".format(bill.welfare_discount) }}
+                            원{% else %}-{% endif %}
+                    </td>
+                    <td style="text-align:right;color:#059669;">
+                        {% if bill.voucher_discount|default(0) > 0 %}-{{ "{:,.0f}".format(bill.voucher_discount) }}
+                            원{% else %}-{% endif %}
+                    </td>
+                    <td style="text-align:right;color:#dc2626;">
+                        {% if bill.tv_fee_total|default(0) > 0 %}+{{ "{:,.0f}".format(bill.tv_fee_total) }}원{% else %}
+                            -{% endif %}
+                    </td>
+                </tr>
+                </tfoot>
+            </table>
+        </div>
     {% endif %}
-    <br><br>
-    <strong style="color:#7c3aed;">✨ N개월 묶음 정산:</strong> 위 금액은 {{ bill.billing_months_count|default(1) }}개월분 고지를 합산하여 한 번에 정산한 금액입니다.
-  </p>
-</div>
+
+    <div class="grid grid-2" style="margin-bottom:30px;">
+        <div style="background:#f8fafc; padding:20px; border-radius:12px;">
+            <h3>청구 정보</h3>
+            <table style="width:100%;">
+                <tr>
+                    <td>전기요금 총액:</td>
+                    <td style="text-align:right"><strong>{{ "{:,.0f}".format(bill.total_amount) }}원</strong></td>
+                </tr>
+                <tr>
+                    <td>복지 할인 총액:</td>
+                    <td style="text-align:right;color:#059669;">
+                        -{{ "{:,.0f}".format(bill.welfare_discount|default(0)) }}원
+                    </td>
+                </tr>
+                <tr>
+                    <td>바우처 할인 총액:</td>
+                    <td style="text-align:right;color:#059669;">
+                        -{{ "{:,.0f}".format(bill.voucher_discount|default(0)) }}원
+                    </td>
+                </tr>
+                <tr>
+                    <td>TV 수신료 총액:</td>
+                    <td style="text-align:right;color:#dc2626;">+{{ "{:,.0f}".format(bill.tv_fee_total|default(0)) }}원
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div style="background:#f8fafc; padding:20px; border-radius:12px;">
+            <h3>정산 요약</h3>
+            <table style="width:100%;">
+                <tr>
+                    <td>정산 세대수:</td>
+                    <td style="text-align:right"><strong>{{ details|length }}세대</strong></td>
+                </tr>
+                <tr>
+                    <td>총 사용량:</td>
+                    <td style="text-align:right">{{ "{:,.2f}".format(details|sum(attribute='usage_amount')) }}</td>
+                </tr>
+                <tr>
+                    <td>세대별 평균:</td>
+                    <td style="text-align:right">{{ "{:,.0f}".format((details|sum(attribute='charged_amount')) / (details|length) if details else 0) }}원</td>
+                </tr>
+                <tr>
+                    <td>최종 청구 총액:</td>
+                    <td style="text-align:right"><strong>{{ "{:,.0f}".format(details|sum(attribute='charged_amount')) }}원</strong>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <h3>세대별 상세 내역</h3>
+    <table>
+        <thead>
+        <tr style="background:#e2e8f0;">
+            <th>세대</th>
+            <th>전월 검침</th>
+            <th>현월 검침</th>
+            <th>사용량</th>
+            <th>기본 배분액</th>
+            <th>복지 할인</th>
+            <th>바우처 할인</th>
+            <th>TV 수신료</th>
+            <th>최종 금액</th>
+            <th style="background:#fef3c7;">청구 금액<br>(10원 단위)</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for detail in details %}
+            {% set reading = readings_map.get(detail.unit_id) %}
+            <tr>
+                <td><strong>{{ detail.unit.unit_name }}</strong></td>
+                <td style="text-align:right">{{ "{:,.2f}".format(reading.previous_reading if reading else 0) }}</td>
+                <td style="text-align:right">{{ "{:,.2f}".format(reading.current_reading if reading else 0) }}</td>
+                <td style="text-align:right; font-weight:bold;">{{ "{:,.2f}".format(detail.usage_amount) }}</td>
+                <td style="text-align:right">{{ "{:,.0f}".format(detail.base_amount) }}원</td>
+                <td style="text-align:right; color:#059669;">
+                    {% if detail.welfare_discount > 0 %}-{{ "{:,.0f}".format(detail.welfare_discount) }}원{% else %}
+                        -{% endif %}
+                </td>
+                <td style="text-align:right; color:#059669;">
+                    {% if detail.voucher_discount > 0 %}-{{ "{:,.0f}".format(detail.voucher_discount) }}원{% else %}
+                        -{% endif %}
+                </td>
+                <td style="text-align:right; color:#dc2626;">
+                    {% if detail.tv_fee > 0 %}+{{ "{:,.0f}".format(detail.tv_fee) }}원{% else %}-{% endif %}
+                </td>
+                <td style="text-align:right">{{ "{:,.0f}".format(detail.final_amount) }}원</td>
+                <td style="text-align:right; background:#fef3c7; font-weight:bold; font-size:1.1em;">
+                    {{ "{:,.0f}".format(detail.charged_amount) }}원
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+        <tfoot>
+        <tr style="background:#e2e8f0; font-weight:bold;">
+            <td>합계</td>
+            <td colspan="2"></td>
+            <td style="text-align:right">{{ "{:,.2f}".format(details|sum(attribute='usage_amount')) }}</td>
+            <td style="text-align:right">{{ "{:,.0f}".format(details|sum(attribute='base_amount')) }}원</td>
+            <td style="text-align:right; color:#059669;">
+                {% set total_welfare = details|sum(attribute='welfare_discount') %}
+                {% if total_welfare > 0 %}-{{ "{:,.0f}".format(total_welfare) }}원{% else %}-{% endif %}
+            </td>
+            <td style="text-align:right; color:#059669;">
+                {% set total_voucher = details|sum(attribute='voucher_discount') %}
+                {% if total_voucher > 0 %}-{{ "{:,.0f}".format(total_voucher) }}원{% else %}-{% endif %}
+            </td>
+            <td style="text-align:right; color:#dc2626;">
+                {% set total_tv = details|sum(attribute='tv_fee') %}
+                {% if total_tv > 0 %}+{{ "{:,.0f}".format(total_tv) }}원{% else %}-{% endif %}
+            </td>
+            <td style="text-align:right">{{ "{:,.0f}".format(details|sum(attribute='final_amount')) }}원</td>
+            <td style="text-align:right; background:#fbbf24; font-size:1.2em;">
+                {{ "{:,.0f}".format(details|sum(attribute='charged_amount')) }}원
+            </td>
+        </tr>
+        </tfoot>
+    </table>
+
+    <div style="margin-top:30px; padding:20px; background:#dbeafe; border-radius:12px;">
+        <p style="color:#1e40af;">
+            💡 <strong>계산 방식 안내</strong><br>
+            • 기본 배분액 = (세대 사용량 ÷ 총 사용량) × (고지액 + 복지할인 + 바우처할인)<br>
+            • 최종 금액 = 기본 배분액 - 세대별 복지할인 - 세대별 바우처할인 + TV수신료<br>
+            • 청구 금액 = 최종 금액을 10원 단위로 올림 처리<br>
+            {% if bill.tv_distribution_mode == 'EQUAL' %}
+                • TV 수신료: 총 TV수신료({{ "{:,.0f}".format(bill.tv_fee_total|default(0)) }}원)를 재실 세대({{ details|length }}세대)가
+                균등 분담
+            {% else %}
+                • TV 수신료: TV 보유 세대만 설정 단가 × {{ bill.billing_months_count|default(1) }}개월 부과
+            {% endif %}
+            <br><br>
+            <strong style="color:#7c3aed;">✨ N개월 묶음 정산:</strong> 위 금액은 {{ bill.billing_months_count|default(1) }}개월분 고지를
+            합산하여 한 번에 정산한 금액입니다.
+        </p>
+    </div>
 
 {% endblock %}

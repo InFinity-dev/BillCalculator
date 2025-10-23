@@ -153,11 +153,12 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
+
         h1 .emoji {
-          color: revert;
-          color: initial;
-          -webkit-text-fill-color: initial;
-          font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji", sans-serif;
+            color: revert;
+            color: initial;
+            -webkit-text-fill-color: initial;
+            font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
         }
 
         h2 {
@@ -586,27 +587,69 @@
         /* ============================================
            🎨 Utility Classes
            ============================================ */
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .text-left { text-align: left; }
+        .text-center {
+            text-align: center;
+        }
 
-        .mt-1 { margin-top: var(--space-sm); }
-        .mt-2 { margin-top: var(--space-md); }
-        .mt-3 { margin-top: var(--space-xl); }
+        .text-right {
+            text-align: right;
+        }
 
-        .mb-1 { margin-bottom: var(--space-sm); }
-        .mb-2 { margin-bottom: var(--space-md); }
-        .mb-3 { margin-bottom: var(--space-xl); }
+        .text-left {
+            text-align: left;
+        }
 
-        .p-1 { padding: var(--space-sm); }
-        .p-2 { padding: var(--space-md); }
-        .p-3 { padding: var(--space-xl); }
+        .mt-1 {
+            margin-top: var(--space-sm);
+        }
 
-        .font-bold { font-weight: 600; }
-        .font-semibold { font-weight: 500; }
+        .mt-2 {
+            margin-top: var(--space-md);
+        }
 
-        .text-sm { font-size: var(--font-small); }
-        .text-xs { font-size: var(--font-xs); }
+        .mt-3 {
+            margin-top: var(--space-xl);
+        }
+
+        .mb-1 {
+            margin-bottom: var(--space-sm);
+        }
+
+        .mb-2 {
+            margin-bottom: var(--space-md);
+        }
+
+        .mb-3 {
+            margin-bottom: var(--space-xl);
+        }
+
+        .p-1 {
+            padding: var(--space-sm);
+        }
+
+        .p-2 {
+            padding: var(--space-md);
+        }
+
+        .p-3 {
+            padding: var(--space-xl);
+        }
+
+        .font-bold {
+            font-weight: 600;
+        }
+
+        .font-semibold {
+            font-weight: 500;
+        }
+
+        .text-sm {
+            font-size: var(--font-small);
+        }
+
+        .text-xs {
+            font-size: var(--font-xs);
+        }
 
         @keyframes modalSlideIn {
             from {
@@ -646,93 +689,99 @@
 </head>
 {#------------------------------------------------GNB------------------------------------------------#}
 <body>
-    <div class="container">
-        <nav class="navbar">
-            <ul>
-                <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">🏠 홈</a></li>
-                <li><a href="{{ url_for('settings') }}" class="{% if request.endpoint == 'settings' %}active{% endif %}">⚙️ 설정</a></li>
-                <li><a href="{{ url_for('calculator') }}" class="{% if request.endpoint == 'calculator' %}active{% endif %}">🧮 계산기</a></li>
-                <li><a href="{{ url_for('view_bills') }}" class="{% if request.endpoint == 'view_bills' %}active{% endif %}">📊 조회</a></li>
-                <li><a href="{{ url_for('invoice_combination') }}" class="{% if request.endpoint == 'invoice_combination' %}active{% endif %}">📄 정산</a></li>
-                <li><a href="{{ url_for('payments') }}" class="{% if request.endpoint == 'payments' %}active{% endif %}">💳 납부 내역</a></li>
-            </ul>
-        </nav>
+<div class="container">
+    <nav class="navbar">
+        <ul>
+            <li><a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">🏠 홈</a>
+            </li>
+            <li><a href="{{ url_for('settings') }}" class="{% if request.endpoint == 'settings' %}active{% endif %}">⚙️
+                설정</a></li>
+            <li><a href="{{ url_for('calculator') }}"
+                   class="{% if request.endpoint == 'calculator' %}active{% endif %}">🧮 계산기</a></li>
+            <li><a href="{{ url_for('view_bills') }}"
+                   class="{% if request.endpoint == 'view_bills' %}active{% endif %}">📊 조회</a></li>
+            <li><a href="{{ url_for('invoice_combination') }}"
+                   class="{% if request.endpoint == 'invoice_combination' %}active{% endif %}">📄 정산</a></li>
+            <li><a href="{{ url_for('payments') }}" class="{% if request.endpoint == 'payments' %}active{% endif %}">💳
+                납부 내역</a></li>
+        </ul>
+    </nav>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-{#------------------------------------------------GNB ENDS HERE----------------------------------------#}
-        <div class="content-card">
-            {% block content %}{% endblock %}
-        </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    {#------------------------------------------------GNB ENDS HERE----------------------------------------#}
+    <div class="content-card">
+        {% block content %}{% endblock %}
     </div>
+</div>
 
-    <!-- 모달 영역 (body 직계 자식, container 외부) -->
-    {% block modals %}{% endblock %}
+<!-- 모달 영역 (body 직계 자식, container 외부) -->
+{% block modals %}{% endblock %}
 
-    <script>
-        // CSRF 토큰 처리
-        function getCsrfToken() {
-            return '{{ csrf_token() }}';
+<script>
+    // CSRF 토큰 처리
+    function getCsrfToken() {
+        return '{{ csrf_token() }}';
+    }
+
+    // 모달 관련 함수
+    function openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('active');
+        } else {
+            console.error('Modal not found:', modalId);
         }
+    }
 
-        // 모달 관련 함수
-        function openModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.add('active');
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+
+    // 모달 배경 클릭 시 닫기
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal')) {
+            closeModal(e.target.id);
+        }
+    });
+
+    // 숫자 포맷팅
+    function formatNumber(num) {
+        return new Intl.NumberFormat('ko-KR').format(num);
+    }
+
+    // Ajax 요청 헬퍼
+    async function fetchAPI(url, method = 'GET', data = null) {
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        };
+
+        if (method === 'POST' && data) {
+            if (data instanceof FormData) {
+                options.body = data;
+                delete options.headers['Content-Type'];
             } else {
-                console.error('Modal not found:', modalId);
+                options.body = JSON.stringify(data);
             }
         }
 
-        function closeModal(modalId) {
-            const modal = document.getElementById(modalId);
-            if (modal) {
-                modal.classList.remove('active');
-            }
-        }
-
-        // 모달 배경 클릭 시 닫기
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('modal')) {
-                closeModal(e.target.id);
-            }
-        });
-
-        // 숫자 포맷팅
-        function formatNumber(num) {
-            return new Intl.NumberFormat('ko-KR').format(num);
-        }
-
-        // Ajax 요청 헬퍼
-        async function fetchAPI(url, method = 'GET', data = null) {
-            const options = {
-                method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            };
-
-            if (method === 'POST' && data) {
-                if (data instanceof FormData) {
-                    options.body = data;
-                    delete options.headers['Content-Type'];
-                } else {
-                    options.body = JSON.stringify(data);
-                }
-            }
-
-            const response = await fetch(url, options);
-            return response.json();
-        }
-    </script>
-    {% block scripts %}{% endblock %}
+        const response = await fetch(url, options);
+        return response.json();
+    }
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

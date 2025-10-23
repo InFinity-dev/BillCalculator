@@ -27,7 +27,7 @@
             background: white;
             padding: 40px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
         }
 
@@ -98,7 +98,7 @@
             border-bottom: 1px solid #ddd;
         }
 
-        .bill-table .amount-title{
+        .bill-table .amount-title {
             text-align: right;
         }
 
@@ -208,14 +208,14 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: 500;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             transition: all 0.3s ease;
             z-index: 1000;
         }
 
         .print-button:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
         }
 
         /* 인쇄 최적화 */
@@ -275,10 +275,10 @@
     </style>
 </head>
 <body>
-    <button class="print-button no-print" onclick="window.print()">🖨️ 인쇄하기</button>
+<button class="print-button no-print" onclick="window.print()">🖨️ 인쇄하기</button>
 
-    <div class="invoice-container">
-        {% for invoice in invoices %}
+<div class="invoice-container">
+    {% for invoice in invoices %}
         <div class="invoice {% if not loop.last %}page-break{% endif %}">
             <div class="header">
                 <p>{{ combination.invoice_name }}</p>
@@ -306,7 +306,8 @@
                                             {# N개월 묶음 정산인 경우 모든 고지월 표시 #}
                                             {% set months = ebill.monthly_details | map(attribute='month') | select | list %}
                                             {% if months|length > 1 %}
-                                                <span class="floor-info">{{ floor_name }}</span> 전기요금 ({{ months|length }}개월 묶음)
+                                                <span class="floor-info">{{ floor_name }}</span> 전기요금 (
+                                                {{ months|length }}개월 묶음)
                                                 <span class="billing-months">
                                                     - 고지월:
                                                     {% for detail in ebill.monthly_details %}
@@ -328,19 +329,21 @@
                                             {% endif %}
                                         {% else %}
                                             {# monthly_details가 없는 경우 정산월 표시 #}
-                                            {{ item.billing_month.strftime('%Y년 %m월') }} <span class="floor-info">{{ floor_name }}</span> 전기요금
+                                            {{ item.billing_month.strftime('%Y년 %m월') }}
+                                            <span class="floor-info">{{ floor_name }}</span> 전기요금
                                         {% endif %}
                                     </li>
                                 {% endif %}
                             {% endif %}
 
-                        {# 수도요금: 모든 세대에 공통 표시 #}
+                            {# 수도요금: 모든 세대에 공통 표시 #}
                         {% elif item.item_type == 'WATER' %}
                             <li>💧 {{ item.billing_month.strftime('%Y년 %m월') }} 수도요금</li>
 
-                        {# 공동 공과금: 모든 세대에 공통 표시 #}
+                            {# 공동 공과금: 모든 세대에 공통 표시 #}
                         {% elif item.item_type == 'COMMON' %}
-                            <li>🏘️ {{ item.billing_month.strftime('%Y년 %m월') }} - {{ item.item_description|default('공동 공과금') }}</li>
+                            <li>🏘️ {{ item.billing_month.strftime('%Y년 %m월') }}
+                                - {{ item.item_description|default('공동 공과금') }}</li>
                         {% endif %}
                     {% endfor %}
                 </ul>
@@ -348,44 +351,44 @@
 
             <table class="bill-table">
                 <thead>
-                    <tr>
-                        <th>청구 항목</th>
-                        <th class="amount-title">금액</th>
-                    </tr>
+                <tr>
+                    <th>청구 항목</th>
+                    <th class="amount-title">금액</th>
+                </tr>
                 </thead>
                 <tbody>
-                    {% if invoice.electric_amount > 0 %}
+                {% if invoice.electric_amount > 0 %}
                     <tr>
                         <td>전기요금</td>
                         <td class="amount">{{ "{:,.0f}".format(invoice.electric_amount) }}원</td>
                     </tr>
-                    {% endif %}
+                {% endif %}
 
-                    {% if invoice.water_amount > 0 %}
+                {% if invoice.water_amount > 0 %}
                     <tr>
                         <td>수도요금</td>
                         <td class="amount">{{ "{:,.0f}".format(invoice.water_amount) }}원</td>
                     </tr>
-                    {% endif %}
+                {% endif %}
 
-                    {% if invoice.common_amount > 0 %}
-                        {% if invoice.common_details %}
-                            {% for common_item in invoice.common_details %}
+                {% if invoice.common_amount > 0 %}
+                    {% if invoice.common_details %}
+                        {% for common_item in invoice.common_details %}
                             <tr>
                                 <td class="sub-item">공동 공과금 - {{ common_item.description }}</td>
                                 <td class="amount">{{ "{:,.0f}".format(common_item.amount) }}원</td>
                             </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr>
-                                <td>공동 공과금</td>
-                                <td class="amount">{{ "{:,.0f}".format(invoice.common_amount) }}원</td>
-                            </tr>
-                        {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td>공동 공과금</td>
+                            <td class="amount">{{ "{:,.0f}".format(invoice.common_amount) }}원</td>
+                        </tr>
                     {% endif %}
+                {% endif %}
 
-                    {% if invoice.additional_charges %}
-                        {% for charge in invoice.additional_charges %}
+                {% if invoice.additional_charges %}
+                    {% for charge in invoice.additional_charges %}
                         <tr {% if charge.description.startswith('[이월]') %}style="background:#fef3c7;"{% endif %}>
                             {% set is_refund = charge.amount < 0 %}
                             {% set is_carryover = charge.description.startswith('[이월]') %}
@@ -399,33 +402,33 @@
                                 {{ "-" if is_refund else "+" }}{{ "{:,.0f}".format(charge.amount|abs) }}원
                             </td>
                         </tr>
-                        {% endfor %}
-                    {% endif %}
+                    {% endfor %}
+                {% endif %}
 
-                    <tr class="total-row">
-                        <td>총 청구금액</td>
-                        <td class="amount">{{ "{:,.0f}".format(invoice.total_amount) }}원</td>
-                    </tr>
+                <tr class="total-row">
+                    <td>총 청구금액</td>
+                    <td class="amount">{{ "{:,.0f}".format(invoice.total_amount) }}원</td>
+                </tr>
                 </tbody>
             </table>
 
             {% if invoice.unit_memo %}
-            <div class="unit-memo-section">
-                <h4>⚠️ 세대 안내사항</h4>
-                <p style="white-space:pre-wrap;margin:0;color:#78350f;">{{ invoice.unit_memo }}</p>
-            </div>
+                <div class="unit-memo-section">
+                    <h4>⚠️ 세대 안내사항</h4>
+                    <p style="white-space:pre-wrap;margin:0;color:#78350f;">{{ invoice.unit_memo }}</p>
+                </div>
             {% endif %}
 
             {% if combination.memo %}
-            <div class="memo-section">
-                <h3>안내사항</h3>
-                <p style="white-space:pre-wrap;margin:0;">{{ combination.memo }}</p>
-            </div>
+                <div class="memo-section">
+                    <h3>안내사항</h3>
+                    <p style="white-space:pre-wrap;margin:0;">{{ combination.memo }}</p>
+                </div>
             {% endif %}
 
             <div class="footer">{{ invoice_footer|default('* Footer 문구를 설정에서 커스텀 할 수 있습니다.') }}</div>
         </div>
-        {% endfor %}
-    </div>
+    {% endfor %}
+</div>
 </body>
 </html>

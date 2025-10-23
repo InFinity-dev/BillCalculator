@@ -3,193 +3,193 @@
 {% block title %}정산서 조회 - 공과금 정산 시스템{% endblock %}
 
 {% block extra_css %}
-<style>
-/* 통계 요약 카드 디자인 */
-.stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
-    margin-bottom: 30px;
-}
+    <style>
+        /* 통계 요약 카드 디자인 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-xl);
+            margin-bottom: var(--space-2xl);
+        }
 
-.stat-card {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    border: 2px solid #e2e8f0;
-    text-align: center;
-    transition: all 0.3s ease;
-}
+        .stat-card {
+            background: white;
+            padding: var(--space-xl);
+            border-radius: var(--radius-lg);
+            border: 2px solid var(--gray-200);
+            text-align: center;
+            transition: var(--transition-base);
+        }
 
-.stat-card:hover {
-    border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-    transform: translateY(-2px);
-}
+        .stat-card:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+            transform: translateY(-2px);
+        }
 
-.stat-card .label {
-    font-size: 13px;
-    color: #64748b;
-    margin-bottom: 8px;
-    font-weight: 500;
-}
+        .stat-card .label {
+            font-size: var(--font-small);
+            color: var(--gray-500);
+            margin-bottom: var(--space-sm);
+            font-weight: 500;
+        }
 
-.stat-card .value {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1e293b;
-}
+        .stat-card .value {
+            font-size: var(--font-2xl);
+            font-weight: 700;
+            color: var(--gray-800);
+        }
 
-.stat-card .value.primary {
-    color: #667eea;
-}
+        .stat-card .value.primary {
+            color: var(--primary-color);
+        }
 
-/* 기타 금액 상세 표시 스타일 */
-.additional-details {
-    font-size: 12px;
-    color: #64748b;
-    margin-top: 4px;
-    padding-left: 8px;
-    {#border-left: 2px solid #e2e8f0;#}
-}
+        /* 기타 금액 상세 표시 스타일 */
+        .additional-details {
+            font-size: var(--font-xs);
+            color: var(--gray-500);
+            margin-top: var(--space-xs);
+            padding-left: var(--space-sm);
+        }
 
-.charge-item {
-    color: #dc2626;
-}
+        .charge-item {
+            color: var(--danger-dark);
+        }
 
-.refund-item {
-    color: #059669;
-}
+        .refund-item {
+            color: var(--success-dark);
+        }
 
-/* 금액 컬럼 헤더 우측 정렬 */
-table th.text-right {
-    text-align: right !important;
-}
+        /* 금액 컬럼 헤더 우측 정렬 */
+        table th.text-right {
+            text-align: right !important;
+        }
 
-/* 금액 데이터 우측 정렬 */
-table td.text-right {
-    text-align: right !important;
-    font-weight: 500;
-}
+        /* 금액 데이터 우측 정렬 */
+        table td.text-right {
+            text-align: right !important;
+            font-weight: 500;
+        }
 
-/* 반응형 */
-@media (max-width: 768px) {
-    .stats-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
 
-    .stat-card .value {
-        font-size: 20px;
-    }
-}
+            .stat-card .value {
+                font-size: 20px;
+            }
+        }
 
-@media (max-width: 480px) {
-    .stats-grid {
-        grid-template-columns: 1fr;
-    }
-}
-</style>
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 {% endblock %}
 
 {% block content %}
-<div style="display: flex; align-items: center; justify-content: space-between;">
-    <h1><span class="emoji">📄</span> {{ combination.invoice_name }}</h1>
-    <div>
-        <a href="{{ url_for('print_invoice', combination_id=combination.id) }}" target="_blank" class="btn btn-primary">🖨️ 인쇄용 보기</a>
-        <a href="{{ url_for('invoice_combination') }}" class="btn btn-secondary">목록으로</a>
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+        <h1><span class="emoji">📄</span> {{ combination.invoice_name }}</h1>
+        <div>
+            <a href="{{ url_for('print_invoice', combination_id=combination.id) }}" target="_blank"
+               class="btn btn-primary">🖨️ 인쇄용 보기</a>
+            <a href="{{ url_for('invoice_combination') }}" class="btn btn-secondary">목록으로</a>
+        </div>
     </div>
-</div>
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-    <div>
-        <p style="color: #64748b;">생성일: {{ combination.created_at.strftime('%Y년 %m월 %d일 %H:%M') }}</p>
-        {% if combination.memo %}
-        <details style="margin-top:10px;">
-            <summary style="cursor:pointer;color:#667eea;font-weight:500;">📝 공통 메모 보기</summary>
-            <div style="background:#f8fafc;padding:15px;border-radius:8px;margin-top:10px;white-space:pre-line;font-size:14px;">
-                {{ combination.memo | trim }}
-            </div>
-        </details>
-        {% endif %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <div>
+            <p style="color: #64748b;">생성일: {{ combination.created_at.strftime('%Y년 %m월 %d일 %H:%M') }}</p>
+            {% if combination.memo %}
+                <details style="margin-top:10px;">
+                    <summary style="cursor:pointer;color:#667eea;font-weight:500;">📝 공통 메모 보기</summary>
+                    <div style="background:#f8fafc;padding:15px;border-radius:8px;margin-top:10px;white-space:pre-line;font-size:14px;">
+                        {{ combination.memo | trim }}
+                    </div>
+                </details>
+            {% endif %}
+        </div>
     </div>
-</div>
 
-<!-- 통계 요약 카드 (새 디자인) -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="label">총 세대수</div>
-        <div class="value primary">{{ invoices|length }}</div>
+    <!-- 통계 요약 카드 (새 디자인) -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="label">총 세대수</div>
+            <div class="value primary">{{ invoices|length }}</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">전기요금 합계</div>
+            <div class="value">{{ "{:,}".format(invoices|sum(attribute='electric_amount')|int) }}원</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">수도요금 합계</div>
+            <div class="value">{{ "{:,}".format(invoices|sum(attribute='water_amount')|int) }}원</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">공동공과금 합계</div>
+            <div class="value">{{ "{:,}".format(invoices|sum(attribute='common_amount')|int) }}원</div>
+        </div>
+        <div class="stat-card">
+            <div class="label">총 청구금액</div>
+            <div class="value primary">{{ "{:,}".format(invoices|sum(attribute='total_amount')|int) }}원</div>
+        </div>
     </div>
-    <div class="stat-card">
-        <div class="label">전기요금 합계</div>
-        <div class="value">{{ "{:,}".format(invoices|sum(attribute='electric_amount')|int) }}원</div>
-    </div>
-    <div class="stat-card">
-        <div class="label">수도요금 합계</div>
-        <div class="value">{{ "{:,}".format(invoices|sum(attribute='water_amount')|int) }}원</div>
-    </div>
-    <div class="stat-card">
-        <div class="label">공동공과금 합계</div>
-        <div class="value">{{ "{:,}".format(invoices|sum(attribute='common_amount')|int) }}원</div>
-    </div>
-    <div class="stat-card">
-        <div class="label">총 청구금액</div>
-        <div class="value primary">{{ "{:,}".format(invoices|sum(attribute='total_amount')|int) }}원</div>
-    </div>
-</div>
 
-<!-- 포함된 항목 -->
-<div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
-    <h3>포함된 청구 항목</h3>
-    <ul style="line-height: 2;">
-        {% for item in combination.items %}
-        <li>
-            {% if item.item_type == 'ELECTRIC' %}
-                {% if item.electric_bill_ref %}
-                    {% set ebill = item.electric_bill_ref %}
-                    {% set floor_name = ebill.floor_ref.name if ebill.floor_ref else '' %}
+    <!-- 포함된 항목 -->
+    <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+        <h3>포함된 청구 항목</h3>
+        <ul style="line-height: 2;">
+            {% for item in combination.items %}
+                <li>
+                    {% if item.item_type == 'ELECTRIC' %}
+                        {% if item.electric_bill_ref %}
+                            {% set ebill = item.electric_bill_ref %}
+                            {% set floor_name = ebill.floor_ref.name if ebill.floor_ref else '' %}
 
-                    ⚡
-                    {% if ebill.monthly_details and ebill.monthly_details|length > 0 %}
-                        {% set months = ebill.monthly_details | map(attribute='month') | select | list %}
-                        {% if months|length > 1 %}
-                            {# 첫 달과 마지막 달 표시 - 문자열인지 datetime 객체인지 확인 #}
-                            {{ floor_name }}
-                            {% if months[0] is string %}
-                                {{ months[0] }} ~ {{ months[-1] }}
+                            ⚡
+                            {% if ebill.monthly_details and ebill.monthly_details|length > 0 %}
+                                {% set months = ebill.monthly_details | map(attribute='month') | select | list %}
+                                {% if months|length > 1 %}
+                                    {# 첫 달과 마지막 달 표시 - 문자열인지 datetime 객체인지 확인 #}
+                                    {{ floor_name }}
+                                    {% if months[0] is string %}
+                                        {{ months[0] }} ~ {{ months[-1] }}
+                                    {% else %}
+                                        {{ months[0].strftime('%Y년 %m월') }} ~ {{ months[-1].strftime('%m월') }}
+                                    {% endif %}
+                                    ({{ months|length }}개월 묶음)
+                                {% else %}
+                                    {# 단일 월 - 문자열인지 datetime 객체인지 확인 #}
+                                    {{ floor_name }}
+                                    {% if months[0] is string %}
+                                        {{ months[0] }}
+                                    {% else %}
+                                        {{ months[0].strftime('%Y년 %m월') }}
+                                    {% endif %}
+                                {% endif %}
                             {% else %}
-                                {{ months[0].strftime('%Y년 %m월') }} ~ {{ months[-1].strftime('%m월') }}
-                            {% endif %}
-                            ({{ months|length }}개월 묶음)
-                        {% else %}
-                            {# 단일 월 - 문자열인지 datetime 객체인지 확인 #}
-                            {{ floor_name }}
-                            {% if months[0] is string %}
-                                {{ months[0] }}
-                            {% else %}
-                                {{ months[0].strftime('%Y년 %m월') }}
+                                {# monthly_details가 없으면 billing_month 사용 #}
+                                {{ floor_name }} {{ ebill.billing_month.strftime('%Y년 %m월') }}
                             {% endif %}
                         {% endif %}
-                    {% else %}
-                        {# monthly_details가 없으면 billing_month 사용 #}
-                        {{ floor_name }} {{ ebill.billing_month.strftime('%Y년 %m월') }}
+
+                    {% elif item.item_type == 'WATER' %}
+                        💧 {{ item.billing_month.strftime('%Y년 %m월') }} 수도요금
+
+                    {% elif item.item_type == 'COMMON' %}
+                        🏘️ {{ item.billing_month.strftime('%Y년 %m월') }} {{ item.item_description|default('공동 공과금') }}
                     {% endif %}
-                {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
 
-            {% elif item.item_type == 'WATER' %}
-                💧 {{ item.billing_month.strftime('%Y년 %m월') }} 수도요금
-
-            {% elif item.item_type == 'COMMON' %}
-                🏘️ {{ item.billing_month.strftime('%Y년 %m월') }} {{ item.item_description|default('공동 공과금') }}
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
-</div>
-
-<!-- 세대별 청구 내역 (원래 디자인 + 기타 항목 상세 표시) -->
-<h2>세대별 청구 내역</h2>
-<table>
-    <thead>
+    <!-- 세대별 청구 내역 (원래 디자인 + 기타 항목 상세 표시) -->
+    <h2>세대별 청구 내역</h2>
+    <table>
+        <thead>
         <tr>
             <th>세대</th>
             <th>세대 비고</th>
@@ -200,71 +200,71 @@ table td.text-right {
             <th class="text-right">세대 메모</th>
             <th class="text-right" style="background: #fef3c7;">최종 청구금액</th>
         </tr>
-    </thead>
-    <tbody>
+        </thead>
+        <tbody>
         {% for invoice in invoices %}
-        <tr>
-            <td><strong>{{ invoice.unit.unit_name }}</strong></td>
-            <td>
-                {% if invoice.unit.memo %}
-                    {{ invoice.unit.memo }}
-                {% else %}
-                    <span style="color:#94a3b8;">-</span>
-                {% endif %}
-            </td>
-            <td class="text-right">
-                {% if invoice.electric_amount > 0 %}
-                    {{ "{:,.0f}".format(invoice.electric_amount) }}원
-                {% else %}
-                    -
-                {% endif %}
-            </td>
-            <td class="text-right">
-                {% if invoice.water_amount > 0 %}
-                    {{ "{:,.0f}".format(invoice.water_amount) }}원
-                {% else %}
-                    -
-                {% endif %}
-            </td>
-            <td class="text-right">
-                {% if invoice.common_amount > 0 %}
-                    {{ "{:,.0f}".format(invoice.common_amount) }}원
-                {% else %}
-                    -
-                {% endif %}
-            </td>
-            <td class="text-right">
-                {% if invoice.additional_charges %}
-                    {% set additional_total = invoice.additional_charges | sum(attribute='amount') %}
-                    <div style="font-weight:600;">
-                        {{ "{:,}".format(additional_total|int) }}원
-                    </div>
-                    <!-- 기타 항목 상세 표시 -->
-                    <div class="additional-details">
-                        {% for charge in invoice.additional_charges %}
-                            <div class="{% if charge.amount > 0 %}charge-item{% else %}refund-item{% endif %}">
-                                {{ charge.description }}: {{ "{:,}".format(charge.amount|int) }}원
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    -
-                {% endif %}
-            </td>
-            <td class="text-right">
-                {% if invoice.unit_memo %}
-                    {{ invoice.unit_memo }}
-                {% else %}
-                    -
-                {% endif %}
-            </td>
-            <td class="text-right" style="background: #fef3c7; font-weight: bold; font-size: 1.1em;">
-                {{ "{:,.0f}".format(invoice.total_amount) }}원
-            </td>
-        </tr>
+            <tr>
+                <td><strong>{{ invoice.unit.unit_name }}</strong></td>
+                <td>
+                    {% if invoice.unit.memo %}
+                        {{ invoice.unit.memo }}
+                    {% else %}
+                        <span style="color:#94a3b8;">-</span>
+                    {% endif %}
+                </td>
+                <td class="text-right">
+                    {% if invoice.electric_amount > 0 %}
+                        {{ "{:,.0f}".format(invoice.electric_amount) }}원
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="text-right">
+                    {% if invoice.water_amount > 0 %}
+                        {{ "{:,.0f}".format(invoice.water_amount) }}원
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="text-right">
+                    {% if invoice.common_amount > 0 %}
+                        {{ "{:,.0f}".format(invoice.common_amount) }}원
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="text-right">
+                    {% if invoice.additional_charges %}
+                        {% set additional_total = invoice.additional_charges | sum(attribute='amount') %}
+                        <div style="font-weight:600;">
+                            {{ "{:,}".format(additional_total|int) }}원
+                        </div>
+                        <!-- 기타 항목 상세 표시 -->
+                        <div class="additional-details">
+                            {% for charge in invoice.additional_charges %}
+                                <div class="{% if charge.amount > 0 %}charge-item{% else %}refund-item{% endif %}">
+                                    {{ charge.description }}: {{ "{:,}".format(charge.amount|int) }}원
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="text-right">
+                    {% if invoice.unit_memo %}
+                        {{ invoice.unit_memo }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td class="text-right" style="background: #fef3c7; font-weight: bold; font-size: 1.1em;">
+                    {{ "{:,.0f}".format(invoice.total_amount) }}원
+                </td>
+            </tr>
         {% endfor %}
-    </tbody>
-    <tfoot>
+        </tbody>
+        <tfoot>
         <tr style="background: #e2e8f0; font-weight: bold;">
             <td>합계</td>
             <td>-</td>
@@ -291,20 +291,20 @@ table td.text-right {
                 {{ "{:,.0f}".format(invoices|sum(attribute='total_amount')) }}원
             </td>
         </tr>
-    </tfoot>
-</table>
+        </tfoot>
+    </table>
 
-<div style="margin-top: 30px; padding: 20px; background: #dbeafe; border-radius: 12px;">
-    <p style="color: #1e40af;">
-        💡 <strong>안내:</strong>
-        각 항목별 금액은 10원 단위로 올림 처리되어 있습니다.
-        기타 항목은 세대별로 개별 부과된 항목입니다.
-        인쇄용 보기에서는 세대별로 잘라서 배부할 수 있는 형식으로 출력됩니다.
-    </p>
-    <p style="color: #1e40af; margin-top: 10px;">
-        📌 <strong>[이월]</strong> 표시가 있는 항목은 전월 미납금/초과납부를 참고용으로 표시한 것으로,
-        실제 누적 잔액 계산 시에는 중복 계산되지 않습니다.
-    </p>
-</div>
+    <div style="margin-top: 30px; padding: 20px; background: #dbeafe; border-radius: 12px;">
+        <p style="color: #1e40af;">
+            💡 <strong>안내:</strong>
+            각 항목별 금액은 10원 단위로 올림 처리되어 있습니다.
+            기타 항목은 세대별로 개별 부과된 항목입니다.
+            인쇄용 보기에서는 세대별로 잘라서 배부할 수 있는 형식으로 출력됩니다.
+        </p>
+        <p style="color: #1e40af; margin-top: 10px;">
+            📌 <strong>[이월]</strong> 표시가 있는 항목은 전월 미납금/초과납부를 참고용으로 표시한 것으로,
+            실제 누적 잔액 계산 시에는 중복 계산되지 않습니다.
+        </p>
+    </div>
 
 {% endblock %}

@@ -131,7 +131,7 @@ class Floor(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     floor_number = db.Column(db.Integer, nullable=False, unique=True)
     name = db.Column(db.String(50))
-    electric_contract_number = db.Column(db.String(50)) # 전기 계약 번호
+    electric_contract_number = db.Column(db.String(50))  # 전기 계약 번호
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     units = db.relationship('Unit', backref='floor', lazy=True, cascade='all, delete-orphan')
@@ -308,6 +308,7 @@ class FinalInvoice(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     unit = db.relationship('Unit', backref='final_invoices')
 
+
 # 납부 내역
 class Payment(db.Model):
     __tablename__ = 'payments'
@@ -419,7 +420,6 @@ def settings_page():
         'water_customer_number': get_setting('water_customer_number', ''),
     }
     return render_template('settings.html', **ctx)
-
 
 
 @app.route('/settings/save', methods=['POST'])
@@ -1345,6 +1345,7 @@ def get_previous_readings(floor_id, billing_month):
         return jsonify({'success': True, 'readings': readings})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+
 
 # ======================================================
 # Payment Management (세대 중심 통합 관리)

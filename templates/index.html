@@ -5,72 +5,72 @@
 {% block content %}
     <h1><span class="emoji">🏢</span> 다세대 주택 공과금 정산 시스템</h1>
 
-<div class="grid grid-3" style="margin: 30px 0;">
-    <div class="stat-card">
-        <h3>전체 층수</h3>
-        <div class="value">{{ floors_count }}층</div>
+    <div class="grid grid-3" style="margin: 30px 0;">
+        <div class="stat-card">
+            <h3>전체 층수</h3>
+            <div class="value">{{ floors_count }}층</div>
+        </div>
+
+        <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <h3>전체 세대수</h3>
+            <div class="value">{{ units_count }}세대</div>
+        </div>
+
+        <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+            <h3>재실 / 공실</h3>
+            <div class="value">{{ occupied_count }} / {{ vacant_count }}</div>
+        </div>
     </div>
 
-    <div class="stat-card" style="background: linear-gradient(135deg, #10b981, #059669);">
-        <h3>전체 세대수</h3>
-        <div class="value">{{ units_count }}세대</div>
+    <h2 style="margin-top: 40px;">📋 시스템 기능</h2>
+
+    <div class="grid grid-2">
+        <div style="background: #f8fafc; padding: 20px; border-radius: 12px;">
+            <h3 style="color: #667eea; margin-bottom: 15px;">⚡ 전기요금 정산</h3>
+            <p style="line-height: 1.6; color: #64748b;">
+                층단위로 부과된 전기요금을 각 세대의 계량기 사용량에 따라 비례 분배합니다.
+                복지 할인, 바우처 할인을 적용하고 TV 수신료를 세대별로 부과합니다.
+            </p>
+        </div>
+
+        <div style="background: #f8fafc; padding: 20px; border-radius: 12px;">
+            <h3 style="color: #3b82f6; margin-bottom: 15px;">💧 수도요금 정산</h3>
+            <p style="line-height: 1.6; color: #64748b;">
+                주택 단위로 부과된 수도요금을 각 세대의 거주 인원수에 비례하여 분배합니다.
+                수도 복지 할인을 적용할 수 있습니다.
+            </p>
+        </div>
+
+        <div style="background: #f8fafc; padding: 20px; border-radius: 12px;">
+            <h3 style="color: #10b981; margin-bottom: 15px;">🏘️ 공동 공과금</h3>
+            <p style="line-height: 1.6; color: #64748b;">
+                비정기적으로 발생하는 공동 공과금을 인원수 비례 또는 세대 균등 분배 방식으로 정산합니다.
+            </p>
+        </div>
+
+        <div style="background: #f8fafc; padding: 20px; border-radius: 12px;">
+            <h3 style="color: #f59e0b; margin-bottom: 15px;">📊 종합 정산</h3>
+            <p style="line-height: 1.6; color: #64748b;">
+                각 공과금 항목을 월별로 선택하여 조합하고, 세대별 최종 청구서를 생성합니다.
+                10원 단위 올림 처리 및 인쇄용 뷰를 제공합니다.
+            </p>
+        </div>
     </div>
 
-    <div class="stat-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-        <h3>재실 / 공실</h3>
-        <div class="value">{{ occupied_count }} / {{ vacant_count }}</div>
-    </div>
-</div>
+    <h2 style="margin-top: 40px;">🚀 빠른 시작</h2>
 
-<h2 style="margin-top: 40px;">📋 시스템 기능</h2>
-
-<div class="grid grid-2">
-    <div style="background: #f8fafc; padding: 20px; border-radius: 12px;">
-        <h3 style="color: #667eea; margin-bottom: 15px;">⚡ 전기요금 정산</h3>
-        <p style="line-height: 1.6; color: #64748b;">
-            층단위로 부과된 전기요금을 각 세대의 계량기 사용량에 따라 비례 분배합니다.
-            복지 할인, 바우처 할인을 적용하고 TV 수신료를 세대별로 부과합니다.
-        </p>
+    <div style="background: #fef3c7; padding: 12px 40px; border-radius: 12px; border: 2px solid #fbbf24;">
+        <ol style="line-height: 2; color: #78350f;">
+            <li><strong>설정 페이지</strong>에서 층과 세대 정보를 등록하세요.</li>
+            <li><strong>계산기 페이지</strong>에서 매월 공과금을 입력하고 계산하세요.</li>
+            <li><strong>조회 페이지</strong>에서 정산 내역을 확인하세요.</li>
+            <li><strong>정산 페이지</strong>에서 최종 청구서를 생성하세요.</li>
+        </ol>
     </div>
 
-    <div style="background: #f8fafc; padding: 20px; border-radius: 12px;">
-        <h3 style="color: #3b82f6; margin-bottom: 15px;">💧 수도요금 정산</h3>
-        <p style="line-height: 1.6; color: #64748b;">
-            주택 단위로 부과된 수도요금을 각 세대의 거주 인원수에 비례하여 분배합니다.
-            수도 복지 할인을 적용할 수 있습니다.
-        </p>
+    <div style="margin-top: 30px; text-align: center;">
+        <a href="{{ url_for('settings') }}" class="btn btn-primary" style="font-size: 16px; padding: 15px 30px;">
+            ⚙️ 설정 시작하기
+        </a>
     </div>
-
-    <div style="background: #f8fafc; padding: 20px; border-radius: 12px;">
-        <h3 style="color: #10b981; margin-bottom: 15px;">🏘️ 공동 공과금</h3>
-        <p style="line-height: 1.6; color: #64748b;">
-            비정기적으로 발생하는 공동 공과금을 인원수 비례 또는 세대 균등 분배 방식으로 정산합니다.
-        </p>
-    </div>
-
-    <div style="background: #f8fafc; padding: 20px; border-radius: 12px;">
-        <h3 style="color: #f59e0b; margin-bottom: 15px;">📊 종합 정산</h3>
-        <p style="line-height: 1.6; color: #64748b;">
-            각 공과금 항목을 월별로 선택하여 조합하고, 세대별 최종 청구서를 생성합니다.
-            10원 단위 올림 처리 및 인쇄용 뷰를 제공합니다.
-        </p>
-    </div>
-</div>
-
-<h2 style="margin-top: 40px;">🚀 빠른 시작</h2>
-
-<div style="background: #fef3c7; padding: 12px 40px; border-radius: 12px; border: 2px solid #fbbf24;">
-    <ol style="line-height: 2; color: #78350f;">
-        <li><strong>설정 페이지</strong>에서 층과 세대 정보를 등록하세요.</li>
-        <li><strong>계산기 페이지</strong>에서 매월 공과금을 입력하고 계산하세요.</li>
-        <li><strong>조회 페이지</strong>에서 정산 내역을 확인하세요.</li>
-        <li><strong>정산 페이지</strong>에서 최종 청구서를 생성하세요.</li>
-    </ol>
-</div>
-
-<div style="margin-top: 30px; text-align: center;">
-    <a href="{{ url_for('settings') }}" class="btn btn-primary" style="font-size: 16px; padding: 15px 30px;">
-        ⚙️ 설정 시작하기
-    </a>
-</div>
 {% endblock %}
