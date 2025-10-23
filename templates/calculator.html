@@ -44,23 +44,46 @@
                     </div>
                 </div>
 
-                <div style="margin-top:20px; background:#f0f4f8; padding:15px; border-radius:8px;">
-                    <h4>월별 고지 내역 입력</h4>
-                    <div id="monthlyBillsContainer"></div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-                        <button type="button" class="btn btn-secondary" onclick="addMonthBillRow()">+ 월 추가</button>
+                <div style="margin-top:20px; background:white; padding:25px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+                        <h4 style="margin:0;color:#334155;font-size:18px;">📋 월별 고지 내역 입력</h4>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="addMonthBillRow()">+ 월 추가</button>
                     </div>
-                    <div style="margin-top:15px; padding:10px; background:#e7f3ff; border-radius:5px;">
-                        <strong>합계:</strong>
-                        총액 <span id="totalAmount">0</span>원 |
-                        복지할인 <span id="totalWelfare">0</span>원 |
-                        바우처할인 <span id="totalVoucher">0</span>원 |
-                        TV수신료 <span id="totalTvFee">0</span>원
+
+                    <div style="background:#f8fafc;padding:15px;border-radius:8px;margin-bottom:15px;">
+                        <table style="width:100%;border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#e2e8f0;">
+                                    <th style="padding:12px;text-align:left;border-bottom:2px solid #cbd5e1;width:140px;">고지월</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">전기요금</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">복지할인</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">바우처할인</th>
+                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">TV수신료 총액</th>
+                                    <th style="padding:12px;border-bottom:2px solid #cbd5e1;width:80px;text-align:center;">작업</th>
+                                </tr>
+                            </thead>
+                            <tbody id="monthlyBillsContainer">
+                            </tbody>
+                        </table>
                     </div>
-                    <small style="color:#64748b;display:block;margin-top:8px;">
-                        <strong>개별 부과 모드:</strong> TV 보유 세대만 설정의 TV 단가 × 개월수가 부과됩니다. TV수신료 입력칸은 비활성화됩니다.<br>
-                        <strong>균등 분배 모드:</strong> TV수신료 입력칸에 월별 총 TV 수신료를 입력하면, 공실을 제외한 모든 재실 세대가 균등 분담합니다.
-                    </small>
+
+                    <div style="padding:15px; background:#e0f2fe; border-radius:8px;border-left:4px solid #0284c7;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px;">
+                            <div style="color:#0c4a6e;font-weight:600;font-size:15px;">📊 합계</div>
+                            <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:14px;color:#0c4a6e;">
+                                <span>총액: <strong id="totalAmount">0</strong>원</span>
+                                <span>복지할인: <strong id="totalWelfare">0</strong>원</span>
+                                <span>바우처할인: <strong id="totalVoucher">0</strong>원</span>
+                                <span>TV수신료: <strong id="totalTvFee">0</strong>원</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="background:#fef3c7;padding:12px;border-radius:8px;margin-top:15px;font-size:13px;color:#92400e;line-height:1.6;">
+                        <strong>💡 TV 수신료 안내:</strong><br>
+                        • <strong>개별 부과 모드:</strong> TV 보유 세대만 설정의 TV 단가 × 개월수가 부과됩니다. TV수신료 입력칸은 비활성화됩니다.<br>
+                        • <strong>균등 분배 모드:</strong> TV수신료 입력칸에 월별 총 TV 수신료를 입력하면, 공실을 제외한 모든 재실 세대가 균등 분담합니다.
+                    </div>
                 </div>
 
                 <div class="form-group" style="margin-top:10px;">
@@ -73,8 +96,7 @@
                 <div id="unitsInfoCardContainer" style="margin-top:20px;"></div>
                 <div id="readingTableWrap" style="margin-top:16px;"></div>
 
-                <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;">
-                    <button type="button" class="btn" onclick="loadPreviousReadings()">이전 정산 현월값 불러오기</button>
+                <div style="margin-top:12px;">
                     <button type="submit" class="btn btn-primary">전기요금 계산 저장</button>
                 </div>
             </form>
@@ -150,7 +172,7 @@
 
             <form id="commonForm">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                <div class="grid grid-2">
+                <div class="grid grid-4">
                     <div class="form-group">
                         <label>정산월</label>
                         <input type="month" name="billing_month" required>
@@ -247,21 +269,39 @@
             const container = document.getElementById('monthlyBillsContainer');
             const idx = monthRowCounter;
 
-            const rowDiv = document.createElement('div');
-            rowDiv.className = 'month-bill-row';
-            rowDiv.dataset.index = idx;
-            rowDiv.style.cssText = 'display:grid; grid-template-columns: 1fr 1.5fr 1.5fr 1.5fr 1.5fr 0.5fr; gap:8px; margin-bottom:10px; padding:10px; background:white; border-radius:5px; align-items:center;';
+            const tr = document.createElement('tr');
+            tr.className = 'month-bill-row';
+            tr.dataset.index = idx;
+            tr.style.cssText = 'border-bottom:1px solid #e2e8f0;';
 
-            rowDiv.innerHTML = `
-    <input type="month" name="month_${idx}" placeholder="고지월" required style="font-size:13px;">
-    <input type="number" name="amount_${idx}" placeholder="전기요금 (원)" min="0" step="0.01" class="bill-amount" required style="font-size:13px;">
-    <input type="number" name="welfare_${idx}" placeholder="복지할인 (원)" min="0" step="0.01" class="bill-welfare" style="font-size:13px;">
-    <input type="number" name="voucher_${idx}" placeholder="바우처할인 (원)" min="0" step="0.01" class="bill-voucher" style="font-size:13px;">
-    <input type="number" name="tv_fee_${idx}" placeholder="TV수신료 총액 (원)" min="0" step="0.01" class="bill-tvfee" style="font-size:13px;">
-    <button type="button" class="btn btn-danger" onclick="removeMonthBillRow(${idx})" style="padding:8px;">삭제</button>
-  `;
+            tr.innerHTML = `
+                <td style="padding:12px;">
+                    <input type="month" name="month_${idx}" required
+                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+                </td>
+                <td style="padding:12px;text-align:right;">
+                    <input type="number" name="amount_${idx}" placeholder="0" min="0" step="0.01" class="bill-amount" required
+                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;text-align:right;">
+                </td>
+                <td style="padding:12px;text-align:right;">
+                    <input type="number" name="welfare_${idx}" placeholder="0" min="0" step="0.01" class="bill-welfare"
+                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;text-align:right;">
+                </td>
+                <td style="padding:12px;text-align:right;">
+                    <input type="number" name="voucher_${idx}" placeholder="0" min="0" step="0.01" class="bill-voucher"
+                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;text-align:right;">
+                </td>
+                <td style="padding:12px;text-align:right;">
+                    <input type="number" name="tv_fee_${idx}" placeholder="0" min="0" step="0.01" class="bill-tvfee"
+                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;text-align:right;">
+                </td>
+                <td style="padding:12px;text-align:center;">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeMonthBillRow(${idx})"
+                            style="padding:6px 12px;font-size:12px;">삭제</button>
+                </td>
+            `;
 
-            container.appendChild(rowDiv);
+            container.appendChild(tr);
             monthRowCounter++;
             updateMonthCount();
             attachBillInputListeners();
@@ -398,7 +438,29 @@
                 (selectedFloor.floor_number < 0 ? 'B' + (-selectedFloor.floor_number) + '층' : selectedFloor.floor_number + '층') : '';
             const floorName = selectedFloor && selectedFloor.name ? ` (${selectedFloor.name})` : '';
 
-            let html = `<h4>검침 입력 - ${floorLabel}${floorName}</h4><table style="width:100%;border-collapse:collapse;"><thead><tr style="background:#f0f4f8;"><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">세대</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">속성</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">전월 검침</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">현월 검침</th><th style="padding:12px;text-align:left;border-bottom:2px solid #e2e8f0;">사용량</th></tr></thead><tbody>`;
+            let html = `
+                <div style="background:white;padding:25px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:18px;">⚡ 검침 입력 - ${floorLabel}${floorName}</h4>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+                        <!-- 전월 검침 테이블 -->
+                        <div style="background:#fff7ed;padding:15px;border-radius:8px;border:2px solid #fed7aa;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
+                                <h5 style="margin:0;color:#9a3412;font-size:16px;">📉 전월 검침</h5>
+                                <button type="button" class="btn btn-secondary btn-sm" onclick="loadPreviousReadings()" style="padding:6px 12px;font-size:12px;">
+                                    이전 정산 값 불러오기
+                                </button>
+                            </div>
+                            <table style="width:100%;border-collapse:collapse;">
+                                <thead>
+                                    <tr style="background:#ffedd5;">
+                                        <th style="padding:10px;text-align:left;border-bottom:2px solid #fed7aa;width:90px;">세대</th>
+                                        <th style="padding:10px;text-align:left;border-bottom:2px solid #fed7aa;width:130px;">속성</th>
+                                        <th style="padding:10px;text-align:center;border-bottom:2px solid #fed7aa;">검침값</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
 
             units.forEach(u => {
                 const badges = [];
@@ -407,18 +469,102 @@
                 if (u.has_tv) badges.push('TV');
                 const badgeStr = badges.length > 0 ? badges.join(', ') : '-';
 
-                html += `<tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:12px;"><strong>${u.unit_name}</strong></td><td style="padding:12px;font-size:12px;color:#64748b;">${badgeStr}</td><td style="padding:12px;"><input type="number" name="prev_${u.id}" step="0.01" placeholder="전월" class="reading-prev" data-unit="${u.id}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;"></td><td style="padding:12px;"><input type="number" name="curr_${u.id}" step="0.01" placeholder="현월" class="reading-curr" data-unit="${u.id}" style="width:100%;padding:8px;border:1px solid #ddd;border-radius:4px;"></td><td style="padding:12px;font-weight:bold;"><span id="usage_${u.id}" style="font-weight:bold;">0.00</span></td></tr>`;
+                html += `
+                    <tr style="border-bottom:1px solid #fed7aa;">
+                        <td style="padding:10px;"><strong>${u.unit_name}</strong></td>
+                        <td style="padding:10px;font-size:12px;color:#9a3412;">${badgeStr}</td>
+                        <td style="padding:10px;text-align:center;">
+                            <input type="number" name="prev_${u.id}" step="0.01" placeholder="0.00"
+                                   class="reading-prev" data-unit="${u.id}"
+                                   style="width:130px;padding:8px;border:1px solid #fed7aa;border-radius:6px;text-align:right;font-size:14px;background:white;">
+                        </td>
+                    </tr>
+                `;
             });
 
-            html += '</tbody></table>';
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- 현월 검침 테이블 -->
+                        <div style="background:#ecfccb;padding:15px;border-radius:8px;border:2px solid #bef264;">
+                            <h5 style="margin:0 0 15px 0;color:#365314;font-size:16px;">📈 현월 검침</h5>
+                            <table style="width:100%;border-collapse:collapse;">
+                                <thead>
+                                    <tr style="background:#d9f99d;">
+                                        <th style="padding:10px;text-align:left;border-bottom:2px solid #bef264;width:90px;">세대</th>
+                                        <th style="padding:10px;text-align:center;border-bottom:2px solid #bef264;">검침값</th>
+                                        <th style="padding:10px;text-align:center;border-bottom:2px solid #bef264;width:100px;">사용량</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+            `;
+
+            units.forEach(u => {
+                html += `
+                    <tr style="border-bottom:1px solid #bef264;">
+                        <td style="padding:10px;"><strong>${u.unit_name}</strong></td>
+                        <td style="padding:10px;text-align:center;">
+                            <input type="number" name="curr_${u.id}" step="0.01" placeholder="0.00"
+                                   class="reading-curr" data-unit="${u.id}"
+                                   style="width:130px;padding:8px;border:1px solid #bef264;border-radius:6px;text-align:right;font-size:14px;background:white;">
+                        </td>
+                        <td style="padding:10px;text-align:right;">
+                            <span id="usage_${u.id}" style="font-weight:bold;font-size:14px;color:#059669;display:inline-block;min-width:80px;">0.00</span>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:20px;padding:15px;background:#e0f2fe;border-radius:8px;border-left:4px solid #0284c7;">
+                        <div style="color:#0c4a6e;font-size:14px;line-height:1.6;">
+                            <strong>💡 입력 방법:</strong><br>
+                            • <strong>전월 검침</strong>을 모두 입력한 후 → <strong>현월 검침</strong>을 입력하세요.<br>
+                            • Tab 키를 누르면 전월 검침 → 전월 검침 → ... → 현월 검침 → 현월 검침 순서로 이동합니다.<br>
+                            • "이전 정산 값 불러오기" 버튼을 클릭하면 이전 정산의 현월 검침값이 전월 검침에 자동으로 입력됩니다.
+                        </div>
+                    </div>
+                </div>
+            `;
             wrap.innerHTML = html;
 
+            // 사용량 계산 및 음수 검증
             document.querySelectorAll('.reading-prev, .reading-curr').forEach(input => {
                 input.addEventListener('input', function () {
                     const unitId = this.dataset.unit;
-                    const prev = parseFloat(document.querySelector(`.reading-prev[data-unit="${unitId}"]`).value || 0);
-                    const curr = parseFloat(document.querySelector(`.reading-curr[data-unit="${unitId}"]`).value || 0);
-                    document.getElementById(`usage_${unitId}`).textContent = (curr - prev).toFixed(2);
+                    const prevInput = document.querySelector(`.reading-prev[data-unit="${unitId}"]`);
+                    const currInput = document.querySelector(`.reading-curr[data-unit="${unitId}"]`);
+                    const usageSpan = document.getElementById(`usage_${unitId}`);
+
+                    const prev = parseFloat(prevInput.value || 0);
+                    const curr = parseFloat(currInput.value || 0);
+                    const usage = curr - prev;
+
+                    usageSpan.textContent = usage.toFixed(2);
+
+                    // 음수 검증 및 시각적 피드백
+                    if (usage < 0) {
+                        usageSpan.style.color = '#dc2626';
+                        usageSpan.style.fontWeight = 'bold';
+                        currInput.style.borderColor = '#dc2626';
+                        currInput.style.borderWidth = '2px';
+                        currInput.style.backgroundColor = '#fee2e2';
+                        currInput.setAttribute('data-invalid', 'true');
+                    } else {
+                        usageSpan.style.color = '#059669';
+                        usageSpan.style.fontWeight = 'bold';
+                        currInput.style.borderColor = '#bef264';
+                        currInput.style.borderWidth = '1px';
+                        currInput.style.backgroundColor = 'white';
+                        currInput.removeAttribute('data-invalid');
+                    }
                 });
             });
         }
@@ -616,6 +762,14 @@
                 return;
             }
 
+            // 음수 사용량 검증
+            const invalidInputs = document.querySelectorAll('.reading-curr[data-invalid="true"]');
+            if (invalidInputs.length > 0) {
+                alert('⚠️ 사용량이 음수인 세대가 있습니다.\n\n현월 검침값이 전월 검침값보다 작습니다.\n검침값을 확인해주세요.');
+                invalidInputs[0].focus();
+                return;
+            }
+
             e.target.querySelectorAll('input[type="number"]:not([disabled])').forEach(input => {
                 if (!input.value || input.value.trim() === '') {
                     input.value = '0';
@@ -712,6 +866,8 @@
 
         // 초기화
         renderFloorOptions();
+        // 전기요금: 월별 고지 내역 기본 1개 행 추가
+        addMonthBillRow();
         renderWaterUnitsSelection();
     </script>
 {% endblock %}
