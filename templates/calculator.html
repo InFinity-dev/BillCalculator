@@ -53,14 +53,18 @@
                     <div style="background:#f8fafc;padding:15px;border-radius:8px;margin-bottom:15px;">
                         <table style="width:100%;border-collapse:collapse;">
                             <thead>
-                                <tr style="background:#e2e8f0;">
-                                    <th style="padding:12px;text-align:left;border-bottom:2px solid #cbd5e1;width:140px;">고지월</th>
-                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">전기요금</th>
-                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">복지할인</th>
-                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">바우처할인</th>
-                                    <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">TV수신료 총액</th>
-                                    <th style="padding:12px;border-bottom:2px solid #cbd5e1;width:80px;text-align:center;">작업</th>
-                                </tr>
+                            <tr style="background:#e2e8f0;">
+                                <th style="padding:12px;text-align:left;border-bottom:2px solid #cbd5e1;width:140px;">
+                                    고지월
+                                </th>
+                                <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">전기요금</th>
+                                <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">복지할인</th>
+                                <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">바우처할인</th>
+                                <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">TV수신료 총액</th>
+                                <th style="padding:12px;border-bottom:2px solid #cbd5e1;width:80px;text-align:center;">
+                                    작업
+                                </th>
+                            </tr>
                             </thead>
                             <tbody id="monthlyBillsContainer">
                             </tbody>
@@ -86,18 +90,25 @@
                     </div>
                 </div>
 
-                <div class="form-group" style="margin-top:10px;">
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" name="overwrite">
-                        <span>기존 정산 덮어쓰기</span>
-                    </label>
-                </div>
-
                 <div id="unitsInfoCardContainer" style="margin-top:20px;"></div>
                 <div id="readingTableWrap" style="margin-top:16px;"></div>
 
-                <div style="margin-top:12px;">
-                    <button type="submit" class="btn btn-primary">전기요금 계산 저장</button>
+                <!-- 저장 영역 (체크박스 + 버튼을 함께 배치) -->
+                <div style="margin-top:30px;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+                        <label class="checkbox-wrapper" style="margin:0;cursor:pointer;">
+                            <input type="checkbox" name="overwrite" style="cursor:pointer;">
+                            <span style="font-size:14px;color:#475569;font-weight:500;">기존 정산 데이터 덮어쓰기</span>
+                        </label>
+                        <button type="submit" class="btn btn-primary" style="padding:12px 30px;font-size:15px;">
+                            전기요금 계산 저장
+                        </button>
+                    </div>
+                    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">
+                        <p style="margin:0;font-size:12px;color:#64748b;line-height:1.6;">
+                            <strong>안내:</strong> 동일한 층과 정산월에 대한 데이터가 이미 존재하는 경우, 체크박스를 선택하면 기존 데이터를 삭제하고 새로운 데이터로 교체합니다.
+                        </p>
+                    </div>
                 </div>
             </form>
         </div>
@@ -114,22 +125,13 @@
                 {% endif %}
             </div>
 
-            <!-- 통합된 세대 선택 및 정산 안내 -->
-            <div style="background:#e0f2fe;padding:20px;border-radius:12px;margin-bottom:20px;border-left:4px solid #0284c7;">
-                {% if water_customer_number %}
-                    <div style="margin-bottom:15px;padding-bottom:15px;border-bottom:1px solid rgba(255,255,255,0.5);">
-                        <div style="font-size:13px;color:#0369a1;font-weight:600;margin-bottom:5px;">🏠 주택 수도 고객번호</div>
-                        <div style="font-size:18px;font-weight:bold;color:#0c4a6e;font-family:monospace;">{{ water_customer_number }}</div>
-                    </div>
-                {% endif %}
-                <div id="waterUnitsSelection"></div>
-            </div>
-
+            <!-- 세대 선택 섹션 -->
+            <div id="waterUnitsSelection"></div>
             <form id="waterForm">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="excluded_units" id="excluded_units" value="[]">
 
-                <div class="grid grid-4">
+                <div class="grid grid-3">
                     <div class="form-group">
                         <label>정산월</label>
                         <input type="month" name="billing_month" required>
@@ -142,13 +144,24 @@
                         <label>복지 할인 총액</label>
                         <input type="number" name="welfare_discount_total" min="0" placeholder="복지할인 (원)">
                     </div>
-                    <div class="form-group" style="align-self:end;">
-                        <label style="visibility:hidden;">중복 처리</label>
-                        <label class="checkbox-wrapper"><input type="checkbox" name="overwrite"><span>기존 정산 덮어쓰기</span></label>
-                    </div>
                 </div>
-                <div style="margin-top:12px;">
-                    <button type="submit" class="btn btn-primary">수도요금 계산 저장</button>
+
+                <!-- 저장 영역 (체크박스 + 버튼을 함께 배치) -->
+                <div style="margin-top:30px;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+                        <label class="checkbox-wrapper" style="margin:0;cursor:pointer;">
+                            <input type="checkbox" name="overwrite" style="cursor:pointer;">
+                            <span style="font-size:14px;color:#475569;font-weight:500;">기존 정산 데이터 덮어쓰기</span>
+                        </label>
+                        <button type="submit" class="btn btn-primary" style="padding:12px 30px;font-size:15px;">
+                            수도요금 계산 저장
+                        </button>
+                    </div>
+                    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">
+                        <p style="margin:0;font-size:12px;color:#64748b;line-height:1.6;">
+                            <strong>안내:</strong> 동일한 정산월에 대한 데이터가 이미 존재하는 경우, 체크박스를 선택하면 기존 데이터를 삭제하고 새로운 데이터로 교체합니다.
+                        </p>
+                    </div>
                 </div>
             </form>
         </div>
@@ -214,8 +227,11 @@
                     </div>
                 </div>
 
-                <div style="margin-top:12px;">
-                    <button type="submit" class="btn btn-primary">공동 공과금 저장</button>
+                <!-- 저장 영역 -->
+                <div style="margin-top:30px;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;text-align:right;">
+                    <button type="submit" class="btn btn-primary" style="padding:12px 30px;font-size:15px;">
+                        공동 공과금 저장
+                    </button>
                 </div>
             </form>
         </div>
@@ -380,47 +396,77 @@
             const floorName = selectedFloor && selectedFloor.name ? selectedFloor.name : '';
             const floorContract = selectedFloor && selectedFloor.electric_contract_number ? selectedFloor.electric_contract_number : '';
 
-            let html = '<div style="background:#e0e7ff;padding:20px;border-radius:12px;margin-bottom:16px;border-left:4px solid #667eea;">';
-            html += '<div style="margin-bottom:20px;">';
-            html += '<h4 style="margin:0 0 8px 0;color:#4338ca;font-size:16px;">💥 선택된 층 세대 정보</h4>';
-            if (floorName) {
-                html += `<div style="color:#5b21b6;font-size:14px;font-weight:500;">${floorLabel} <span style="color:#7c3aed;">(${floorName})</span></div>`;
-            } else {
-                html += `<div style="color:#5b21b6;font-size:14px;font-weight:500;">${floorLabel}</div>`;
-            }
-            if (floorContract) {
-                html += `<div style="color:#667eea;font-size:13px;font-weight:500;margin-top:5px;">⚡ 계약번호: <span style="font-family:monospace;">${floorContract}</span></div>`;
-            }
-            html += '</div>';
+            const occupiedCount = units.filter(u => !u.is_vacant).length;
+            const vacantCount = units.filter(u => u.is_vacant).length;
+            const tvCount = units.filter(u => !u.is_vacant && u.has_tv).length;
+            const welfareCount = units.filter(u => !u.is_vacant && u.electric_welfare).length;
+            const voucherCount = units.filter(u => !u.is_vacant && u.electric_voucher).length;
 
-            html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;">';
+            let html = `
+        <div style="background:#f8fafc;padding:20px;border-radius:12px;border:1px solid #e2e8f0;">
+            <!-- 층 정보 헤더 -->
+            <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:2px solid #e2e8f0;">
+                <h4 style="margin:0 0 8px 0;color:#1e293b;font-size:16px;font-weight:600;">
+                    ${floorLabel}${floorName ? ' (' + floorName + ')' : ''} 세대 정보
+                </h4>
+                ${floorContract ? `<div style="font-size:13px;color:#64748b;">계약번호: <span style="font-family:monospace;color:#475569;font-weight:500;">${floorContract}</span></div>` : ''}
+            </div>
+
+            <!-- 통계 요약 -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-bottom:20px;">
+                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">재실</div>
+                    <div style="font-size:20px;font-weight:700;color:#059669;">${occupiedCount}</div>
+                </div>
+                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">공실</div>
+                    <div style="font-size:20px;font-weight:700;color:#dc2626;">${vacantCount}</div>
+                </div>
+                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">TV</div>
+                    <div style="font-size:20px;font-weight:700;color:#f59e0b;">${tvCount}</div>
+                </div>
+                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">복지</div>
+                    <div style="font-size:20px;font-weight:700;color:#667eea;">${welfareCount}</div>
+                </div>
+                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">바우처</div>
+                    <div style="font-size:20px;font-weight:700;color:#667eea;">${voucherCount}</div>
+                </div>
+            </div>
+
+            <!-- 세대 카드 -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
+    `;
 
             units.forEach(u => {
-                const statusBadge = u.is_vacant
-                    ? '<span class="badge badge-danger">공실</span>'
-                    : '<span class="badge badge-success">재실</span>';
+                const badges = [];
+                if (u.is_vacant) badges.push('<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">공실</span>');
+                else badges.push('<span style="background:#d1fae5;color:#059669;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">재실</span>');
 
-                const elecWelfare = u.electric_welfare ? '<span class="badge badge-primary">전기복지</span>' : '';
-                const elecVoucher = u.electric_voucher ? '<span class="badge badge-primary">전기바우처</span>' : '';
-                const tv = u.has_tv ? '<span class="badge badge-warning">TV보유</span>' : '';
-                const waterWelfare = u.water_welfare ? '<span class="badge badge-primary">수도복지</span>' : '';
+                if (!u.is_vacant) {
+                    if (u.has_tv) badges.push('<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">TV</span>');
+                    if (u.electric_welfare) badges.push('<span style="background:#ddd6fe;color:#5b21b6;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">복지</span>');
+                    if (u.electric_voucher) badges.push('<span style="background:#ddd6fe;color:#5b21b6;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">바우처</span>');
+                }
 
                 html += `
-      <div style="background:white;padding:12px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px;">
-        <div style="font-weight:bold;margin-bottom:8px;font-size:14px;">${u.unit_name}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;">
-          ${statusBadge}
-          ${elecWelfare}
-          ${elecVoucher}
-          ${tv}
-          ${waterWelfare}
-        </div>
-        <div style="color:#64748b;">💥 ${u.residents_count}명</div>
-      </div>
-    `;
+            <div style="background:white;padding:12px;border-radius:8px;border:1px solid ${u.is_vacant ? '#fecaca' : '#cbd5e1'};">
+                <div style="font-weight:600;font-size:14px;color:#1e293b;margin-bottom:8px;">${u.unit_name}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
+                    ${badges.join('')}
+                </div>
+                ${!u.is_vacant ? `<div style="font-size:12px;color:#64748b;">${u.residents_count}명 거주</div>` : ''}
+            </div>
+        `;
             });
 
-            html += '</div></div>';
+            html += `
+            </div>
+        </div>
+    `;
+
             container.innerHTML = html;
         }
 
@@ -575,7 +621,7 @@
             const occupiedUnits = UNITS.filter(u => !u.is_vacant);
 
             if (occupiedUnits.length === 0) {
-                container.innerHTML = '<p style="color:#0c4a6e;margin:0;">재실 세대가 없습니다.</p>';
+                container.innerHTML = '<p style="color:#64748b;margin:0;">재실 세대가 없습니다.</p>';
                 return;
             }
 
@@ -583,40 +629,52 @@
             const totalResidents = occupiedUnits.reduce((sum, u) => sum + (u.residents_count || 1), 0);
             const selectedCount = occupiedUnits.length - waterExcludedUnits.size;
 
-            let html = '';
+            // 전기요금 unitsInfoCardContainer와 동일한 외곽 컨테이너 디자인
+            let html = `
+        <div style="background:#f8fafc;padding:20px;border-radius:12px;border:1px solid #e2e8f0;">
+            <!-- 헤더 (전기요금처럼 고객번호 포함) -->
+            <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:2px solid #e2e8f0;">
+                <h4 style="margin:0 0 8px 0;color:#1e293b;font-size:16px;font-weight:600;">
+                    정산 대상 세대 선택
+                </h4>
+    `;
+
+            // 주택 수도 고객번호가 있으면 표시 (전기요금 계약번호와 동일한 스타일)
+            const waterCustomerNumber = '{{ water_customer_number }}';
+            if (waterCustomerNumber) {
+                html += `<div style="color:#64748b;font-size:13px;font-weight:500;margin-top:5px;">주택 수도 고객번호: <span style="font-family:monospace;color:#475569;font-weight:500;">${waterCustomerNumber}</span></div>`;
+            }
 
             html += `
-    <div style="margin-bottom:var(--space-xl);">
-      <h3 style="margin:0 0 var(--space-md) 0;color:var(--info-dark);font-size:var(--font-large);">🏘️ 정산 대상 세대 선택</h3>
-      <p style="color:var(--info-dark);font-size:var(--font-base);margin:0;line-height:1.6;">
-        💡 수도세 정산에 포함할 세대를 선택하세요. 장기 출장 등으로 해당 월에 수도를 사용하지 않은 세대는 선택 해제할 수 있습니다.
-      </p>
-    </div>
-  `;
+                <p style="color:#64748b;font-size:13px;margin:8px 0 0 0;line-height:1.5;">
+                    체크박스를 클릭하여 정산 대상을 선택하세요. 장기 출장 등으로 수도를 사용하지 않은 세대는 선택 해제할 수 있습니다.
+                </p>
+            </div>
 
-            html += `
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px;">
-      <div style="background:white;padding:14px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">전체 세대 (재실)</div>
-        <div style="font-size:22px;font-weight:bold;color:#0284c7;">${occupiedUnits.length}<span style="font-size:14px;font-weight:normal;color:#64748b;">세대</span></div>
-      </div>
-      <div style="background:white;padding:14px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">선택된 세대</div>
-        <div style="font-size:22px;font-weight:bold;color:#0891b2;" id="selectedCountDisplay">${selectedCount}<span style="font-size:14px;font-weight:normal;color:#64748b;">세대</span></div>
-      </div>
-      <div style="background:white;padding:14px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">총 거주 인원</div>
-        <div style="font-size:22px;font-weight:bold;color:#0284c7;">${totalResidents}<span style="font-size:14px;font-weight:normal;color:#64748b;">명</span></div>
-      </div>
-      <div style="background:white;padding:14px;border-radius:10px;box-shadow:0 2px 4px rgba(0,0,0,0.05);">
-        <div style="font-size:12px;color:#64748b;margin-bottom:4px;">수도 복지 대상</div>
-        <div style="font-size:22px;font-weight:bold;color:#${waterWelfareUnits.length > 0 ? '059669' : '94a3b8'};">${waterWelfareUnits.length}<span style="font-size:14px;font-weight:normal;color:#64748b;">세대</span></div>
-      </div>
-    </div>
-  `;
+            <!-- 통계 요약 (전기요금과 동일한 스타일) -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-bottom:20px;">
+                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">전체</div>
+                    <div style="font-size:20px;font-weight:700;color:#0284c7;">${occupiedUnits.length}</div>
+                </div>
+                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">선택됨</div>
+                    <div style="font-size:20px;font-weight:700;color:#059669;" id="selectedCountDisplay">${selectedCount}</div>
+                </div>
+                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">인원</div>
+                    <div style="font-size:20px;font-weight:700;color:#0284c7;">${totalResidents}</div>
+                </div>
+                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">복지</div>
+                    <div style="font-size:20px;font-weight:700;color:#059669;">${waterWelfareUnits.length}</div>
+                </div>
+            </div>
 
-            html += '<div style="border-top:2px solid rgba(255,255,255,0.5);margin:20px 0;"></div>';
+            <!-- 세대 카드 (층별 그룹화) -->
+    `;
 
+            // 층별 그룹화
             const floorGroups = {};
             occupiedUnits.forEach(unit => {
                 if (!floorGroups[unit.floor_id]) {
@@ -637,55 +695,56 @@
                 const floorLabel = group.floor_number < 0 ? `B${-group.floor_number}층` : `${group.floor_number}층`;
                 const floorDisplayName = group.floor_name ? `${floorLabel} (${group.floor_name})` : floorLabel;
 
-                html += `<div style="margin-bottom:20px;">`;
-                html += `<h4 style="margin:0 0 12px 0;color:#0c4a6e;font-size:15px;font-weight:600;">${floorDisplayName}</h4>`;
-                html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;">';
+                html += `
+            <div style="margin-bottom:16px;">
+                <h5 style="margin:0 0 10px 0;color:#475569;font-size:13px;font-weight:600;">${floorDisplayName}</h5>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
+        `;
 
                 group.units.forEach(unit => {
                     const isIncluded = !waterExcludedUnits.has(unit.id);
-                    const cardStyle = isIncluded
-                        ? 'background:white;border:2px solid #0891b2;box-shadow:0 2px 4px rgba(8,145,178,0.15);'
-                        : 'background:#f8fafc;border:2px solid #cbd5e1;';
+
+                    // 배지 생성 (전기요금 카드와 동일한 스타일)
+                    const badges = [];
+                    if (isIncluded) {
+                        badges.push('<span style="background:#d1fae5;color:#059669;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">선택됨</span>');
+                    } else {
+                        badges.push('<span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">제외됨</span>');
+                    }
+
+                    if (unit.water_welfare) {
+                        badges.push('<span style="background:#d1fae5;color:#059669;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">복지</span>');
+                    }
+
+                    const borderColor = isIncluded ? '#0891b2' : '#cbd5e1';
 
                     html += `
-        <div class="water-unit-card" data-unit-id="${unit.id}"
-             style="${cardStyle}padding:14px;border-radius:10px;cursor:pointer;transition:all 0.2s;min-height:110px;display:flex;flex-direction:column;"
-             onclick="toggleWaterUnit(${unit.id})">
-          <div style="display:flex;align-items:start;gap:10px;margin-bottom:10px;">
-            <input type="checkbox"
-                   ${isIncluded ? 'checked' : ''}
-                   onclick="event.stopPropagation(); toggleWaterUnit(${unit.id});"
-                   style="width:18px;height:18px;cursor:pointer;margin-top:2px;flex-shrink:0;accent-color:#0891b2;">
-            <div style="flex:1;">
-              <div style="font-weight:bold;font-size:15px;color:#1e293b;margin-bottom:4px;">${unit.unit_name}</div>
-              <div style="font-size:13px;color:#64748b;">💥 ${unit.residents_count}명</div>
-            </div>
-          </div>
-          <div style="margin-top:auto;min-height:24px;display:flex;align-items:center;">
-            ${unit.water_welfare ? '<span style="background:#d1fae5;color:#059669;font-size:11px;padding:4px 10px;border-radius:5px;font-weight:500;display:inline-block;">💰 복지할인</span>' : ''}
-          </div>
-        </div>
-      `;
+                <div class="water-unit-card" data-unit-id="${unit.id}"
+                     style="background:white;padding:12px;border-radius:8px;border:1px solid ${borderColor};cursor:pointer;transition:all 0.2s;"
+                     onclick="toggleWaterUnit(${unit.id})">
+                    <div style="display:flex;align-items:start;gap:8px;margin-bottom:8px;">
+                        <input type="checkbox"
+                               ${isIncluded ? 'checked' : ''}
+                               onclick="event.stopPropagation(); toggleWaterUnit(${unit.id});"
+                               style="width:16px;height:16px;cursor:pointer;margin-top:2px;accent-color:#0891b2;">
+                        <div style="flex:1;">
+                            <div style="font-weight:600;font-size:14px;color:#1e293b;margin-bottom:4px;">${unit.unit_name}</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
+                        ${badges.join('')}
+                    </div>
+                    <div style="font-size:12px;color:#64748b;">${unit.residents_count}명 거주</div>
+                </div>
+            `;
                 });
 
                 html += '</div></div>';
             });
 
             html += `
-    <div style="margin-top:20px;padding:14px;background:rgba(255,255,255,0.7);border-radius:8px;border:1px solid rgba(8,145,178,0.3);">
-      <div style="display:flex;align-items:start;gap:10px;font-size:13px;color:#0c4a6e;">
-        <span style="font-size:18px;flex-shrink:0;">ℹ️</span>
-        <div style="flex:1;line-height:1.6;">
-          <div style="margin-bottom:4px;">
-            <strong>선택 방법:</strong> 체크박스를 클릭하거나 카드 전체를 클릭하여 정산 대상을 선택/해제할 수 있습니다.
-          </div>
-          <div style="font-size:12px;color:#0369a1;">
-            기본값은 모든 재실 세대가 선택되어 있으며, 필요시 개별 세대를 제외할 수 있습니다.
-          </div>
         </div>
-      </div>
-    </div>
-  `;
+    `;
 
             container.innerHTML = html;
         }
@@ -700,7 +759,22 @@
             const excludedArray = Array.from(waterExcludedUnits);
             document.getElementById('excluded_units').value = JSON.stringify(excludedArray);
 
-            renderWaterUnitsSelection();
+            // 선택 카운트만 업데이트 (전체 재렌더링 방지)
+            const occupiedUnits = UNITS.filter(u => !u.is_vacant);
+            const selectedCount = occupiedUnits.length - waterExcludedUnits.size;
+            const displayElement = document.getElementById('selectedCountDisplay');
+            if (displayElement) {
+                displayElement.textContent = selectedCount;
+            }
+
+            // 해당 카드만 시각적 업데이트
+            const card = document.querySelector(`.water-unit-card[data-unit-id="${unitId}"]`);
+            const checkbox = card.querySelector('input[type="checkbox"]');
+            const isIncluded = !waterExcludedUnits.has(unitId);
+
+            checkbox.checked = isIncluded;
+            card.style.background = isIncluded ? 'white' : '#f8fafc';
+            card.style.borderColor = isIncluded ? '#0891b2' : '#cbd5e1';
         }
 
         function loadPreviousReadings() {
