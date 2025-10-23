@@ -12,42 +12,55 @@
     <div class="tabs-container">
         <!-- 전기요금 탭 -->
         <div id="electric-tab" class="tab-content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h2 style="margin:0;">⚡ 전기요금 계산</h2>
-                {% if electric_bill_url %}
-                    <button type="button" class="btn btn-secondary"
-                            onclick="window.open('{{ electric_bill_url }}', '_blank')" style="padding:8px 16px;">
-                        🔍 요금 조회
-                    </button>
-                {% endif %}
+            <!-- 헤더 섹션 -->
+            <div style="background:white;padding:20px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h2 style="margin:0;color:#1e293b;font-size:22px;font-weight:700;">⚡ 전기요금 계산</h2>
+                    {% if electric_bill_url %}
+                        <button type="button" class="btn btn-secondary"
+                                onclick="window.open('{{ electric_bill_url }}', '_blank')" style="padding:10px 20px;font-size:14px;">
+                            🔍 요금 조회
+                        </button>
+                    {% endif %}
+                </div>
+                <p style="margin:0;color:#64748b;font-size:14px;line-height:1.6;">
+                    층단위 전기요금을 각 세대의 계량기 사용량에 따라 비례 분배합니다. N개월 묶음 정산이 가능합니다.
+                </p>
             </div>
 
             <form id="electricForm">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="month_count" id="month_count" value="0">
 
-                <div class="grid grid-3">
-                    <div class="form-group">
-                        <label>정산월</label>
-                        <input type="month" name="billing_month" id="billing_month" required>
-                    </div>
-                    <div class="form-group">
-                        <label>층</label>
-                        <select name="floor_id" id="electric_floor_id" required></select>
-                    </div>
-                    <div class="form-group">
-                        <label>TV 수신료 배분</label>
-                        <select name="tv_distribution_mode" id="tv_mode">
-                            <option value="INDIVIDUAL">개별 부과 (TV 보유 세대만)</option>
-                            <option value="EQUAL">균등 분배 (재실 세대 전체)</option>
-                        </select>
+                <!-- 기본 정보 입력 -->
+                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">📋 기본 정보</h4>
+                    <div class="grid grid-3">
+                        <div class="form-group">
+                            <label>정산월</label>
+                            <input type="month" name="billing_month" id="billing_month" required>
+                        </div>
+                        <div class="form-group">
+                            <label>층 선택</label>
+                            <select name="floor_id" id="electric_floor_id" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label>TV 수신료 배분</label>
+                            <select name="tv_distribution_mode" id="tv_mode">
+                                <option value="INDIVIDUAL">개별 부과 (TV 보유 세대만)</option>
+                                <option value="EQUAL" selected>균등 분배 (재실 세대 전체)</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
 
-                <div style="margin-top:20px; background:white; padding:25px; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <!-- 월별 고지 내역 입력 -->
+                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                        <h4 style="margin:0;color:#334155;font-size:18px;">📋 월별 고지 내역 입력</h4>
-                        <button type="button" class="btn btn-primary btn-sm" onclick="addMonthBillRow()">+ 월 추가</button>
+                        <h4 style="margin:0;color:#334155;font-size:16px;font-weight:600;">📋 월별 고지 내역</h4>
+                        <button type="button" class="btn btn-primary btn-sm" onclick="addMonthBillRow()" style="padding:8px 16px;font-size:13px;">
+                            + 월 추가
+                        </button>
                     </div>
 
                     <div style="background:#f8fafc;padding:15px;border-radius:8px;margin-bottom:15px;">
@@ -90,23 +103,24 @@
                     </div>
                 </div>
 
-                <div id="unitsInfoCardContainer" style="margin-top:20px;"></div>
-                <div id="readingTableWrap" style="margin-top:16px;"></div>
+                <!-- 검침 입력 (동적으로 생성됨) -->
+                <div id="unitsInfoCardContainer"></div>
+                <div id="readingTableWrap"></div>
 
-                <!-- 저장 영역 (체크박스 + 버튼을 함께 배치) -->
-                <div style="margin-top:30px;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+                <!-- 저장 영역 -->
+                <div style="background:#f8fafc;padding:20px;border-radius:12px;border:1px solid #e2e8f0;">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
                         <label class="checkbox-wrapper" style="margin:0;cursor:pointer;">
                             <input type="checkbox" name="overwrite" style="cursor:pointer;">
                             <span style="font-size:14px;color:#475569;font-weight:500;">기존 정산 데이터 덮어쓰기</span>
                         </label>
-                        <button type="submit" class="btn btn-primary" style="padding:12px 30px;font-size:15px;">
-                            전기요금 계산 저장
+                        <button type="submit" class="btn btn-primary" style="padding:12px 32px;font-size:15px;font-weight:600;">
+                            전기요금 저장
                         </button>
                     </div>
                     <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">
                         <p style="margin:0;font-size:12px;color:#64748b;line-height:1.6;">
-                            <strong>안내:</strong> 동일한 층과 정산월에 대한 데이터가 이미 존재하는 경우, 체크박스를 선택하면 기존 데이터를 삭제하고 새로운 데이터로 교체합니다.
+                            💡 동일한 정산월/층에 대한 데이터가 이미 존재하는 경우, 체크박스를 선택하면 기존 데이터를 삭제하고 새로운 데이터로 교체합니다.
                         </p>
                     </div>
                 </div>
@@ -115,51 +129,62 @@
 
         <!-- 수도요금 탭 -->
         <div id="water-tab" class="tab-content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                <h2 style="margin:0;">💧 수도요금 계산</h2>
-                {% if water_bill_url %}
-                    <button type="button" class="btn btn-secondary"
-                            onclick="window.open('{{ water_bill_url }}', '_blank')" style="padding:8px 16px;">
-                        🔍 요금 조회
-                    </button>
-                {% endif %}
+            <!-- 헤더 섹션 -->
+            <div style="background:white;padding:20px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h2 style="margin:0;color:#1e293b;font-size:22px;font-weight:700;">💧 수도요금 계산</h2>
+                    {% if water_bill_url %}
+                        <button type="button" class="btn btn-secondary"
+                                onclick="window.open('{{ water_bill_url }}', '_blank')" style="padding:10px 20px;font-size:14px;">
+                            🔍 요금 조회
+                        </button>
+                    {% endif %}
+                </div>
+                <p style="margin:0;color:#64748b;font-size:14px;line-height:1.6;">
+                    주택 전체 수도요금을 각 세대의 거주 인원수에 비례하여 분배합니다. 특정 세대를 제외할 수 있습니다.
+                </p>
             </div>
 
             <!-- 세대 선택 섹션 -->
-            <div id="waterUnitsSelection"></div>
+            <div id="waterUnitsSelection" style="margin-bottom:24px;"></div>
+
             <form id="waterForm">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="excluded_units" id="excluded_units" value="[]">
 
-                <div class="grid grid-3">
-                    <div class="form-group">
-                        <label>정산월</label>
-                        <input type="month" name="billing_month" required>
-                    </div>
-                    <div class="form-group">
-                        <label>수도 총액 (주택)</label>
-                        <input type="number" name="total_amount" min="0" placeholder="수도요금 (원)" required>
-                    </div>
-                    <div class="form-group">
-                        <label>복지 할인 총액</label>
-                        <input type="number" name="welfare_discount_total" min="0" placeholder="복지할인 (원)">
+                <!-- 요금 정보 입력 -->
+                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">💰 요금 정보</h4>
+                    <div class="grid grid-3">
+                        <div class="form-group">
+                            <label>정산월</label>
+                            <input type="month" name="billing_month" required>
+                        </div>
+                        <div class="form-group">
+                            <label>수도 총액 (원)</label>
+                            <input type="number" name="total_amount" min="0" placeholder="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label>복지 할인 총액 (원)</label>
+                            <input type="number" name="welfare_discount_total" min="0" placeholder="0">
+                        </div>
                     </div>
                 </div>
 
-                <!-- 저장 영역 (체크박스 + 버튼을 함께 배치) -->
-                <div style="margin-top:30px;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;">
+                <!-- 저장 영역 -->
+                <div style="background:#f8fafc;padding:20px;border-radius:12px;border:1px solid #e2e8f0;">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
                         <label class="checkbox-wrapper" style="margin:0;cursor:pointer;">
                             <input type="checkbox" name="overwrite" style="cursor:pointer;">
                             <span style="font-size:14px;color:#475569;font-weight:500;">기존 정산 데이터 덮어쓰기</span>
                         </label>
-                        <button type="submit" class="btn btn-primary" style="padding:12px 30px;font-size:15px;">
-                            수도요금 계산 저장
+                        <button type="submit" class="btn btn-primary" style="padding:12px 32px;font-size:15px;font-weight:600;">
+                            수도요금 저장
                         </button>
                     </div>
                     <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">
                         <p style="margin:0;font-size:12px;color:#64748b;line-height:1.6;">
-                            <strong>안내:</strong> 동일한 정산월에 대한 데이터가 이미 존재하는 경우, 체크박스를 선택하면 기존 데이터를 삭제하고 새로운 데이터로 교체합니다.
+                            💡 동일한 정산월에 대한 데이터가 이미 존재하는 경우, 체크박스를 선택하면 기존 데이터를 삭제하고 새로운 데이터로 교체합니다.
                         </p>
                     </div>
                 </div>
@@ -168,68 +193,66 @@
 
         <!-- 공동 공과금 탭 -->
         <div id="common-tab" class="tab-content">
-            <h2>🏘️ 공동 공과금 계산</h2>
-
-            <div style="background:#fff3cd;padding:15px;border-radius:8px;margin-bottom:20px;border-left:4px solid #f59e0b;">
-                <div style="display:flex;align-items:start;gap:10px;">
-                    <span style="font-size:20px;">💡</span>
-                    <div style="flex:1;">
-                        <strong style="color:#92400e;">공동 공과금이란?</strong>
-                        <p style="color:#92400e;margin:5px 0 0 0;font-size:14px;line-height:1.6;">
-                            청소비, 엘리베이터 유지보수비, 공용 전기세, 정화조 관리비 등 건물 전체에 부과되는 비용을 말합니다.<br>
-                            인원수 비례 또는 세대 균등 분배 방식을 선택할 수 있습니다.
-                        </p>
-                    </div>
-                </div>
+            <!-- 헤더 섹션 -->
+            <div style="background:white;padding:20px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <h2 style="margin:0 0 12px 0;color:#1e293b;font-size:22px;font-weight:700;">🏘️ 공동 공과금</h2>
+                <p style="margin:0;color:#64748b;font-size:14px;line-height:1.6;">
+                    비정기적으로 발생하는 공동 공과금을 인원수 비례 또는 세대 균등 분배 방식으로 정산합니다.
+                </p>
             </div>
 
             <form id="commonForm">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
-                <div class="grid grid-4">
-                    <div class="form-group">
-                        <label>정산월</label>
-                        <input type="month" name="billing_month" required>
-                    </div>
-                    <div class="form-group">
-                        <label>항목 설명</label>
-                        <input type="text" name="description" placeholder="예: 청소비, 엘리베이터 유지보수 등" required>
-                    </div>
-                    <div class="form-group">
-                        <label>총액</label>
-                        <input type="number" name="total_amount" min="0" placeholder="공과금 총액 (원)" required>
-                    </div>
-                    <div class="form-group">
-                        <label>분배 방식</label>
-                        <select name="distribution_method">
-                            <option value="BY_RESIDENTS">인원수 비례</option>
-                            <option value="BY_UNITS">세대 균등</option>
-                        </select>
+
+                <!-- 기본 정보 -->
+                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">📋 기본 정보</h4>
+                    <div class="grid grid-3">
+                        <div class="form-group">
+                            <label>정산월</label>
+                            <input type="month" name="billing_month" required>
+                        </div>
+                        <div class="form-group">
+                            <label>항목 설명</label>
+                            <input type="text" name="description" placeholder="예: 방역비, 청소비 등" required>
+                        </div>
+                        <div class="form-group">
+                            <label>총 금액 (원)</label>
+                            <input type="number" name="total_amount" min="0" placeholder="0" required>
+                        </div>
                     </div>
                 </div>
 
-                <div style="background:#f8fafc;padding:15px;border-radius:8px;margin:20px 0;">
-                    <h4 style="margin:0 0 10px 0;color:#334155;">📊 분배 방식 설명</h4>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
-                        <div style="background:white;padding:12px;border-radius:6px;border:1px solid #e2e8f0;">
-                            <div style="font-weight:600;color:#667eea;margin-bottom:5px;">👥 인원수 비례</div>
-                            <div style="font-size:13px;color:#64748b;line-height:1.5;">
-                                각 세대의 거주 인원수에 비례하여 금액을 분배합니다.
-                                인원이 많은 세대가 더 많이 부담합니다.
+                <!-- 분배 방식 선택 -->
+                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">⚙️ 분배 방식</h4>
+                    <div class="form-group">
+                        <label>분배 방법 선택</label>
+                        <select name="distribution_mode" required style="margin-bottom:16px;">
+                            <option value="RESIDENTS">인원수 비례</option>
+                            <option value="EQUAL">세대 균등</option>
+                        </select>
+                    </div>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        <div style="background:#fef3c7;padding:16px;border-radius:8px;border:1px solid #fbbf24;">
+                            <div style="font-weight:600;color:#78350f;margin-bottom:8px;font-size:14px;">👥 인원수 비례</div>
+                            <div style="font-size:13px;color:#78350f;line-height:1.6;">
+                                각 세대의 거주 인원수에 비례하여 분배합니다. 인원이 많은 세대가 더 많이 부담합니다.
                             </div>
                         </div>
-                        <div style="background:white;padding:12px;border-radius:6px;border:1px solid #e2e8f0;">
-                            <div style="font-weight:600;color:#667eea;margin-bottom:5px;">🏠 세대 균등</div>
-                            <div style="font-size:13px;color:#64748b;line-height:1.5;">
-                                재실 세대수로 균등하게 분배합니다.
-                                인원수와 관계없이 모든 세대가 동일하게 부담합니다.
+                        <div style="background:#e0f2fe;padding:16px;border-radius:8px;border:1px solid #0ea5e9;">
+                            <div style="font-weight:600;color:#0c4a6e;margin-bottom:8px;font-size:14px;">🏠 세대 균등</div>
+                            <div style="font-size:13px;color:#0c4a6e;line-height:1.6;">
+                                재실 세대수로 균등하게 분배합니다. 인원수와 관계없이 모든 세대가 동일하게 부담합니다.
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- 저장 영역 -->
-                <div style="margin-top:30px;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;text-align:right;">
-                    <button type="submit" class="btn btn-primary" style="padding:12px 30px;font-size:15px;">
+                <div style="background:#f8fafc;padding:20px;border-radius:12px;border:1px solid #e2e8f0;text-align:right;">
+                    <button type="submit" class="btn btn-primary" style="padding:12px 32px;font-size:15px;font-weight:600;">
                         공동 공과금 저장
                     </button>
                 </div>
@@ -245,21 +268,16 @@
         const UNITS = {{ (units_json|default([]))|tojson }};
 
         let monthRowCounter = 0;
-        let waterExcludedUnits = new Set(); // 수도세 제외 세대 ID 저장
+        let waterExcludedUnits = new Set();
 
         // 탭 전환 함수
         function showCalcTab(tabId, event) {
-            // 모든 탭 콘텐츠 숨기기
             document.querySelectorAll('#electric-tab, #water-tab, #common-tab').forEach(tab => {
                 tab.style.display = 'none';
             });
-
-            // 모든 탭 버튼 비활성화
             document.querySelectorAll('.tab').forEach(btn => {
                 btn.classList.remove('active');
             });
-
-            // 선택된 탭 표시
             document.getElementById(tabId).style.display = 'block';
             if (event && event.target) {
                 event.target.classList.add('active');
@@ -280,7 +298,7 @@
             sel2.innerHTML = options;
         }
 
-        // 전기 관련 함수들
+        // 월별 고지 내역 행 추가
         function addMonthBillRow() {
             const container = document.getElementById('monthlyBillsContainer');
             const idx = monthRowCounter;
@@ -308,20 +326,23 @@
                            style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;text-align:right;">
                 </td>
                 <td style="padding:12px;text-align:right;">
-                    <input type="number" name="tv_fee_${idx}" placeholder="0" min="0" step="0.01" class="bill-tvfee"
+                    <input type="number" name="tv_fee_${idx}" placeholder="0" min="0" step="0.01" class="bill-tv-fee"
                            style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;text-align:right;">
                 </td>
                 <td style="padding:12px;text-align:center;">
                     <button type="button" class="btn btn-danger btn-sm" onclick="removeMonthBillRow(${idx})"
-                            style="padding:6px 12px;font-size:12px;">삭제</button>
+                            style="padding:4px 8px;font-size:12px;">삭제</button>
                 </td>
             `;
 
             container.appendChild(tr);
             monthRowCounter++;
             updateMonthCount();
-            attachBillInputListeners();
-            updateTvFeeInputs();
+            updateTotals();
+
+            tr.querySelectorAll('input').forEach(input => {
+                input.addEventListener('input', updateTotals);
+            });
         }
 
         function removeMonthBillRow(idx) {
@@ -329,68 +350,67 @@
             if (row) {
                 row.remove();
                 updateMonthCount();
-                calculateBillTotals();
+                updateTotals();
             }
         }
 
         function updateMonthCount() {
-            const rows = document.querySelectorAll('#monthlyBillsContainer .month-bill-row');
-            document.getElementById('month_count').value = rows.length;
+            const count = document.querySelectorAll('.month-bill-row').length;
+            document.getElementById('month_count').value = count;
         }
 
-        function attachBillInputListeners() {
-            document.querySelectorAll('.bill-amount, .bill-welfare, .bill-voucher, .bill-tvfee').forEach(input => {
-                input.removeEventListener('input', calculateBillTotals);
-                input.addEventListener('input', calculateBillTotals);
-            });
-        }
+        function updateTotals() {
+            let totalAmount = 0, totalWelfare = 0, totalVoucher = 0, totalTvFee = 0;
 
-        function calculateBillTotals() {
-            let totalAmount = 0, totalWelfare = 0, totalVoucher = 0, totalTv = 0;
-
-            document.querySelectorAll('.bill-amount').forEach(input => {
-                totalAmount += parseFloat(input.value || 0);
-            });
-            document.querySelectorAll('.bill-welfare').forEach(input => {
-                totalWelfare += parseFloat(input.value || 0);
-            });
-            document.querySelectorAll('.bill-voucher').forEach(input => {
-                totalVoucher += parseFloat(input.value || 0);
-            });
-            document.querySelectorAll('.bill-tvfee').forEach(input => {
-                totalTv += parseFloat(input.value || 0);
+            document.querySelectorAll('.month-bill-row').forEach(row => {
+                totalAmount += parseFloat(row.querySelector('.bill-amount').value || 0);
+                totalWelfare += parseFloat(row.querySelector('.bill-welfare').value || 0);
+                totalVoucher += parseFloat(row.querySelector('.bill-voucher').value || 0);
+                totalTvFee += parseFloat(row.querySelector('.bill-tv-fee').value || 0);
             });
 
             document.getElementById('totalAmount').textContent = totalAmount.toLocaleString();
             document.getElementById('totalWelfare').textContent = totalWelfare.toLocaleString();
             document.getElementById('totalVoucher').textContent = totalVoucher.toLocaleString();
-            document.getElementById('totalTvFee').textContent = totalTv.toLocaleString();
+            document.getElementById('totalTvFee').textContent = totalTvFee.toLocaleString();
         }
 
+        // TV 모드 변경 시 입력칸 활성화/비활성화
         function updateTvFeeInputs() {
-            const isIndividual = document.getElementById('tv_mode').value === 'INDIVIDUAL';
-            document.querySelectorAll('.bill-tvfee').forEach(input => {
-                input.disabled = isIndividual;
-                if (isIndividual) {
-                    input.value = '';
-                    input.style.backgroundColor = '#e5e7eb';
+            const mode = document.getElementById('tv_mode').value;
+            const tvInputs = document.querySelectorAll('.bill-tv-fee');
+
+            tvInputs.forEach(input => {
+                if (mode === 'INDIVIDUAL') {
+                    input.disabled = true;
+                    input.value = '0';
+                    input.style.background = '#f1f5f9';
                 } else {
-                    input.style.backgroundColor = '';
+                    input.disabled = false;
+                    input.style.background = 'white';
                 }
             });
-            calculateBillTotals();
+            updateTotals();
         }
 
+        // 세대 정보 카드 렌더링
         function renderUnitsInfoCards(floorId) {
             const container = document.getElementById('unitsInfoCardContainer');
-            const units = UNITS.filter(u => u.floor_id == floorId).sort((a, b) => a.unit_name.localeCompare(b.unit_name));
+            if (!container) return;
 
-            if (units.length === 0) {
+            floorId = parseInt(floorId);
+            if (!floorId) {
                 container.innerHTML = '';
                 return;
             }
 
-            const selectedFloor = FLOORS.find(f => f.id == floorId);
+            const units = UNITS.filter(u => u.floor_id === floorId);
+            if (units.length === 0) {
+                container.innerHTML = '<div style="background:#fee2e2;padding:16px;border-radius:8px;border:1px solid #ef4444;color:#991b1b;text-align:center;">해당 층에 세대가 없습니다.</div>';
+                return;
+            }
+
+            const selectedFloor = FLOORS.find(f => f.id === floorId);
             const floorLabel = selectedFloor ?
                 (selectedFloor.floor_number < 0 ? 'B' + (-selectedFloor.floor_number) + '층' : selectedFloor.floor_number + '층') : '';
             const floorName = selectedFloor && selectedFloor.name ? selectedFloor.name : '';
@@ -403,34 +423,34 @@
             const voucherCount = units.filter(u => !u.is_vacant && u.electric_voucher).length;
 
             let html = `
-        <div style="background:#f8fafc;padding:20px;border-radius:12px;border:1px solid #e2e8f0;">
+        <div style="background:white;padding:20px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:24px;">
             <!-- 층 정보 헤더 -->
             <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:2px solid #e2e8f0;">
                 <h4 style="margin:0 0 8px 0;color:#1e293b;font-size:16px;font-weight:600;">
                     ${floorLabel}${floorName ? ' (' + floorName + ')' : ''} 세대 정보
                 </h4>
-                ${floorContract ? `<div style="font-size:13px;color:#64748b;">계약번호: <span style="font-family:monospace;color:#475569;font-weight:500;">${floorContract}</span></div>` : ''}
+                ${floorContract ? `<div style="color:#64748b;font-size:14px;font-weight:500;">계약번호: <span style="font-family:monospace;color:#475569;font-weight:600;">${floorContract}</span></div>` : ''}
             </div>
 
             <!-- 통계 요약 -->
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-bottom:20px;">
-                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
                     <div style="font-size:11px;color:#64748b;margin-bottom:4px;">재실</div>
                     <div style="font-size:20px;font-weight:700;color:#059669;">${occupiedCount}</div>
                 </div>
-                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
                     <div style="font-size:11px;color:#64748b;margin-bottom:4px;">공실</div>
                     <div style="font-size:20px;font-weight:700;color:#dc2626;">${vacantCount}</div>
                 </div>
-                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
                     <div style="font-size:11px;color:#64748b;margin-bottom:4px;">TV</div>
                     <div style="font-size:20px;font-weight:700;color:#f59e0b;">${tvCount}</div>
                 </div>
-                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
                     <div style="font-size:11px;color:#64748b;margin-bottom:4px;">복지</div>
                     <div style="font-size:20px;font-weight:700;color:#667eea;">${welfareCount}</div>
                 </div>
-                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
+                <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
                     <div style="font-size:11px;color:#64748b;margin-bottom:4px;">바우처</div>
                     <div style="font-size:20px;font-weight:700;color:#667eea;">${voucherCount}</div>
                 </div>
@@ -470,23 +490,44 @@
             container.innerHTML = html;
         }
 
+        // 검침 입력 테이블 렌더링
         function renderReadingTable(floorId) {
             const wrap = document.getElementById('readingTableWrap');
-            const units = UNITS.filter(u => u.floor_id == floorId && !u.is_vacant);
+            if (!wrap) {
+                // readingTableWrap이 없으면 unitsInfoCardContainer를 사용
+                const altWrap = document.getElementById('unitsInfoCardContainer');
+                if (altWrap) {
+                    // 세대 카드가 이미 렌더링된 경우, 검침 테이블을 추가
+                    const existingCard = altWrap.querySelector('[style*="검침 입력"]');
+                    if (existingCard) return; // 이미 있으면 종료
+                }
+            }
 
-            if (units.length === 0) {
-                wrap.innerHTML = '<p style="color:#94a3b8;">해당 층의 재실 세대가 없습니다.</p>';
+            const container = wrap || document.getElementById('unitsInfoCardContainer');
+            if (!container) return;
+
+            floorId = parseInt(floorId);
+            if (!floorId) {
                 return;
             }
 
-            const selectedFloor = FLOORS.find(f => f.id == floorId);
+            const units = UNITS.filter(u => u.floor_id === floorId && !u.is_vacant);
+            if (units.length === 0) {
+                return;
+            }
+
+            const selectedFloor = FLOORS.find(f => f.id === floorId);
             const floorLabel = selectedFloor ?
                 (selectedFloor.floor_number < 0 ? 'B' + (-selectedFloor.floor_number) + '층' : selectedFloor.floor_number + '층') : '';
             const floorName = selectedFloor && selectedFloor.name ? ` (${selectedFloor.name})` : '';
+            const contractNumber = selectedFloor && selectedFloor.electric_contract_number ? selectedFloor.electric_contract_number : '';
 
             let html = `
-                <div style="background:white;padding:25px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:18px;">⚡ 검침 입력 - ${floorLabel}${floorName}</h4>
+                <div style="background:white;padding:25px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:24px;">
+                    <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:2px solid #e2e8f0;">
+                        <h4 style="margin:0 0 12px 0;color:#1e293b;font-size:18px;font-weight:700;">⚡ 검침 입력 - ${floorLabel}${floorName}</h4>
+                        ${contractNumber ? `<div style="color:#64748b;font-size:14px;font-weight:500;">전기 계약번호: <span style="font-family:monospace;color:#475569;font-weight:600;">${contractNumber}</span></div>` : ''}
+                    </div>
 
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                         <!-- 전월 검침 테이블 -->
@@ -579,7 +620,7 @@
                     </div>
                 </div>
             `;
-            wrap.innerHTML = html;
+            container.innerHTML = html;
 
             // 사용량 계산 및 음수 검증
             document.querySelectorAll('.reading-prev, .reading-curr').forEach(input => {
@@ -595,7 +636,6 @@
 
                     usageSpan.textContent = usage.toFixed(2);
 
-                    // 음수 검증 및 시각적 피드백
                     if (usage < 0) {
                         usageSpan.style.color = '#dc2626';
                         usageSpan.style.fontWeight = 'bold';
@@ -621,60 +661,51 @@
             const occupiedUnits = UNITS.filter(u => !u.is_vacant);
 
             if (occupiedUnits.length === 0) {
-                container.innerHTML = '<p style="color:#64748b;margin:0;">재실 세대가 없습니다.</p>';
+                container.innerHTML = '<div style="background:#fee2e2;padding:16px;border-radius:8px;border:1px solid #ef4444;color:#991b1b;text-align:center;">재실 세대가 없습니다.</div>';
                 return;
             }
 
             const waterWelfareUnits = occupiedUnits.filter(u => u.water_welfare);
             const totalResidents = occupiedUnits.reduce((sum, u) => sum + (u.residents_count || 1), 0);
             const selectedCount = occupiedUnits.length - waterExcludedUnits.size;
+            const waterCustomerNumber = '{{ water_customer_number }}';
 
-            // 전기요금 unitsInfoCardContainer와 동일한 외곽 컨테이너 디자인
             let html = `
-        <div style="background:#f8fafc;padding:20px;border-radius:12px;border:1px solid #e2e8f0;">
-            <!-- 헤더 (전기요금처럼 고객번호 포함) -->
-            <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:2px solid #e2e8f0;">
-                <h4 style="margin:0 0 8px 0;color:#1e293b;font-size:16px;font-weight:600;">
+        <div style="background:white;padding:24px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <!-- 헤더 -->
+            <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:2px solid #e2e8f0;">
+                <h4 style="margin:0 0 12px 0;color:#1e293b;font-size:18px;font-weight:700;">
                     정산 대상 세대 선택
                 </h4>
-    `;
-
-            // 주택 수도 고객번호가 있으면 표시 (전기요금 계약번호와 동일한 스타일)
-            const waterCustomerNumber = '{{ water_customer_number }}';
-            if (waterCustomerNumber) {
-                html += `<div style="color:#64748b;font-size:13px;font-weight:500;margin-top:5px;">주택 수도 고객번호: <span style="font-family:monospace;color:#475569;font-weight:500;">${waterCustomerNumber}</span></div>`;
-            }
-
-            html += `
+                ${waterCustomerNumber ? `<div style="color:#64748b;font-size:14px;font-weight:500;">주택 수도 고객번호: <span style="font-family:monospace;color:#475569;font-weight:600;">${waterCustomerNumber}</span></div>` : ''}
                 <p style="color:#64748b;font-size:13px;margin:8px 0 0 0;line-height:1.5;">
                     체크박스를 클릭하여 정산 대상을 선택하세요. 장기 출장 등으로 수도를 사용하지 않은 세대는 선택 해제할 수 있습니다.
                 </p>
             </div>
 
-            <!-- 통계 요약 (전기요금과 동일한 스타일) -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-bottom:20px;">
-                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">전체</div>
-                    <div style="font-size:20px;font-weight:700;color:#0284c7;">${occupiedUnits.length}</div>
+            <!-- 통계 요약 -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;margin-bottom:24px;">
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">전체 세대</div>
+                    <div style="font-size:22px;font-weight:700;color:#0284c7;">${occupiedUnits.length}</div>
                 </div>
-                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">선택됨</div>
-                    <div style="font-size:20px;font-weight:700;color:#059669;" id="selectedCountDisplay">${selectedCount}</div>
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">선택됨</div>
+                    <div style="font-size:22px;font-weight:700;color:#059669;" id="selectedCountDisplay">${selectedCount}</div>
                 </div>
-                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">인원</div>
-                    <div style="font-size:20px;font-weight:700;color:#0284c7;">${totalResidents}</div>
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">총 인원</div>
+                    <div style="font-size:22px;font-weight:700;color:#0284c7;">${totalResidents}</div>
                 </div>
-                <div style="text-align:center;padding:12px;background:white;border-radius:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">복지</div>
-                    <div style="font-size:20px;font-weight:700;color:#059669;">${waterWelfareUnits.length}</div>
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">복지 할인</div>
+                    <div style="font-size:22px;font-weight:700;color:#059669;">${waterWelfareUnits.length}</div>
                 </div>
             </div>
 
             <!-- 세대 카드 (층별 그룹화) -->
     `;
 
-            // 층별 그룹화
             const floorGroups = {};
             occupiedUnits.forEach(unit => {
                 if (!floorGroups[unit.floor_id]) {
@@ -695,32 +726,21 @@
                 const floorLabel = group.floor_number < 0 ? `B${-group.floor_number}층` : `${group.floor_number}층`;
                 const floorDisplayName = group.floor_name ? `${floorLabel} (${group.floor_name})` : floorLabel;
 
-                html += `
-            <div style="margin-bottom:16px;">
-                <h5 style="margin:0 0 10px 0;color:#475569;font-size:13px;font-weight:600;">${floorDisplayName}</h5>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
-        `;
+                html += `<div style="margin-bottom:16px;">
+                    <h5 style="margin:0 0 12px 0;color:#334155;font-size:15px;font-weight:600;">${floorDisplayName}</h5>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">`;
 
                 group.units.forEach(unit => {
                     const isIncluded = !waterExcludedUnits.has(unit.id);
-
-                    // 배지 생성 (전기요금 카드와 동일한 스타일)
                     const badges = [];
-                    if (isIncluded) {
-                        badges.push('<span style="background:#d1fae5;color:#059669;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">선택됨</span>');
-                    } else {
-                        badges.push('<span style="background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">제외됨</span>');
-                    }
-
                     if (unit.water_welfare) {
-                        badges.push('<span style="background:#d1fae5;color:#059669;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">복지</span>');
+                        badges.push('<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">복지</span>');
                     }
-
                     const borderColor = isIncluded ? '#0891b2' : '#cbd5e1';
 
                     html += `
                 <div class="water-unit-card" data-unit-id="${unit.id}"
-                     style="background:white;padding:12px;border-radius:8px;border:1px solid ${borderColor};cursor:pointer;transition:all 0.2s;"
+                     style="background:${isIncluded ? 'white' : '#f8fafc'};padding:12px;border-radius:8px;border:1px solid ${borderColor};cursor:pointer;transition:all 0.2s;min-height:121px;display:flex;flex-direction:column;"
                      onclick="toggleWaterUnit(${unit.id})">
                     <div style="display:flex;align-items:start;gap:8px;margin-bottom:8px;">
                         <input type="checkbox"
@@ -759,7 +779,6 @@
             const excludedArray = Array.from(waterExcludedUnits);
             document.getElementById('excluded_units').value = JSON.stringify(excludedArray);
 
-            // 선택 카운트만 업데이트 (전체 재렌더링 방지)
             const occupiedUnits = UNITS.filter(u => !u.is_vacant);
             const selectedCount = occupiedUnits.length - waterExcludedUnits.size;
             const displayElement = document.getElementById('selectedCountDisplay');
@@ -767,7 +786,6 @@
                 displayElement.textContent = selectedCount;
             }
 
-            // 해당 카드만 시각적 업데이트
             const card = document.querySelector(`.water-unit-card[data-unit-id="${unitId}"]`);
             const checkbox = card.querySelector('input[type="checkbox"]');
             const isIncluded = !waterExcludedUnits.has(unitId);
@@ -808,16 +826,19 @@
                 .catch(() => alert('통신 오류가 발생했습니다.'));
         }
 
-        // 층 선택 동기화
+        // 이벤트 리스너
         document.getElementById('electric_floor_id').addEventListener('change', (e) => {
             const id = e.target.value;
             if (id) {
-                renderReadingTable(id);
                 renderUnitsInfoCards(id);
+                renderReadingTable(id);
+            } else {
+                document.getElementById('unitsInfoCardContainer').innerHTML = '';
+                const wrap = document.getElementById('readingTableWrap');
+                if (wrap) wrap.innerHTML = '';
             }
         });
 
-        // TV 모드 변경
         document.getElementById('tv_mode').addEventListener('change', updateTvFeeInputs);
 
         // 전기요금 폼 제출
@@ -836,7 +857,6 @@
                 return;
             }
 
-            // 음수 사용량 검증
             const invalidInputs = document.querySelectorAll('.reading-curr[data-invalid="true"]');
             if (invalidInputs.length > 0) {
                 alert('⚠️ 사용량이 음수인 세대가 있습니다.\n\n현월 검침값이 전월 검침값보다 작습니다.\n검침값을 확인해주세요.');
@@ -857,8 +877,8 @@
                 const res = await fetch('/calculate/electric', {method: 'POST', body: fd});
                 const j = await res.json();
 
-                if (j.exists) {
-                    if (confirm('해당 월의 전기요금이 이미 존재합니다. 덮어쓸까요?')) {
+                if (j.already_exists) {
+                    if (confirm('이미 해당 정산월/층에 대한 데이터가 존재합니다.\n기존 데이터를 삭제하고 덮어쓸까요?')) {
                         fd.set('overwrite', 'true');
                         const res2 = await fetch('/calculate/electric', {method: 'POST', body: fd});
                         const j2 = await res2.json();
@@ -866,15 +886,11 @@
                         if (j2.success) location.reload();
                     }
                 } else {
-                    if (j.success) {
-                        alert('저장되었습니다.');
-                        location.reload();
-                    } else {
-                        alert('오류: ' + (j.message || '알 수 없는 오류'));
-                    }
+                    alert(j.message || (j.success ? '저장되었습니다.' : '실패했습니다.'));
+                    if (j.success) location.reload();
                 }
             } catch (error) {
-                alert('네트워크 오류가 발생했습니다: ' + error.message);
+                alert('오류가 발생했습니다: ' + error.message);
             }
         });
 
@@ -889,18 +905,14 @@
             });
 
             const fd = new FormData(e.target);
-
-            const excludedArray = Array.from(waterExcludedUnits);
-            const excludedUnitsValue = JSON.stringify(excludedArray);
-            fd.set('excluded_units', excludedUnitsValue);
             fd.set('overwrite', e.target.overwrite.checked ? 'true' : 'false');
 
             try {
                 const res = await fetch('/calculate/water', {method: 'POST', body: fd});
                 const j = await res.json();
 
-                if (j.exists) {
-                    if (confirm('해당 월의 수도요금이 이미 존재합니다. 덮어쓸까요?')) {
+                if (j.already_exists) {
+                    if (confirm('이미 해당 정산월에 대한 데이터가 존재합니다.\n기존 데이터를 삭제하고 덮어쓸까요?')) {
                         fd.set('overwrite', 'true');
                         const res2 = await fetch('/calculate/water', {method: 'POST', body: fd});
                         const j2 = await res2.json();
@@ -940,7 +952,6 @@
 
         // 초기화
         renderFloorOptions();
-        // 전기요금: 월별 고지 내역 기본 1개 행 추가
         addMonthBillRow();
         renderWaterUnitsSelection();
     </script>
