@@ -74,7 +74,7 @@
                                 <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">복지할인</th>
                                 <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">바우처할인</th>
                                 <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">TV수신료 총액</th>
-                                <th style="padding:12px;border-bottom:2px solid #cbd5e1;width:80px;text-align:center;">
+                                <th style="padding:12px;text-align:center;border-bottom:2px solid #cbd5e1;width:80px;text-align:center;">
                                     작업
                                 </th>
                             </tr>
@@ -193,11 +193,10 @@
 
         <!-- 공동 공과금 탭 -->
         <div id="common-tab" class="tab-content">
-            <!-- 헤더 섹션 -->
             <div style="background:white;padding:20px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-                <h2 style="margin:0 0 12px 0;color:#1e293b;font-size:22px;font-weight:700;">🏘️ 공동 공과금</h2>
+                <h2 style="margin:0 0 16px 0;color:#1e293b;font-size:22px;font-weight:700;">🏘️ 공동 공과금 계산</h2>
                 <p style="margin:0;color:#64748b;font-size:14px;line-height:1.6;">
-                    비정기적으로 발생하는 공동 공과금을 인원수 비례 또는 세대 균등 분배 방식으로 정산합니다.
+                    인터넷, 관리비, 기타 등의 공동 공과금을 입력합니다. 분배 방식(인원 비례 또는 세대 균등)을 선택할 수 있습니다.
                 </p>
             </div>
 
@@ -207,38 +206,48 @@
                 <!-- 기본 정보 -->
                 <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
                     <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">📋 기본 정보</h4>
-                    <div class="grid grid-3">
+                    <div class="grid grid-2">
                         <div class="form-group">
                             <label>정산월</label>
                             <input type="month" name="billing_month" required>
                         </div>
                         <div class="form-group">
-                            <label>항목 설명</label>
-                            <input type="text" name="description" placeholder="예: 방역비, 청소비 등" required>
-                        </div>
-                        <div class="form-group">
-                            <label>총 금액 (원)</label>
-                            <input type="number" name="total_amount" min="0" placeholder="0" required>
+                            <label>분배 방식</label>
+                            <select name="distribution_mode" required>
+                                <option value="RESIDENTS">인원 비례 (거주 인원수에 비례)</option>
+                                <option value="UNIT">세대 균등 (재실 세대수로 균등)</option>
+                            </select>
                         </div>
                     </div>
                 </div>
 
-                <!-- 분배 방식 선택 -->
+                <!-- 항목별 금액 -->
                 <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">⚙️ 분배 방식</h4>
-                    <div class="form-group">
-                        <label>분배 방법 선택</label>
-                        <select name="distribution_mode" required style="margin-bottom:16px;">
-                            <option value="RESIDENTS">인원수 비례</option>
-                            <option value="EQUAL">세대 균등</option>
-                        </select>
+                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">💰 항목별 금액</h4>
+                    <div class="grid grid-3">
+                        <div class="form-group">
+                            <label>인터넷 (원)</label>
+                            <input type="number" name="internet_amount" min="0" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>관리비 (원)</label>
+                            <input type="number" name="management_amount" min="0" placeholder="0">
+                        </div>
+                        <div class="form-group">
+                            <label>기타 (원)</label>
+                            <input type="number" name="other_amount" min="0" placeholder="0">
+                        </div>
                     </div>
+                </div>
 
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <!-- 분배 방식 안내 -->
+                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                    <h4 style="margin:0 0 16px 0;color:#334155;font-size:16px;font-weight:600;">📊 분배 방식 안내</h4>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
                         <div style="background:#fef3c7;padding:16px;border-radius:8px;border:1px solid #fbbf24;">
-                            <div style="font-weight:600;color:#78350f;margin-bottom:8px;font-size:14px;">👥 인원수 비례</div>
-                            <div style="font-size:13px;color:#78350f;line-height:1.6;">
-                                각 세대의 거주 인원수에 비례하여 분배합니다. 인원이 많은 세대가 더 많이 부담합니다.
+                            <div style="font-weight:600;color:#92400e;margin-bottom:8px;font-size:14px;">👥 인원 비례</div>
+                            <div style="font-size:13px;color:#92400e;line-height:1.6;">
+                                거주 인원수에 비례하여 분배합니다. 인원이 많은 세대가 더 많이 부담합니다.
                             </div>
                         </div>
                         <div style="background:#e0f2fe;padding:16px;border-radius:8px;border:1px solid #0ea5e9;">
@@ -290,79 +299,85 @@
             const options = '<option value="">선택</option>' + FLOORS.map(f => {
                 const floorLabel = f.floor_number < 0 ? 'B' + (-f.floor_number) + '층' : f.floor_number + '층';
                 let displayLabel = f.name ? `${floorLabel} (${f.name})` : floorLabel;
-                if (f.electric_contract_number) {
-                    displayLabel += ` [${f.electric_contract_number}]`;
-                }
                 return `<option value="${f.id}">${displayLabel}</option>`;
             }).join('');
             sel2.innerHTML = options;
         }
 
-        // 월별 고지 내역 행 추가
+        // 월별 고지 행 추가
         function addMonthBillRow() {
             const container = document.getElementById('monthlyBillsContainer');
-            const idx = monthRowCounter;
+            const rowId = monthRowCounter++;
 
-            const tr = document.createElement('tr');
-            tr.className = 'month-bill-row';
-            tr.dataset.index = idx;
-            tr.style.cssText = 'border-bottom:1px solid #e2e8f0;';
+            const row = document.createElement('tr');
+            row.className = 'month-bill-row';
+            row.id = `bill-row-${rowId}`;
+            row.style.borderBottom = '1px solid #e2e8f0';
 
-            tr.innerHTML = `
-                <td style="padding:12px;">
-                    <input type="month" name="month_${idx}" required
+            row.innerHTML = `
+                <td style="padding:10px;">
+                    <input type="month" name="bill_month_${rowId}" required
                            style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
                 </td>
-                <td style="padding:12px;text-align:right;">
-                    <input type="number" name="amount_${idx}" placeholder="0" min="0" step="0.01" class="bill-amount" required
-                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;text-align:right;">
+                <td style="padding:10px;">
+                    <input type="number" name="bill_amount_${rowId}" min="0" placeholder="0" required
+                           class="bill-amount"
+                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;text-align:right;font-size:13px;">
                 </td>
-                <td style="padding:12px;text-align:right;">
-                    <input type="number" name="welfare_${idx}" placeholder="0" min="0" step="0.01" class="bill-welfare"
-                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;text-align:right;">
+                <td style="padding:10px;">
+                    <input type="number" name="bill_welfare_${rowId}" min="0" placeholder="0"
+                           class="bill-welfare"
+                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;text-align:right;font-size:13px;">
                 </td>
-                <td style="padding:12px;text-align:right;">
-                    <input type="number" name="voucher_${idx}" placeholder="0" min="0" step="0.01" class="bill-voucher"
-                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;text-align:right;">
+                <td style="padding:10px;">
+                    <input type="number" name="bill_voucher_${rowId}" min="0" placeholder="0"
+                           class="bill-voucher"
+                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;text-align:right;font-size:13px;">
                 </td>
-                <td style="padding:12px;text-align:right;">
-                    <input type="number" name="tv_fee_${idx}" placeholder="0" min="0" step="0.01" class="bill-tv-fee"
-                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;text-align:right;">
+                <td style="padding:10px;">
+                    <input type="number" name="bill_tv_fee_${rowId}" min="0" placeholder="0"
+                           class="bill-tv-fee"
+                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;text-align:right;font-size:13px;">
                 </td>
-                <td style="padding:12px;text-align:center;">
-                    <button type="button" class="btn btn-danger btn-sm" onclick="removeMonthBillRow(${idx})"
-                            style="padding:4px 8px;font-size:12px;">삭제</button>
+                <td style="padding:10px;text-align:center;">
+                    <button type="button" class="btn btn-danger btn-sm"
+                            onclick="removeMonthBillRow(${rowId})"
+                            style="padding:6px 12px;font-size:12px;">삭제</button>
                 </td>
             `;
 
-            container.appendChild(tr);
-            monthRowCounter++;
-            updateMonthCount();
-            updateTotals();
+            container.appendChild(row);
 
-            tr.querySelectorAll('input').forEach(input => {
+            row.querySelectorAll('.bill-amount, .bill-welfare, .bill-voucher, .bill-tv-fee').forEach(input => {
                 input.addEventListener('input', updateTotals);
             });
+
+            updateTotals();
+            updateMonthCount();
         }
 
-        function removeMonthBillRow(idx) {
-            const row = document.querySelector(`.month-bill-row[data-index="${idx}"]`);
+        function removeMonthBillRow(rowId) {
+            const row = document.getElementById(`bill-row-${rowId}`);
             if (row) {
                 row.remove();
-                updateMonthCount();
                 updateTotals();
+                updateMonthCount();
             }
         }
 
         function updateMonthCount() {
-            const count = document.querySelectorAll('.month-bill-row').length;
-            document.getElementById('month_count').value = count;
+            const rows = document.querySelectorAll('#monthlyBillsContainer .month-bill-row');
+            document.getElementById('month_count').value = rows.length;
         }
 
         function updateTotals() {
-            let totalAmount = 0, totalWelfare = 0, totalVoucher = 0, totalTvFee = 0;
+            const rows = document.querySelectorAll('#monthlyBillsContainer .month-bill-row');
+            let totalAmount = 0;
+            let totalWelfare = 0;
+            let totalVoucher = 0;
+            let totalTvFee = 0;
 
-            document.querySelectorAll('.month-bill-row').forEach(row => {
+            rows.forEach(row => {
                 totalAmount += parseFloat(row.querySelector('.bill-amount').value || 0);
                 totalWelfare += parseFloat(row.querySelector('.bill-welfare').value || 0);
                 totalVoucher += parseFloat(row.querySelector('.bill-voucher').value || 0);
@@ -414,7 +429,8 @@
             const floorLabel = selectedFloor ?
                 (selectedFloor.floor_number < 0 ? 'B' + (-selectedFloor.floor_number) + '층' : selectedFloor.floor_number + '층') : '';
             const floorName = selectedFloor && selectedFloor.name ? selectedFloor.name : '';
-            const floorContract = selectedFloor && selectedFloor.electric_contract_number ? selectedFloor.electric_contract_number : '';
+            const floorContract = selectedFloor && selectedFloor.electric_contract_number ?
+                selectedFloor.electric_contract_number : null;
 
             const occupiedCount = units.filter(u => !u.is_vacant).length;
             const vacantCount = units.filter(u => u.is_vacant).length;
@@ -433,26 +449,26 @@
             </div>
 
             <!-- 통계 요약 -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:12px;margin-bottom:20px;">
-                <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">재실</div>
-                    <div style="font-size:20px;font-weight:700;color:#059669;">${occupiedCount}</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;margin-bottom:20px;">
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">재실</div>
+                    <div style="font-size:22px;font-weight:700;color:#059669;">${occupiedCount}</div>
                 </div>
-                <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">공실</div>
-                    <div style="font-size:20px;font-weight:700;color:#dc2626;">${vacantCount}</div>
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">공실</div>
+                    <div style="font-size:22px;font-weight:700;color:#dc2626;">${vacantCount}</div>
                 </div>
-                <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">TV</div>
-                    <div style="font-size:20px;font-weight:700;color:#f59e0b;">${tvCount}</div>
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">TV</div>
+                    <div style="font-size:22px;font-weight:700;color:#f59e0b;">${tvCount}</div>
                 </div>
-                <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">복지</div>
-                    <div style="font-size:20px;font-weight:700;color:#667eea;">${welfareCount}</div>
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">복지</div>
+                    <div style="font-size:22px;font-weight:700;color:#667eea;">${welfareCount}</div>
                 </div>
-                <div style="text-align:center;padding:12px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:4px;">바우처</div>
-                    <div style="font-size:20px;font-weight:700;color:#667eea;">${voucherCount}</div>
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
+                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">바우처</div>
+                    <div style="font-size:22px;font-weight:700;color:#667eea;">${voucherCount}</div>
                 </div>
             </div>
 
@@ -472,12 +488,14 @@
                 }
 
                 html += `
-            <div style="background:white;padding:12px;border-radius:8px;border:1px solid ${u.is_vacant ? '#fecaca' : '#cbd5e1'};">
+            <div style="background:white;padding:12px;border-radius:8px;border:1px solid ${u.is_vacant ? '#fecaca' : '#cbd5e1'};min-height:110px;display:flex;flex-direction:column;">
                 <div style="font-weight:600;font-size:14px;color:#1e293b;margin-bottom:8px;">${u.unit_name}</div>
                 <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
                     ${badges.join('')}
                 </div>
-                ${!u.is_vacant ? `<div style="font-size:12px;color:#64748b;">${u.residents_count}명 거주</div>` : ''}
+                <div style="margin-top:auto;">
+                    ${!u.is_vacant ? `<div style="font-size:12px;color:#64748b;">${u.residents_count}명 거주</div>` : '<div style="font-size:12px;color:#94a3b8;">공실</div>'}
+                </div>
             </div>
         `;
             });
@@ -494,12 +512,10 @@
         function renderReadingTable(floorId) {
             const wrap = document.getElementById('readingTableWrap');
             if (!wrap) {
-                // readingTableWrap이 없으면 unitsInfoCardContainer를 사용
                 const altWrap = document.getElementById('unitsInfoCardContainer');
                 if (altWrap) {
-                    // 세대 카드가 이미 렌더링된 경우, 검침 테이블을 추가
                     const existingCard = altWrap.querySelector('[style*="검침 입력"]');
-                    if (existingCard) return; // 이미 있으면 종료
+                    if (existingCard) return;
                 }
             }
 
@@ -524,25 +540,34 @@
 
             let html = `
                 <div style="background:white;padding:25px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:24px;">
-                    <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:2px solid #e2e8f0;">
-                        <h4 style="margin:0 0 12px 0;color:#1e293b;font-size:18px;font-weight:700;">⚡ 검침 입력 - ${floorLabel}${floorName}</h4>
-                        ${contractNumber ? `<div style="color:#64748b;font-size:14px;font-weight:500;">전기 계약번호: <span style="font-family:monospace;color:#475569;font-weight:600;">${contractNumber}</span></div>` : ''}
+                    <div style="display:grid;grid-template-columns: 1fr auto;grid-template-rows: auto auto;align-items:center;column-gap:12px;row-gap:8px;margin-bottom:20px;padding-bottom:20px;border-bottom:2px solid #e2e8f0;">
+                        <h4 style="margin:0;color:#1e293b;font-size:18px;font-weight:700;">
+                          ⚡ 검침 입력 - ${floorLabel}${floorName}
+                        </h4>
+                        <button type="button" class="btn btn-secondary" onclick="loadPreviousReadings()"
+                                style="padding:10px 16px;font-size:14px;justify-self:end;white-space:nowrap;">
+                          📥 이전 정산의 현월 검침 불러오기
+                        </button>
+                        ${contractNumber ? `
+                          <div style="color:#64748b;font-size:14px;font-weight:500;">
+                            계약번호:
+                            <span style="font-family:monospace;color:#475569;font-weight:600;">
+                              ${contractNumber}
+                            </span>
+                          </div>` : '<div></div>'}
+                        <p style="margin:0;font-size:12px;color:#64748b;justify-self:end;text-align:right;">
+                          💡 동일 층의 가장 최근 정산 데이터에서 현월 검침값을 불러와 전월 검침란에 자동으로 입력합니다.
+                        </p>
                     </div>
-
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
                         <!-- 전월 검침 테이블 -->
-                        <div style="background:#fff7ed;padding:15px;border-radius:8px;border:2px solid #fed7aa;">
-                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;">
-                                <h5 style="margin:0;color:#9a3412;font-size:16px;">📉 전월 검침</h5>
-                                <button type="button" class="btn btn-secondary btn-sm" onclick="loadPreviousReadings()" style="padding:6px 12px;font-size:12px;">
-                                    이전 정산 값 불러오기
-                                </button>
-                            </div>
+                        <div style="background:#fef3c7;padding:15px;border-radius:8px;border:2px solid #fed7aa;">
+                            <h5 style="margin:0 0 15px 0;color:#92400e;font-size:16px;">📉 전월 검침</h5>
                             <table style="width:100%;border-collapse:collapse;">
                                 <thead>
-                                    <tr style="background:#ffedd5;">
+                                    <tr style="background:#fed7aa;">
                                         <th style="padding:10px;text-align:left;border-bottom:2px solid #fed7aa;width:90px;">세대</th>
-                                        <th style="padding:10px;text-align:left;border-bottom:2px solid #fed7aa;width:130px;">속성</th>
+                                        <th style="padding:10px;text-align:left;border-bottom:2px solid #fed7aa;font-size:11px;">특성</th>
                                         <th style="padding:10px;text-align:center;border-bottom:2px solid #fed7aa;">검침값</th>
                                     </tr>
                                 </thead>
@@ -551,9 +576,9 @@
 
             units.forEach(u => {
                 const badges = [];
+                if (u.has_tv) badges.push('TV');
                 if (u.electric_welfare) badges.push('복지');
                 if (u.electric_voucher) badges.push('바우처');
-                if (u.has_tv) badges.push('TV');
                 const badgeStr = badges.length > 0 ? badges.join(', ') : '-';
 
                 html += `
@@ -597,8 +622,8 @@
                                    class="reading-curr" data-unit="${u.id}"
                                    style="width:130px;padding:8px;border:1px solid #bef264;border-radius:6px;text-align:right;font-size:14px;background:white;">
                         </td>
-                        <td style="padding:10px;text-align:right;">
-                            <span id="usage_${u.id}" style="font-weight:bold;font-size:14px;color:#059669;display:inline-block;min-width:80px;">0.00</span>
+                        <td style="padding:10px;text-align:center;">
+                            <span class="usage-display" data-unit="${u.id}" style="font-weight:600;font-size:14px;color:#365314;">-</span>
                         </td>
                     </tr>
                 `;
@@ -610,42 +635,50 @@
                         </div>
                     </div>
 
-                    <div style="margin-top:20px;padding:15px;background:#e0f2fe;border-radius:8px;border-left:4px solid #0284c7;">
-                        <div style="color:#0c4a6e;font-size:14px;line-height:1.6;">
-                            <strong>💡 입력 방법:</strong><br>
-                            • <strong>전월 검침</strong>을 모두 입력한 후 → <strong>현월 검침</strong>을 입력하세요.<br>
-                            • Tab 키를 누르면 전월 검침 → 전월 검침 → ... → 현월 검침 → 현월 검침 순서로 이동합니다.<br>
-                            • "이전 정산 값 불러오기" 버튼을 클릭하면 이전 정산의 현월 검침값이 전월 검침에 자동으로 입력됩니다.
-                        </div>
+                    <div style="background:#dbeafe;padding:12px;border-radius:8px;margin-top:15px;font-size:13px;color:#1e3a8a;line-height:1.6;">
+                        <strong>💡 사용량 계산:</strong> 사용량 = 현월 검침 - 전월 검침<br>
+                        사용량이 음수로 표시되면 검침값을 확인해주세요. (현월 검침이 전월보다 작은 경우)
                     </div>
                 </div>
             `;
-            container.innerHTML = html;
 
-            // 사용량 계산 및 음수 검증
+            if (wrap) {
+                wrap.innerHTML = html;
+            } else {
+                container.innerHTML += html;
+            }
+
             document.querySelectorAll('.reading-prev, .reading-curr').forEach(input => {
-                input.addEventListener('input', function () {
-                    const unitId = this.dataset.unit;
+                input.addEventListener('input', () => {
+                    const unitId = input.dataset.unit;
                     const prevInput = document.querySelector(`.reading-prev[data-unit="${unitId}"]`);
                     const currInput = document.querySelector(`.reading-curr[data-unit="${unitId}"]`);
-                    const usageSpan = document.getElementById(`usage_${unitId}`);
+                    const usageSpan = document.querySelector(`.usage-display[data-unit="${unitId}"]`);
 
-                    const prev = parseFloat(prevInput.value || 0);
-                    const curr = parseFloat(currInput.value || 0);
+                    const prev = parseFloat(prevInput.value) || 0;
+                    const curr = parseFloat(currInput.value) || 0;
                     const usage = curr - prev;
 
-                    usageSpan.textContent = usage.toFixed(2);
+                    if (currInput.value && prevInput.value) {
+                        usageSpan.textContent = usage.toFixed(2);
 
-                    if (usage < 0) {
-                        usageSpan.style.color = '#dc2626';
-                        usageSpan.style.fontWeight = 'bold';
-                        currInput.style.borderColor = '#dc2626';
-                        currInput.style.borderWidth = '2px';
-                        currInput.style.backgroundColor = '#fee2e2';
-                        currInput.setAttribute('data-invalid', 'true');
+                        if (usage < 0) {
+                            usageSpan.style.color = '#dc2626';
+                            usageSpan.style.fontWeight = 'bold';
+                            currInput.style.borderColor = '#dc2626';
+                            currInput.style.borderWidth = '2px';
+                            currInput.style.backgroundColor = '#fee2e2';
+                            currInput.setAttribute('data-invalid', 'true');
+                        } else {
+                            usageSpan.style.color = '#059669';
+                            usageSpan.style.fontWeight = 'bold';
+                            currInput.style.borderColor = '#bef264';
+                            currInput.style.borderWidth = '1px';
+                            currInput.style.backgroundColor = 'white';
+                            currInput.removeAttribute('data-invalid');
+                        }
                     } else {
-                        usageSpan.style.color = '#059669';
-                        usageSpan.style.fontWeight = 'bold';
+                        usageSpan.textContent = '-';
                         currInput.style.borderColor = '#bef264';
                         currInput.style.borderWidth = '1px';
                         currInput.style.backgroundColor = 'white';
@@ -685,19 +718,19 @@
 
             <!-- 통계 요약 -->
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;margin-bottom:24px;">
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
                     <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">전체 세대</div>
                     <div style="font-size:22px;font-weight:700;color:#0284c7;">${occupiedUnits.length}</div>
                 </div>
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
                     <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">선택됨</div>
                     <div style="font-size:22px;font-weight:700;color:#059669;" id="selectedCountDisplay">${selectedCount}</div>
                 </div>
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
                     <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">총 인원</div>
                     <div style="font-size:22px;font-weight:700;color:#0284c7;">${totalResidents}</div>
                 </div>
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
                     <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">복지 할인</div>
                     <div style="font-size:22px;font-weight:700;color:#059669;">${waterWelfareUnits.length}</div>
                 </div>
@@ -740,7 +773,7 @@
 
                     html += `
                 <div class="water-unit-card" data-unit-id="${unit.id}"
-                     style="background:${isIncluded ? 'white' : '#f8fafc'};padding:12px;border-radius:8px;border:1px solid ${borderColor};cursor:pointer;transition:all 0.2s;min-height:121px;display:flex;flex-direction:column;"
+                     style="background:${isIncluded ? 'white' : '#f8fafc'};padding:12px;border-radius:8px;border:1px solid ${borderColor};cursor:pointer;transition:all 0.2s;min-height:110px;display:flex;flex-direction:column;"
                      onclick="toggleWaterUnit(${unit.id})">
                     <div style="display:flex;align-items:start;gap:8px;margin-bottom:8px;">
                         <input type="checkbox"
@@ -754,7 +787,9 @@
                     <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
                         ${badges.join('')}
                     </div>
-                    <div style="font-size:12px;color:#64748b;">${unit.residents_count}명 거주</div>
+                    <div style="margin-top:auto;">
+                        <div style="font-size:12px;color:#64748b;">${unit.residents_count}명 거주</div>
+                    </div>
                 </div>
             `;
                 });
@@ -860,18 +895,10 @@
             const invalidInputs = document.querySelectorAll('.reading-curr[data-invalid="true"]');
             if (invalidInputs.length > 0) {
                 alert('⚠️ 사용량이 음수인 세대가 있습니다.\n\n현월 검침값이 전월 검침값보다 작습니다.\n검침값을 확인해주세요.');
-                invalidInputs[0].focus();
                 return;
             }
 
-            e.target.querySelectorAll('input[type="number"]:not([disabled])').forEach(input => {
-                if (!input.value || input.value.trim() === '') {
-                    input.value = '0';
-                }
-            });
-
             const fd = new FormData(e.target);
-            fd.set('overwrite', e.target.overwrite.checked ? 'true' : 'false');
 
             try {
                 const res = await fetch('/calculate/electric', {method: 'POST', body: fd});
@@ -898,14 +925,9 @@
         document.getElementById('waterForm').addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            e.target.querySelectorAll('input[type="number"]').forEach(input => {
-                if (!input.value || input.value.trim() === '') {
-                    input.value = '0';
-                }
-            });
-
             const fd = new FormData(e.target);
-            fd.set('overwrite', e.target.overwrite.checked ? 'true' : 'false');
+            const overwriteCheckbox = e.target.querySelector('input[name="overwrite"]');
+            fd.set('overwrite', overwriteCheckbox && overwriteCheckbox.checked ? 'true' : 'false');
 
             try {
                 const res = await fetch('/calculate/water', {method: 'POST', body: fd});
