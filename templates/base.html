@@ -234,20 +234,22 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin: var(--space-xl) 0;
             background: white;
-            border-radius: var(--radius-md);
+            border-radius: var(--radius-lg);
             overflow: hidden;
+            box-shadow: var(--shadow-sm);
+            margin: var(--space-xl) 0;
         }
 
         th {
             background: var(--gray-100) !important;
-            padding: var(--space-md);
+            padding: var(--space-md) var(--space-lg);
             text-align: left;
             font-weight: 600;
             color: var(--gray-700) !important;
             border-bottom: 2px solid var(--gray-300) !important;
             white-space: nowrap;
+            font-size: var(--font-base);
         }
 
         th.text-right {
@@ -255,8 +257,9 @@
         }
 
         td {
-            padding: var(--space-md);
+            padding: var(--space-md) var(--space-lg);
             border-bottom: 1px solid var(--gray-200);
+            font-size: var(--font-base);
         }
 
         td.text-right {
@@ -264,20 +267,31 @@
             font-weight: 500;
         }
 
-        tr:hover {
+        tbody tr:hover {
             background: var(--gray-50) !important;
             transition: var(--transition-fast);
+        }
+
+        /* 테이블 푸터 스타일 */
+        tfoot tr {
+            background: var(--gray-100) !important;
+            font-weight: 600;
+        }
+
+        tfoot td {
+            padding: var(--space-lg);
+            border-top: 2px solid var(--gray-300);
         }
 
         /* 금액 스타일링 */
         .amount-positive {
             color: var(--success-dark);
-            font-weight: 500;
+            font-weight: 600;
         }
 
         .amount-negative {
             color: var(--danger-dark);
-            font-weight: 500;
+            font-weight: 600;
         }
 
         /* 작업 버튼 */
@@ -285,6 +299,7 @@
             white-space: nowrap;
             display: flex;
             gap: var(--space-xs);
+            justify-content: flex-end;
         }
 
         /* ============================================

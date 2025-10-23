@@ -29,11 +29,12 @@
 
         /* 개선된 테이블 스타일 */
         table th {
-            background: #f1f5f9 !important;
+            background: var(--gray-100) !important;
             font-weight: 600 !important;
-            color: #334155 !important;
-            border-bottom: 2px solid #cbd5e1 !important;
+            color: var(--gray-700) !important;
+            border-bottom: 2px solid var(--gray-300) !important;
             white-space: nowrap;
+            padding: var(--space-md) var(--space-lg) !important;
         }
 
         /* 금액 컬럼 헤더도 우측 정렬 */
@@ -56,13 +57,13 @@
         /* 할인 금액 스타일 */
         .discount-amount {
             color: var(--success-dark);
-            font-weight: 500;
+            font-weight: 600;
         }
 
         /* TV 수신료 스타일 */
         .tv-fee-amount {
             color: var(--danger-dark);
-            font-weight: 500;
+            font-weight: 600;
         }
 
         /* 작업 버튼 컨테이너 */
@@ -70,6 +71,7 @@
             white-space: nowrap;
             display: flex;
             gap: var(--space-xs);
+            justify-content: flex-end;
         }
 
         /* 고지월 정보 셀 스타일 */
