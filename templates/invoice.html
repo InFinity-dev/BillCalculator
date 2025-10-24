@@ -490,7 +490,12 @@
             <div class="content-card" style="margin-bottom:20px;">
                 <!-- Step 1: 항목 선택 -->
                 <div id="step1" class="step-content">
-                    <h2>Step 1: 청구 항목 선택</h2>
+                    <div style="margin-bottom: 20px;">
+                        <h2 style="margin: 0px;">Step 1. 청구 항목 선택</h2>
+                        <small style="color:#64748b;">
+                            이번달 정산서 발급에 반영할 항목별 정산월을 선택합니다.
+                        </small>
+                    </div>
 
                     <div class="form-group">
                         <label>정산서 이름</label>
@@ -687,7 +692,7 @@
 
                 <!-- Step 2: 세대별 기타금액 및 메모 -->
                 <div id="step2" class="step-content" style="display:none;">
-                    <h2>Step 2: 세대별 기타금액 및 메모</h2>
+                    <h2>Step 2. 세대별 기타금액 및 메모</h2>
                     <p style="color:#64748b;margin-bottom:20px;">
                         💡 특정 세대에만 부과되는 기타 항목(미납금, 수리비 등) 또는 환급액과 세대별 특별 안내사항을 입력하세요.
                     </p>
@@ -703,7 +708,7 @@
 
                 <!-- Step 3: 최종 확인 -->
                 <div id="step3" class="step-content" style="display:none;">
-                    <h2>Step 3: 최종 확인</h2>
+                    <h2>Step 3. 최종 확인</h2>
                     <div id="finalConfirmation"></div>
 
                     <div style="margin-top: 30px;display:flex;gap:10px;">
@@ -936,7 +941,7 @@
                 // 각 세대 행
                 group.units.forEach(unit => {
                     const balance = balances[unit.id];
-                    let balanceContent = '<span class="balance-badge none">-</span>';
+                    let balanceContent = '<span class="balance-badge none">완납</span>';
 
                     if (balance && balance.balance !== 0) {
                         const balanceAmount = Math.abs(balance.balance);
