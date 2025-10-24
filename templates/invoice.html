@@ -118,6 +118,348 @@
         .unit-summary-row strong {
             color: var(--gray-700);
         }
+
+        /* 세대 일괄 관리 테이블 스타일 */
+        /*
+        .units-table-container {
+            background: white;
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }*/
+
+        .units-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .units-table thead {
+            /*background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);*/
+            color: white;
+        }
+
+        .units-table th {
+            padding: var(--space-md) var(--space-lg);
+            text-align: left;
+            font-weight: 600;
+            font-size: var(--font-small);
+            white-space: nowrap;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: inherit;
+        }
+
+        .units-table tbody tr {
+            border-bottom: 1px solid var(--gray-200);
+            transition: var(--transition-fast);
+        }
+
+        .units-table tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        .units-table tbody tr.floor-separator {
+            background: #f8fafc;
+            border-top: 2px solid var(--gray-300);
+            border-bottom: 2px solid var(--gray-300);
+        }
+
+        .units-table tbody tr.floor-separator td {
+            padding: var(--space-sm) var(--space-lg);
+            font-weight: 700;
+            color: var(--gray-700);
+            background: linear-gradient(90deg, #f1f5f9 0%, #f8fafc 100%);
+        }
+
+        .units-table td {
+            padding: var(--space-sm) var(--space-lg);
+            vertical-align: top;
+        }
+
+        .unit-name-cell {
+            font-weight: 600;
+            color: var(--gray-800);
+            white-space: nowrap;
+        }
+
+        .unit-memo-badge {
+            display: inline-block;
+            font-size: 11px;
+            padding: 2px 8px;
+            background: var(--gray-100);
+            color: var(--gray-600);
+            border-radius: var(--radius-md);
+            margin-left: var(--space-xs);
+        }
+
+        .balance-cell {
+            min-width: 180px;
+        }
+
+        .balance-info-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-start;
+        }
+
+        .balance-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: var(--radius-md);
+            font-size: var(--font-small);
+            font-weight: 600;
+        }
+
+        .balance-badge.unpaid {
+            background: #fef2f2;
+            color: var(--danger-dark);
+            border: 1px solid #fecaca;
+        }
+
+        .balance-badge.overpaid {
+            background: #f0fdf4;
+            color: var(--success-dark);
+            border: 1px solid #bbf7d0;
+        }
+
+        .balance-badge.none {
+            background: var(--gray-100);
+            color: var(--gray-500);
+        }
+
+        .balance-apply-btn {
+            font-size: 11px;
+            padding: 8px;
+            white-space: nowrap;
+            width: fit-content;
+        }
+
+        .charges-cell {
+            min-width: 280px;
+        }
+
+        .charge-inline-container {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .charge-inline-row {
+            display: flex;
+            padding-left: 11px;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .charge-inline-row select,
+        .charge-inline-row input {
+            font-size: 12px;
+            padding: 4px 6px;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-sm);
+        }
+
+        .charge-inline-row select {
+            width: 70px;
+        }
+
+        .charge-inline-row .charge-desc {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .charge-inline-row .charge-amount {
+            width: 80px;
+        }
+
+        .charge-inline-row button {
+            padding: 2px 6px;
+            font-size: 11px;
+            min-width: 35px;
+        }
+
+        /* 이월 항목 스타일 */
+        .charge-inline-row.carryover-row {
+            background: linear-gradient(90deg, #fef3c7 0%, #fef9e7 100%);
+            border-left: 3px solid #fbbf24;
+            padding-left: 8px;
+            border-radius: var(--radius-sm);
+            position: relative;
+            animation: highlightFade 0.5s ease;
+        }
+
+        @keyframes highlightFade {
+            0% {
+                background: linear-gradient(90deg, #fde68a 0%, #fef3c7 100%);
+                transform: translateX(-3px);
+            }
+            100% {
+                background: linear-gradient(90deg, #fef3c7 0%, #fef9e7 100%);
+                transform: translateX(0);
+            }
+        }
+
+        /*
+        .charge-inline-row.carryover-row::before {
+            content: "자동";
+            position: absolute;
+            left: -35px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #fbbf24;
+            color: white;
+            font-size: 10px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
+        }*/
+
+        .charge-inline-row.carryover-row .charge-type,
+        .charge-inline-row.carryover-row .charge-desc,
+        .charge-inline-row.carryover-row .charge-amount {
+            background: rgba(255, 255, 255, 0.8);
+            border-color: #fbbf24;
+        }
+
+        .charge-inline-row.carryover-row .charge-desc {
+            font-weight: 600;
+            color: #92400e;
+        }
+
+        /* 이월 항목 hover 효과 */
+        .charge-inline-row.carryover-row:hover {
+            background: linear-gradient(90deg, #fed7aa 0%, #fef3c7 100%);
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
+        }
+
+        /* 이월 항목 툴팁 */
+        .carryover-tooltip {
+            position: absolute;
+            right: -20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            background: #fbbf24;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: help;
+            z-index: 1;
+        }
+
+        .carryover-tooltip:hover::after {
+            content: "전월 잔액이 자동으로 추가된 항목입니다";
+            position: absolute;
+            right: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #1f2937;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            white-space: nowrap;
+            font-weight: normal;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .carryover-tooltip:hover::before {
+            content: "";
+            position: absolute;
+            right: 22px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 5px solid #1f2937;
+        }
+
+        /* 컨테이너 여백 조정 (자동 레이블 공간 확보) */
+        .charge-inline-container {
+        /*    padding-left: 40px;*/
+            position: relative;
+        }
+
+        .add-charge-btn {
+            font-size: 11px;
+            padding: 3px 8px;
+            margin-top: 4px;
+            background: var(--gray-100);
+            color: var(--gray-700);
+            border: 1px dashed var(--gray-400);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: var(--transition-fast);
+        }
+
+        .add-charge-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            border-style: solid;
+        }
+
+        .memo-cell textarea {
+            width: 100%;
+            min-width: 200px;
+            font-size: 12px;
+            padding: 6px;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-sm);
+            resize: vertical;
+        }
+
+        /* 테이블 상단 요약 정보 */
+        .table-summary {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #0ea5e9;
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            margin-bottom: var(--space-xl);
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .summary-item {
+            flex: 1;
+        }
+
+        .summary-label {
+            font-size: var(--font-small);
+            color: var(--gray-600);
+            margin-bottom: var(--space-xs);
+        }
+
+        .summary-value {
+            font-size: var(--font-xl);
+            font-weight: 700;
+            color: var(--gray-800);
+        }
+
+        .summary-value.highlight {
+            color: var(--danger-dark);
+        }
+
+        /* 반응형 스크롤 */
+        @media (max-width: 1024px) {
+            .units-table-container {
+                overflow-x: auto;
+            }
+
+            .units-table {
+                min-width: 800px;
+            }
+        }
     </style>
 {% endblock %}
 
@@ -504,7 +846,7 @@
             updateStepIndicators(2);
         }
 
-        async function renderStep2() {
+       async function renderStep2() {
             const container = document.getElementById('unitsAdditionalContainer');
             const occupiedUnits = UNITS.filter(u => !u.is_vacant);
 
@@ -527,82 +869,133 @@
                     const floor = FLOORS.find(f => f.id === unit.floor_id);
                     floorGroups[unit.floor_id] = {
                         floor_name: floor ? floor.name : '',
+                        floor_number: floor?.floor_number || 0,
                         units: []
                     };
                 }
                 floorGroups[unit.floor_id].units.push(unit);
             });
 
-            let html = '';
+            // 요약 정보 계산
+            let totalUnits = occupiedUnits.length;
+            let unitsWithBalance = 0;
+            let totalUnpaid = 0;
 
-            // 층별로 렌더링
-            Object.keys(floorGroups).sort((a, b) => {
-                const floorA = FLOORS.find(f => f.id == a);
-                const floorB = FLOORS.find(f => f.id == b);
-                return (floorA?.floor_number || 0) - (floorB?.floor_number || 0);
-            }).forEach(floorId => {
+            occupiedUnits.forEach(unit => {
+                const balance = balances[unit.id];
+                if (balance && balance.balance > 0) {
+                    unitsWithBalance++;
+                    totalUnpaid += balance.balance;
+                }
+            });
+
+            let html = `
+                <div class="table-summary">
+                    <div class="summary-item">
+                        <div class="summary-label">총 세대수</div>
+                        <div class="summary-value">${totalUnits}세대</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">미납 세대</div>
+                        <div class="summary-value ${unitsWithBalance > 0 ? 'highlight' : ''}">${unitsWithBalance}세대</div>
+                    </div>
+                    <div class="summary-item">
+                        <div class="summary-label">총 미납금액</div>
+                        <div class="summary-value ${totalUnpaid > 0 ? 'highlight' : ''}">${totalUnpaid.toLocaleString()}원</div>
+                    </div>
+                </div>
+
+                <div class="units-table-container">
+                    <table class="units-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 120px;">층/호수</th>
+                                <th style="width: 200px;">미납금 현황</th>
+                                <th style="width: 320px;">기타 항목</th>
+                                <th style="width: 250px;">세대별 메모</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            // 층별로 정렬하여 렌더링
+            const sortedFloorIds = Object.keys(floorGroups).sort((a, b) => {
+                return floorGroups[a].floor_number - floorGroups[b].floor_number;
+            });
+
+            sortedFloorIds.forEach(floorId => {
                 const group = floorGroups[floorId];
 
-                html += `<h3 style="margin-top:30px;margin-bottom:16px;color:#334155;font-size:18px;">${group.floor_name}</h3>`;
+                // 층 구분선
+                html += `
+                    <tr class="floor-separator">
+                        <td colspan="5">${group.floor_name}</td>
+                    </tr>
+                `;
 
+                // 각 세대 행
                 group.units.forEach(unit => {
-                    const unitMemo = unit.memo ? `<span class="unit-memo-tag">${unit.memo}</span>` : '';
-
-                    // 해당 세대의 잔액 확인
                     const balance = balances[unit.id];
-                    let balanceAlert = '';
+                    let balanceContent = '<span class="balance-badge none">-</span>';
 
                     if (balance && balance.balance !== 0) {
                         const balanceAmount = Math.abs(balance.balance);
-                        const balanceType = balance.balance > 0 ? '미납' : '초과납부';
-                        const balanceColor = balance.balance > 0 ? '#dc2626' : '#059669';
-
-                        balanceAlert = `
-                    <div style="background: ${balance.balance > 0 ? '#fef2f2' : '#f0fdf4'};
-                                border-left: 4px solid ${balance.balance > 0 ? '#dc2626' : '#059669'};
-                                padding: 12px; margin-top: 10px; border-radius: 6px;">
-                        <strong style="color: ${balance.balance > 0 ? '#dc2626' : '#059669'};">
-                            ${balanceType} ${balanceAmount.toLocaleString()}원
-                        </strong>
-                        <p style="margin: 8px 0 0 0; font-size: 13px; color: #64748b;">
-                            💡 이 금액은 참고용이며, "잔액 자동 적용" 버튼을 누르면 <strong>[이월]</strong> 항목으로 추가됩니다.<br>
-                        </p>
-                        <button type="button" class="btn btn-primary"
-                                style="margin-top: 10px; padding: 6px 12px; font-size: 13px;"
-                                onclick="applyBalance(${unit.id}, ${balance.balance})">
-                            미납금 자동 적용
-                        </button>
-                    </div>
-                `;
+                        if (balance.balance > 0) {
+                            balanceContent = `
+                                <div class="balance-info-container">
+                                    <span class="balance-badge unpaid">미납 ${balanceAmount.toLocaleString()}원</span>
+                                    <button type="button" class="btn btn-primary balance-apply-btn"
+                                            onclick="applyBalance(${unit.id}, ${balance.balance})"
+                                            data-balance-value="${balance.balance}">
+                                        미납금 정산서에 포함
+                                    </button>
+                                </div>
+                            `;
+                        } else {
+                            balanceContent = `
+                                <div class="balance-info-container">
+                                    <span class="balance-badge overpaid">초과 ${balanceAmount.toLocaleString()}원</span>
+                                    <button type="button" class="btn btn-success balance-apply-btn"
+                                            onclick="applyBalance(${unit.id}, ${balance.balance})"
+                                            data-balance-value="${balance.balance}">
+                                        환급금 정산서에 포함
+                                    </button>
+                                </div>
+                            `;
+                        }
                     }
 
                     html += `
-                <div class="unit-card">
-                    <div class="unit-card-header">
-                        <div>
-                            <span class="unit-name">${unit.unit_name}</span>
-                            ${unitMemo}
-                        </div>
-                    </div>
-
-                    ${balanceAlert}
-
-                    <div style="margin-bottom:16px;">
-                        <div class="section-title">💰 기타 항목 (부과 / 환급)</div>
-                        <div id="charges-${unit.id}"></div>
-                        <button type="button" class="btn btn-secondary" style="padding:6px 12px;font-size:13px;margin-top:8px;"
-                                onclick="addChargeRow(${unit.id})">+ 항목 추가</button>
-                    </div>
-
-                    <div>
-                        <div class="section-title">📝 세대별 메모</div>
-                        <textarea id="memo-${unit.id}" rows="2" placeholder="이 세대에만 안내할 특별 사항"
-                                  style="width:100%;padding:10px;border:1px solid #e2e8f0;border-radius:6px;font-size:13px;"></textarea>
-                    </div>
-                </div>
-            `;
+                        <tr>
+                            <td class="unit-name-cell">
+                                ${unit.unit_name}
+                                ${unit.memo ? `<span class="unit-memo-badge">${unit.memo}</span>` : ''}
+                            </td>
+                            <td class="balance-cell">
+                                ${balanceContent}
+                            </td>
+                            <td class="charges-cell">
+                                <div id="charges-${unit.id}" class="charge-inline-container"></div>
+                                <div class="charge-inline-container" style="padding-left: 11px;">
+                                    <button type="button" class="add-charge-btn" onclick="addChargeRow(${unit.id})">
+                                        + 항목 추가
+                                    </button>
+                                <div>
+                            </td>
+                            <td class="memo-cell">
+                                <textarea id="memo-${unit.id}" rows="2"
+                                          placeholder="세대 특별 안내사항"></textarea>
+                            </td>
+                        </tr>
+                    `;
                 });
             });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
 
             container.innerHTML = html;
         }
@@ -611,56 +1004,121 @@
 
         function addChargeRow(unitId) {
             const container = document.getElementById(`charges-${unitId}`);
-            const rowId = `charge-${unitId}-${chargeCounter++}`;
-
+            const rowId = `charge-${unitId}-${Date.now()}`;
             const row = document.createElement('div');
-            row.className = 'additional-charge-row';
+            row.className = 'charge-inline-row';
             row.id = rowId;
+            row.setAttribute('data-unit-id', unitId);
+            row.setAttribute('data-is-carryover', 'false');  // 일반 항목 명시
+
             row.innerHTML = `
-        <select class="charge-type" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
-            <option value="charge">부과 (+)</option>
-            <option value="refund">환급 (-)</option>
-        </select>
-        <input type="text" placeholder="항목명 (예: 전월 미납금)" class="charge-desc" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
-        <input type="number" placeholder="금액" class="charge-amount" min="0" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
-        <button type="button" class="btn btn-danger" style="padding:6px 12px;font-size:12px;"
-                onclick="removeChargeRow('${rowId}')">삭제</button>
-    `;
+                <select class="charge-type">
+                    <option value="charge">부과</option>
+                    <option value="refund">환급</option>
+                </select>
+                <input type="text" placeholder="항목명" class="charge-desc">
+                <input type="number" placeholder="금액" class="charge-amount" min="0">
+                <button type="button" class="btn btn-danger" onclick="removeChargeRow('${rowId}')">삭제</button>
+            `;
 
             container.appendChild(row);
         }
 
         function removeChargeRow(rowId) {
-            document.getElementById(rowId).remove();
+            const row = document.getElementById(rowId);
+            if (row) {
+                // data 속성으로 이월 항목인지 확인
+                const isCarryover = row.getAttribute('data-is-carryover') === 'true';
+                const unitId = row.getAttribute('data-unit-id');
+                const originalBalance = row.getAttribute('data-original-balance');
+
+                row.remove();
+
+                // 이월 항목이 삭제되면 해당 세대의 미납금 버튼 다시 활성화
+                if (isCarryover && unitId && originalBalance) {
+                    // 해당 버튼 찾기 (data-balance-value 속성 활용)
+                    const buttons = document.querySelectorAll(`td.balance-cell button[data-balance-value="${originalBalance}"]`);
+
+                    buttons.forEach(btn => {
+                        // onclick 속성에서 unitId 확인
+                        const onclickAttr = btn.getAttribute('onclick');
+                        if (onclickAttr && onclickAttr.includes(`applyBalance(${unitId},`)) {
+                            btn.disabled = false;
+                            btn.textContent = btn.getAttribute('data-original-text') || '미납금 정산서에 포함';
+                            btn.removeAttribute('data-applied');
+
+                            const originalClass = btn.getAttribute('data-original-class');
+                            if (originalClass) {
+                                btn.classList.remove('btn-secondary');
+                                btn.classList.add(originalClass);
+                            }
+
+                            // 부모 컨테이너 투명도 원복
+                            const balanceContainer = btn.parentElement;
+                            if (balanceContainer && balanceContainer.classList.contains('balance-info-container')) {
+                                balanceContainer.style.opacity = '1';
+                                balanceContainer.removeAttribute('data-applied');
+                            }
+                        }
+                    });
+                }
+            }
         }
 
         // 잔액 자동 적용 함수
         function applyBalance(unitId, balance) {
             const container = document.getElementById(`charges-${unitId}`);
-            const rowId = `charge-${unitId}-${chargeCounter++}`;
 
+            // 이미 이월 항목이 있는지 data 속성으로 확인
+            const existingCarryover = container.querySelector('[data-is-carryover="true"]');
+            if (existingCarryover) {
+                alert('이미 미납금/환급금이 정산서에 포함되어 있습니다.');
+                return;
+            }
+
+            const rowId = `charge-${unitId}-${Date.now()}`;
             const row = document.createElement('div');
-            row.className = 'additional-charge-row';
+            row.className = 'charge-inline-row carryover-row';  // carryover-row 클래스 추가
             row.id = rowId;
+            row.setAttribute('data-unit-id', unitId);
+            row.setAttribute('data-is-carryover', 'true');
+            row.setAttribute('data-original-balance', balance);
 
             const type = balance > 0 ? 'charge' : 'refund';
             const amount = Math.abs(balance);
             const description = balance > 0 ? '[이월] 전월 미납금' : '[이월] 전월 초과납부 환급';
 
+            // 툴팁 아이콘 추가
             row.innerHTML = `
-        <select class="charge-type" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
-            <option value="charge" ${type === 'charge' ? 'selected' : ''}>부과 (+)</option>
-            <option value="refund" ${type === 'refund' ? 'selected' : ''}>환급 (-)</option>
-        </select>
-        <input type="text" placeholder="항목명" class="charge-desc" value="${description}" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
-        <input type="number" placeholder="금액" class="charge-amount" value="${amount}" min="0" style="font-size:13px;padding:8px;border:1px solid #e2e8f0;border-radius:6px;">
-        <button type="button" class="btn btn-danger" style="padding:6px 12px;font-size:12px;"
-                onclick="removeChargeRow('${rowId}')">삭제</button>
-    `;
+                <select class="charge-type" data-carryover-type="${type}">
+                    <option value="charge" ${type === 'charge' ? 'selected' : ''}>부과</option>
+                    <option value="refund" ${type === 'refund' ? 'selected' : ''}>환급</option>
+                </select>
+                <input type="text" placeholder="항목명" class="charge-desc" value="${description}" data-carryover-desc="true">
+                <input type="number" placeholder="금액" class="charge-amount" value="${amount}" min="0" data-carryover-amount="${amount}">
+                <button type="button" class="btn btn-danger" onclick="removeChargeRow('${rowId}')">삭제</button>
+                <span class="carryover-tooltip" title="전월 잔액 자동 추가">!</span>
+            `;
 
             container.appendChild(row);
 
-            alert(`${description} ${amount.toLocaleString()}원이 자동으로 추가되었습니다.\n필요시 수정 또는 삭제할 수 있습니다.`);
+            // 버튼 비활성화 및 속성 저장
+            const button = event.target;
+            button.disabled = true;
+            button.textContent = '포함됨';
+            button.classList.remove('btn-primary', 'btn-success');
+            button.classList.add('btn-secondary');
+            button.setAttribute('data-applied', 'true');
+            button.setAttribute('data-original-text', balance > 0 ? '미납금 정산서에 포함' : '환급금 정산서에 포함');
+            button.setAttribute('data-original-class', balance > 0 ? 'btn-primary' : 'btn-success');
+            button.setAttribute('data-balance-value', balance);
+
+            // 부모 컨테이너에 적용 완료 표시
+            const balanceContainer = button.parentElement;
+            if (balanceContainer && balanceContainer.classList.contains('balance-info-container')) {
+                balanceContainer.style.opacity = '0.7';
+                balanceContainer.setAttribute('data-applied', 'true');
+            }
         }
 
         function goToStep3() {
@@ -673,17 +1131,23 @@
                 const chargesContainer = document.getElementById(`charges-${unit.id}`);
 
                 if (chargesContainer) {
-                    chargesContainer.querySelectorAll('.additional-charge-row').forEach(row => {
+                    chargesContainer.querySelectorAll('.charge-inline-row').forEach(row => {
                         const type = row.querySelector('.charge-type').value;
                         const desc = row.querySelector('.charge-desc').value;
                         let amount = parseFloat(row.querySelector('.charge-amount').value) || 0;
+                        const isCarryover = row.getAttribute('data-is-carryover') === 'true';
 
                         if (desc && amount > 0) {
                             // 환급인 경우 음수로 변환
                             if (type === 'refund') {
                                 amount = -Math.abs(amount);
                             }
-                            charges.push({description: desc, amount: amount});
+                            charges.push({
+                                description: desc,
+                                amount: amount,
+                                type: type,
+                                is_carryover: isCarryover  // 이월 여부 저장
+                            });
                         }
                     });
                 }
@@ -750,18 +1214,20 @@
                         html += '<div style="margin-top:8px;">';
                         html += '<div style="font-size:12px;color:#64748b;margin-bottom:4px;">기타 항목:</div>';
                         data.charges.forEach(c => {
-                            const isRefund = c.type === 'refund';
-                            const isCarryover = c.description.includes('[이월]');
+                            const isRefund = c.type === 'refund' || c.amount < 0;
+                            const isCarryover = c.is_carryover || c.description.includes('[이월]');
                             const displayAmount = Math.abs(c.amount).toLocaleString();
                             const color = isRefund ? '#059669' : '#dc2626';
                             const prefix = isRefund ? '환급 -' : '부과 +';
                             const bgColor = isCarryover ? '#fef3c7' : '#f8fafc';
+                            const borderStyle = isCarryover ? 'border-left:3px solid #fbbf24;' : '';
 
                             html += `
-                        <div style="padding:6px 12px;background:${bgColor};border-radius:6px;margin-bottom:4px;${isCarryover ? 'border-left:3px solid #fbbf24;' : ''}">
+                        <div style="padding:6px 12px;background:${bgColor};border-radius:6px;margin-bottom:4px;${borderStyle}">
+                            ${isCarryover ? '<span style="background:#fbbf24;color:white;font-size:10px;padding:1px 4px;border-radius:3px;margin-right:6px;">자동</span>' : ''}
                             <span style="color:#475569;">${c.description}</span>
                             <span style="color:${color};font-weight:600;margin-left:8px;">${prefix}${displayAmount}원</span>
-                            ${isCarryover ? '<span style="font-size:10px;color:#92400e;margin-left:4px;">(참고용, 중복계산 안됨)</span>' : ''}
+                            ${isCarryover ? '<span style="font-size:10px;color:#92400e;margin-left:4px;">(전월 잔액)</span>' : ''}
                         </div>
                     `;
                         });
