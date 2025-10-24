@@ -24,7 +24,7 @@
             </div>
 
             {% for floor in floors %}
-                <div style="background:white;padding:25px;border-radius:12px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.08);border:2px solid #f1f5f9;">
+                <div class="content-card" style="margin-bottom:20px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #f1f5f9;">
                         <div>
                             <h3 style="margin-bottom:5px;color:#334155;font-size:20px;">
@@ -41,7 +41,7 @@
                             <button class="btn" data-open-rename-floor data-floor-id="{{ floor.id }}"
                                     data-floor-number="{{ floor.floor_number }}"
                                     data-floor-name="{{ floor.name|default('') }}"
-                                    data-floor-contract="{{ floor.electric_contract_number|default('') }}">이름 수정</button>
+                                    data-floor-contract="{{ floor.electric_contract_number|default('') }}">층 정보 수정</button>
                             <button class="btn btn-danger" data-delete-floor data-floor-id="{{ floor.id }}">층 삭제</button>
                         </div>
                     </div>
@@ -132,7 +132,7 @@
                 공과금 계산에 사용되는 기본 요금과 할인 금액을 설정합니다.
             </p>
 
-            <div style="background:white;padding:30px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <div class="content-card" style="margin-bottom:20px;">
                 <form action="{{ url_for('save_settings') }}" method="POST">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <!-- 정산서 설정값도 함께 전송 -->
@@ -180,7 +180,7 @@
                 계산기 페이지에서 빠르게 접근할 수 있습니다.
             </p>
 
-            <div style="background:white;padding:30px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <div class="content-card" style="margin-bottom:20px;">
                 <form action="{{ url_for('save_settings') }}" method="POST">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <!-- 요금 설정값도 함께 전송 -->
@@ -242,7 +242,7 @@
                 정산서에 항상 포함될 고정 메모와 인쇄 시 하단에 표시될 안내문을 설정할 수 있습니다.
             </p>
 
-            <div style="background:white;padding:30px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <div class="content-card" style="margin-bottom:20px;">
                 <form action="{{ url_for('save_settings') }}" method="POST">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <!-- 요금 설정값도 함께 전송 -->
@@ -309,7 +309,7 @@
 
             <div class="grid grid-2" style="gap:20px;">
                 <!-- 내보내기 카드 -->
-                <div style="background:white;padding:30px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <div class="content-card" style="margin-bottom:20px;">
                     <h3 style="color:#667eea;margin-bottom:15px;font-size:18px;">📤 내보내기</h3>
                     <p style="color:#64748b;margin-bottom:20px;line-height:1.6;">
                         현재 층/세대 설정을 JSON 파일로 내보냅니다.
@@ -321,7 +321,7 @@
                 </div>
 
                 <!-- 가져오기 카드 -->
-                <div style="background:white;padding:30px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <div class="content-card" style="margin-bottom:20px;">
                     <h3 style="color:#10b981;margin-bottom:15px;font-size:18px;">📥 가져오기</h3>
                     <p style="color:#64748b;margin-bottom:20px;line-height:1.6;">
                         JSON 파일에서 층/세대 설정을 가져옵니다.

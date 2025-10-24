@@ -13,7 +13,7 @@
         <!-- 전기요금 탭 -->
         <div id="electric-tab" class="tab-content">
             <!-- 헤더 섹션 -->
-            <div style="background:white;padding:20px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <div class="content-card" style="margin-bottom:20px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                     <h2 style="margin:0;color:#1e293b;font-size:22px;font-weight:700;">⚡ 전기요금 계산</h2>
                     {% if electric_bill_url %}
@@ -33,7 +33,7 @@
                 <input type="hidden" name="month_count" id="month_count" value="0">
 
                 <!-- 기본 정보 입력 -->
-                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <div class="content-card" style="margin-bottom:20px;">
                     <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">📋 기본 정보</h4>
                     <div class="grid grid-3">
                         <div class="form-group">
@@ -55,7 +55,7 @@
                 </div>
 
                 <!-- 월별 고지 내역 입력 -->
-                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <div class="content-card" style="margin-bottom:20px;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
                         <h4 style="margin:0;color:#334155;font-size:16px;font-weight:600;">📋 월별 고지 내역</h4>
                         <button type="button" class="btn btn-primary btn-sm" onclick="addMonthBillRow()" style="padding:8px 16px;font-size:13px;">
@@ -63,26 +63,25 @@
                         </button>
                     </div>
 
-                    <div style="background:#f8fafc;padding:15px;border-radius:8px;margin-bottom:15px;">
-                        <table style="width:100%;border-collapse:collapse;">
-                            <thead>
-                            <tr style="background:#e2e8f0;">
-                                <th style="padding:12px;text-align:left;border-bottom:2px solid #cbd5e1;width:140px;">
-                                    고지월
-                                </th>
-                                <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">전기요금</th>
-                                <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">복지할인</th>
-                                <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">바우처할인</th>
-                                <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">TV수신료 총액</th>
-                                <th style="padding:12px;text-align:center;border-bottom:2px solid #cbd5e1;width:80px;text-align:center;">
-                                    작업
-                                </th>
-                            </tr>
-                            </thead>
-                            <tbody id="monthlyBillsContainer">
-                            </tbody>
-                        </table>
-                    </div>
+
+                    <table style="width:100%;border-collapse:collapse;">
+                        <thead>
+                        <tr style="background:#e2e8f0;">
+                            <th style="padding:12px;text-align:left;border-bottom:2px solid #cbd5e1;width:140px;">
+                                고지월
+                            </th>
+                            <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">전기요금</th>
+                            <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">복지할인</th>
+                            <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">바우처할인</th>
+                            <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">TV수신료 총액</th>
+                            <th style="padding:12px;text-align:center;border-bottom:2px solid #cbd5e1;width:80px;text-align:center;">
+                                작업
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody id="monthlyBillsContainer">
+                        </tbody>
+                    </table>
 
                     <div style="padding:15px; background:#e0f2fe; border-radius:8px;border-left:4px solid #0284c7;">
                         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px;">
@@ -108,7 +107,7 @@
                 <div id="readingTableWrap"></div>
 
                 <!-- 저장 영역 -->
-                <div style="background:#f8fafc;padding:20px;border-radius:12px;border:1px solid #e2e8f0;">
+                <div class="content-card" style="margin-bottom:20px;">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
                         <label class="checkbox-wrapper" style="margin:0;cursor:pointer;">
                             <input type="checkbox" name="overwrite" style="cursor:pointer;">
@@ -130,7 +129,7 @@
         <!-- 수도요금 탭 -->
         <div id="water-tab" class="tab-content">
             <!-- 헤더 섹션 -->
-            <div style="background:white;padding:20px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <div class="content-card" style="margin-bottom:20px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                     <h2 style="margin:0;color:#1e293b;font-size:22px;font-weight:700;">💧 수도요금 계산</h2>
                     {% if water_bill_url %}
@@ -153,7 +152,7 @@
                 <input type="hidden" name="excluded_units" id="excluded_units" value="[]">
 
                 <!-- 요금 정보 입력 -->
-                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <div class="content-card" style="margin-bottom:20px;">
                     <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">💰 요금 정보</h4>
                     <div class="grid grid-3">
                         <div class="form-group">
@@ -172,7 +171,7 @@
                 </div>
 
                 <!-- 저장 영역 -->
-                <div style="background:#f8fafc;padding:20px;border-radius:12px;border:1px solid #e2e8f0;">
+                <div class="content-card" style="margin-bottom:20px;">
                     <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
                         <label class="checkbox-wrapper" style="margin:0;cursor:pointer;">
                             <input type="checkbox" name="overwrite" style="cursor:pointer;">
@@ -193,7 +192,7 @@
 
         <!-- 공동 공과금 탭 -->
         <div id="common-tab" class="tab-content">
-            <div style="background:white;padding:20px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+            <div class="content-card" style="margin-bottom:20px;">
                 <h2 style="margin:0 0 16px 0;color:#1e293b;font-size:22px;font-weight:700;">🏘️ 공동 공과금 계산</h2>
                 <p style="margin:0;color:#64748b;font-size:14px;line-height:1.6;">
                     인터넷, 관리비, 기타 등의 공동 공과금을 입력합니다. 분배 방식(인원 비례 또는 세대 균등)을 선택할 수 있습니다.
@@ -204,7 +203,7 @@
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
                 <!-- 기본 정보 -->
-                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <div class="content-card" style="margin-bottom:20px;">
                     <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">📋 기본 정보</h4>
                     <div class="grid grid-2">
                         <div class="form-group">
@@ -222,7 +221,7 @@
                 </div>
 
                 <!-- 항목별 금액 -->
-                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <div class="content-card" style="margin-bottom:20px;">
                     <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">💰 항목별 금액</h4>
                     <div class="grid grid-3">
                         <div class="form-group">
@@ -241,7 +240,7 @@
                 </div>
 
                 <!-- 분배 방식 안내 -->
-                <div style="background:white;padding:24px;border-radius:12px;margin-bottom:24px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+                <div class="content-card" style="margin-bottom:20px;">
                     <h4 style="margin:0 0 16px 0;color:#334155;font-size:16px;font-weight:600;">📊 분배 방식 안내</h4>
                     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
                         <div style="background:#fef3c7;padding:16px;border-radius:8px;border:1px solid #fbbf24;">
@@ -439,10 +438,10 @@
             const voucherCount = units.filter(u => !u.is_vacant && u.electric_voucher).length;
 
             let html = `
-        <div style="background:white;padding:20px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:24px;">
+        <div class="content-card" style="margin-bottom:20px;">
             <!-- 층 정보 헤더 -->
             <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:2px solid #e2e8f0;">
-                <h4 style="margin:0 0 8px 0;color:#1e293b;font-size:16px;font-weight:600;">
+                <h4 style="margin:0;color:#334155;font-size:16px;font-weight:600;">
                     ${floorLabel}${floorName ? ' (' + floorName + ')' : ''} 세대 정보
                 </h4>
                 ${floorContract ? `<div style="color:#64748b;font-size:14px;font-weight:500;">계약번호: <span style="font-family:monospace;color:#475569;font-weight:600;">${floorContract}</span></div>` : ''}
@@ -539,9 +538,9 @@
             const contractNumber = selectedFloor && selectedFloor.electric_contract_number ? selectedFloor.electric_contract_number : '';
 
             let html = `
-                <div style="background:white;padding:25px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);margin-bottom:24px;">
+                <div class="content-card" style="margin-bottom:20px;">
                     <div style="display:grid;grid-template-columns: 1fr auto;grid-template-rows: auto auto;align-items:center;column-gap:12px;row-gap:8px;margin-bottom:20px;padding-bottom:20px;border-bottom:2px solid #e2e8f0;">
-                        <h4 style="margin:0;color:#1e293b;font-size:18px;font-weight:700;">
+                        <h4 style="margin:0;color:#334155;font-size:16px;font-weight:600;">
                           ⚡ 검침 입력 - ${floorLabel}${floorName}
                         </h4>
                         <button type="button" class="btn btn-secondary" onclick="loadPreviousReadings()"
@@ -704,7 +703,7 @@
             const waterCustomerNumber = '{{ water_customer_number }}';
 
             let html = `
-        <div style="background:white;padding:24px;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+        <div class="content-card" style="margin-bottom:20px;">
             <!-- 헤더 -->
             <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:2px solid #e2e8f0;">
                 <h4 style="margin:0 0 12px 0;color:#1e293b;font-size:18px;font-weight:700;">
