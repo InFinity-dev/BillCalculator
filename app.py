@@ -730,14 +730,23 @@ def calculate_electric():
         tv_fee_total = dec(0)
 
         month_count = to_int(request.form.get('month_count', '1'), 1)
-        for i in range(month_count):
-            month_data = {
-                'month': request.form.get(f'month_{i}'),
-                'amount': float(dec(request.form.get(f'amount_{i}', 0))),
-                'welfare': float(dec(request.form.get(f'welfare_{i}', 0))),
-                'voucher': float(dec(request.form.get(f'voucher_{i}', 0))),
-                'tv_fee': float(dec(request.form.get(f'tv_fee_{i}', 0)))
-            }
+
+        # 수정: 동적으로 생성된 rowId를 찾아서 처리
+        # FormData에서 bill_month_로 시작하는 모든 키를 찾아 rowId 추출
+        bill_months = {}
+        for key in request.form.keys():
+            if key.startswith('bill_month_'):
+                row_id = key.replace('bill_month_', '')
+                bill_months[row_id] = {
+                    'month': request.form.get(f'bill_month_{row_id}'),
+                    'amount': float(dec(request.form.get(f'bill_amount_{row_id}', 0))),
+                    'welfare': float(dec(request.form.get(f'bill_welfare_{row_id}', 0))),
+                    'voucher': float(dec(request.form.get(f'bill_voucher_{row_id}', 0))),
+                    'tv_fee': float(dec(request.form.get(f'bill_tv_fee_{row_id}', 0)))
+                }
+
+        # 월별 데이터를 리스트로 변환하고 합계 계산
+        for row_id, month_data in bill_months.items():
             monthly_details.append(month_data)
             total_amount += dec(month_data['amount'])
             welfare_discount_input += dec(month_data['welfare'])
@@ -760,7 +769,7 @@ def calculate_electric():
             tv_fee_total=tv_fee_total,
             tv_distribution_mode=tv_distribution_mode,
             tv_units_count=0,
-            billing_months_count=month_count,
+            billing_months_count=len(monthly_details),
             monthly_details=monthly_details
         )
         db.session.add(bill)
