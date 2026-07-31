@@ -1,4 +1,31 @@
--- BillCalculator Improved Schema
+-- =====================================================================
+-- ⚠️  DEPRECATED — 이 파일은 더 이상 스키마의 Single Source of Truth 가 아닙니다.
+-- =====================================================================
+--
+-- 현재 스키마 정의:  models.py  +  migrations/ (Alembic)
+-- 현재 DB 엔진:      SQLite (data/bill_calculator.db)
+--
+-- 이 파일은 MySQL 시절의 **역사적 참고 자료**로만 보존합니다.
+-- 실행하지 마십시오. 파일 상단이 DROP TABLE 로 시작하므로 실수로 실행하면
+-- 전체 데이터가 소실됩니다.
+--
+-- 또한 이 DDL 은 마지막 MySQL 모델 정의와도 불일치했습니다:
+--   · floors.electric_contract_number       없음
+--   · invoice_combination_items             item_id 단일 컬럼 (모델은 3개 nullable FK)
+--   · final_invoices.additional_charges     없음
+--   · final_invoices.unit_memo              없음
+--   · FK ON DELETE                          CASCADE (모델 생성 시에는 RESTRICT)
+-- 상세: docs/refactoring/database/00-current-db-audit.md
+--
+-- 새 DB 를 만들려면:
+--     flask db upgrade
+--     flask seed-settings
+--
+-- 기존 MySQL 데이터를 옮기려면:
+--     python scripts/migrate_mysql_to_sqlite.py --mysql-uri ... --sqlite-path ...
+-- =====================================================================
+
+-- BillCalculator Improved Schema (HISTORICAL — MySQL)
 -- 개선사항: N개월 묶음 정산, TV 배분 모드, 공동 공과금 상세 저장
 -- Target DB: bill_calculator (MySQL 5.7+/8.0+, InnoDB, utf8mb4)
 
