@@ -1,0 +1,108 @@
+# ==========================================
+# Python
+# ==========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 배포/빌드 산출물
+build/
+dist/
+.dist/
+develop-eggs/
+eggs/
+.eggs/
+sdist/
+wheels/
+*.egg-info/
+*.egg
+MANIFEST
+
+# ==========================================
+# 가상환경
+# ==========================================
+venv/
+.venv/
+env/
+ENV/
+.python-version
+
+# ==========================================
+# 환경 변수 / 비밀 정보
+# ==========================================
+# DB 접속 정보 등은 절대 커밋하지 않는다. (.env.example 은 커밋)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets.json
+
+# ==========================================
+# Flask
+# ==========================================
+instance/
+.webassets-cache
+flask_session/
+*.log
+
+# ==========================================
+# 테스트 / 커버리지 / 린트 캐시
+# ==========================================
+.pytest_cache/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.cache
+.mypy_cache/
+.ruff_cache/
+.dmypy.json
+
+# ==========================================
+# 데이터베이스 로컬 파일 / 백업
+# ==========================================
+*.sqlite
+*.sqlite3
+*.db
+*.sql.gz
+*.dump
+backup/
+dumps/
+
+# ==========================================
+# IDE
+# ==========================================
+# .idea/ 는 팀 공유 설정이므로 커밋 유지 (.idea/.gitignore 가 로컬 항목을 별도 관리)
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+.idea/dataSources.local.xml
+.idea/dataSources/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ==========================================
+# OS
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ==========================================
+# 기타
+# ==========================================
+*.bak
+*.tmp
+node_modules/
