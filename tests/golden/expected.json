@@ -1,0 +1,375 @@
+{
+  "aggregates": {
+    "sum_charges": 70230,
+    "sum_common_charged": 103020,
+    "sum_electric_charged": 446720,
+    "sum_final_invoice_total": 807290,
+    "sum_payments": 260640,
+    "sum_water_charged": 187320
+  },
+  "balances": {
+    "101호": 8000,
+    "102호": 103230,
+    "201호": 181350,
+    "202호": 147440,
+    "B101호": 27540,
+    "B102호": 15860
+  },
+  "common_bill_details": [
+    {
+      "amount": "8000.00",
+      "charged_amount": 8000,
+      "description": "계단 청소비",
+      "method": "BY_UNITS",
+      "unit": "101호"
+    },
+    {
+      "amount": "8000.00",
+      "charged_amount": 8000,
+      "description": "계단 청소비",
+      "method": "BY_UNITS",
+      "unit": "102호"
+    },
+    {
+      "amount": "8000.00",
+      "charged_amount": 8000,
+      "description": "계단 청소비",
+      "method": "BY_UNITS",
+      "unit": "201호"
+    },
+    {
+      "amount": "8000.00",
+      "charged_amount": 8000,
+      "description": "계단 청소비",
+      "method": "BY_UNITS",
+      "unit": "202호"
+    },
+    {
+      "amount": "8000.00",
+      "charged_amount": 8000,
+      "description": "계단 청소비",
+      "method": "BY_UNITS",
+      "unit": "B101호"
+    },
+    {
+      "amount": "8000.00",
+      "charged_amount": 8000,
+      "description": "계단 청소비",
+      "method": "BY_UNITS",
+      "unit": "B102호"
+    },
+    {
+      "amount": "7857.14",
+      "charged_amount": 7860,
+      "description": "인터넷",
+      "method": "BY_RESIDENTS",
+      "unit": "101호"
+    },
+    {
+      "amount": "11785.71",
+      "charged_amount": 11790,
+      "description": "인터넷",
+      "method": "BY_RESIDENTS",
+      "unit": "102호"
+    },
+    {
+      "amount": "15714.29",
+      "charged_amount": 15720,
+      "description": "인터넷",
+      "method": "BY_RESIDENTS",
+      "unit": "201호"
+    },
+    {
+      "amount": "7857.14",
+      "charged_amount": 7860,
+      "description": "인터넷",
+      "method": "BY_RESIDENTS",
+      "unit": "202호"
+    },
+    {
+      "amount": "3928.57",
+      "charged_amount": 3930,
+      "description": "인터넷",
+      "method": "BY_RESIDENTS",
+      "unit": "B101호"
+    },
+    {
+      "amount": "7857.14",
+      "charged_amount": 7860,
+      "description": "인터넷",
+      "method": "BY_RESIDENTS",
+      "unit": "B102호"
+    }
+  ],
+  "electric_bill_details": [
+    {
+      "base_amount": "64664.08",
+      "billing_month": "2025-03-01",
+      "charged_amount": 60170,
+      "final_amount": "60164.08",
+      "floor": "1층",
+      "tv_fee": "2500.00",
+      "unit": "101호",
+      "usage_amount": "250.25",
+      "voucher_discount": "0.00",
+      "welfare_discount": "7000.00"
+    },
+    {
+      "base_amount": "85335.92",
+      "billing_month": "2025-03-01",
+      "charged_amount": 87840,
+      "final_amount": "87835.92",
+      "floor": "1층",
+      "tv_fee": "2500.00",
+      "unit": "102호",
+      "usage_amount": "330.25",
+      "voucher_discount": "0.00",
+      "welfare_discount": "0.00"
+    },
+    {
+      "base_amount": "175849.22",
+      "billing_month": "2025-03-01",
+      "charged_amount": 183350,
+      "final_amount": "183349.22",
+      "floor": "2층",
+      "tv_fee": "7500.00",
+      "unit": "201호",
+      "usage_amount": "620.40",
+      "voucher_discount": "0.00",
+      "welfare_discount": "0.00"
+    },
+    {
+      "base_amount": "107850.78",
+      "billing_month": "2025-03-01",
+      "charged_amount": 115360,
+      "final_amount": "115350.78",
+      "floor": "2층",
+      "tv_fee": "7500.00",
+      "unit": "202호",
+      "usage_amount": "380.50",
+      "voucher_discount": "0.00",
+      "welfare_discount": "0.00"
+    }
+  ],
+  "electric_bill_months": [
+    {
+      "amount": 143000,
+      "billing_month": "2025-03-01",
+      "floor": "1층",
+      "tv_fee": 0,
+      "voucher_discount": 0,
+      "welfare_discount": 7000
+    },
+    {
+      "amount": 88000,
+      "billing_month": "2025-01-01",
+      "floor": "2층",
+      "tv_fee": 5000,
+      "voucher_discount": 3000,
+      "welfare_discount": 0
+    },
+    {
+      "amount": 91500,
+      "billing_month": "2025-02-01",
+      "floor": "2층",
+      "tv_fee": 5000,
+      "voucher_discount": 0,
+      "welfare_discount": 0
+    },
+    {
+      "amount": 104200,
+      "billing_month": "2025-03-01",
+      "floor": "2층",
+      "tv_fee": 5000,
+      "voucher_discount": 0,
+      "welfare_discount": 0
+    }
+  ],
+  "final_invoices": [
+    {
+      "charges": [],
+      "common_amount": 7860,
+      "electric_amount": 60170,
+      "invoice": "2025년 3월 정산 (1차)",
+      "total_amount": 99250,
+      "unit": "101호",
+      "water_amount": 31220
+    },
+    {
+      "charges": [],
+      "common_amount": 11790,
+      "electric_amount": 87840,
+      "invoice": "2025년 3월 정산 (1차)",
+      "total_amount": 146460,
+      "unit": "102호",
+      "water_amount": 46830
+    },
+    {
+      "charges": [],
+      "common_amount": 15720,
+      "electric_amount": 0,
+      "invoice": "2025년 3월 정산 (1차)",
+      "total_amount": 78160,
+      "unit": "201호",
+      "water_amount": 62440
+    },
+    {
+      "charges": [],
+      "common_amount": 7860,
+      "electric_amount": 0,
+      "invoice": "2025년 3월 정산 (1차)",
+      "total_amount": 39080,
+      "unit": "202호",
+      "water_amount": 31220
+    },
+    {
+      "charges": [],
+      "common_amount": 3930,
+      "electric_amount": 0,
+      "invoice": "2025년 3월 정산 (1차)",
+      "total_amount": 19540,
+      "unit": "B101호",
+      "water_amount": 15610
+    },
+    {
+      "charges": [],
+      "common_amount": 7860,
+      "electric_amount": 0,
+      "invoice": "2025년 3월 정산 (1차)",
+      "total_amount": 7860,
+      "unit": "B102호",
+      "water_amount": 0
+    },
+    {
+      "charges": [],
+      "common_amount": 8000,
+      "electric_amount": 0,
+      "invoice": "2025년 3월 정산 (2차)",
+      "total_amount": 8000,
+      "unit": "101호",
+      "water_amount": 0
+    },
+    {
+      "charges": [
+        {
+          "amount": 73230,
+          "description": "[이월] 전월 미납금",
+          "is_carryover": true,
+          "sort_order": 0
+        },
+        {
+          "amount": 22000,
+          "description": "현관 수리비",
+          "is_carryover": false,
+          "sort_order": 1
+        }
+      ],
+      "common_amount": 8000,
+      "electric_amount": 0,
+      "invoice": "2025년 3월 정산 (2차)",
+      "total_amount": 103230,
+      "unit": "102호",
+      "water_amount": 0
+    },
+    {
+      "charges": [
+        {
+          "amount": -10000,
+          "description": "[이월] 전월 초과납부 환급",
+          "is_carryover": true,
+          "sort_order": 0
+        }
+      ],
+      "common_amount": 8000,
+      "electric_amount": 183350,
+      "invoice": "2025년 3월 정산 (2차)",
+      "total_amount": 181350,
+      "unit": "201호",
+      "water_amount": 0
+    },
+    {
+      "charges": [
+        {
+          "amount": -15000,
+          "description": "보증금 일부 환급",
+          "is_carryover": false,
+          "sort_order": 0
+        }
+      ],
+      "common_amount": 8000,
+      "electric_amount": 115360,
+      "invoice": "2025년 3월 정산 (2차)",
+      "total_amount": 108360,
+      "unit": "202호",
+      "water_amount": 0
+    },
+    {
+      "charges": [],
+      "common_amount": 8000,
+      "electric_amount": 0,
+      "invoice": "2025년 3월 정산 (2차)",
+      "total_amount": 8000,
+      "unit": "B101호",
+      "water_amount": 0
+    },
+    {
+      "charges": [],
+      "common_amount": 8000,
+      "electric_amount": 0,
+      "invoice": "2025년 3월 정산 (2차)",
+      "total_amount": 8000,
+      "unit": "B102호",
+      "water_amount": 0
+    }
+  ],
+  "water_bill_details": [
+    {
+      "base_amount": "31216.67",
+      "charged_amount": 31220,
+      "final_amount": "31216.67",
+      "is_excluded": false,
+      "unit": "101호",
+      "welfare_discount": "0.00"
+    },
+    {
+      "base_amount": "46825.00",
+      "charged_amount": 46830,
+      "final_amount": "46825.00",
+      "is_excluded": false,
+      "unit": "102호",
+      "welfare_discount": "0.00"
+    },
+    {
+      "base_amount": "62433.33",
+      "charged_amount": 62440,
+      "final_amount": "62433.33",
+      "is_excluded": false,
+      "unit": "201호",
+      "welfare_discount": "0.00"
+    },
+    {
+      "base_amount": "31216.67",
+      "charged_amount": 31220,
+      "final_amount": "31216.67",
+      "is_excluded": false,
+      "unit": "202호",
+      "welfare_discount": "0.00"
+    },
+    {
+      "base_amount": "15608.33",
+      "charged_amount": 15610,
+      "final_amount": "15608.33",
+      "is_excluded": false,
+      "unit": "B101호",
+      "welfare_discount": "0.00"
+    },
+    {
+      "base_amount": "0.00",
+      "charged_amount": 0,
+      "final_amount": "0.00",
+      "is_excluded": true,
+      "unit": "B102호",
+      "welfare_discount": "0.00"
+    }
+  ]
+}

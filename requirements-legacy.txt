@@ -1,0 +1,9 @@
+# 레거시 MySQL → SQLite 데이터 이전에만 필요한 선택적 의존성.
+#
+# 애플리케이션 런타임에는 필요하지 않다.
+# scripts/migrate_mysql_to_sqlite.py 를 실행할 때만 설치하면 된다.
+#
+#   pip install -r requirements-legacy.txt
+#   python scripts/migrate_mysql_to_sqlite.py --mysql-uri ... --sqlite-path ...
+
+mysql-connector-python==9.0.0
