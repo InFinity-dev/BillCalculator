@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}설정 - 공과금 정산 시스템{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/settings.css') }}">{% endblock %}
 {% block content %}
-    <h1><span class="emoji">⚙️</span> 시스템 설정</h1>
+    <div class="page-heading"><div><h1>설정</h1><p class="page-description">세대 정보, 요금 기준과 정산서 기본값을 관리하세요.</p></div></div>
 
     <div class="tabs">
         <button class="tab active" onclick="showTab('floors-tab', event)">층/세대 관리</button>
@@ -13,10 +14,10 @@
     <div class="tabs-container">
         <!-- 층/세대 관리 탭 -->
         <div id="floors-tab" class="tab-content">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:30px;">
+            <div class="section-heading">
                 <div>
-                    <h2 style="margin-bottom:8px;">🏢 층 및 세대 관리</h2>
-                    <p style="color:#64748b;margin:0;">
+                    <h2 class="u-mb-8px"> 층 및 세대 관리</h2>
+                    <p class="u-color-text-muted u-m-0">
                         건물의 층 구조를 설정하고 각 층의 세대 정보를 관리합니다.
                     </p>
                 </div>
@@ -24,19 +25,19 @@
             </div>
 
             {% for floor in floors %}
-                <div class="content-card" style="margin-bottom:20px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:15px;border-bottom:2px solid #f1f5f9;">
+                <div class="content-card u-mb-20px">
+                    <div class="floor-heading">
                         <div>
-                            <h3 style="margin-bottom:5px;color:#334155;font-size:20px;">
+                            <h3 class="u-mb-5px u-color-text-primary u-text-20px">
                                 {% set label = ('B' ~ (0 - floor.floor_number) ~ '층') if floor.floor_number < 0 else (floor.floor_number ~ '층') %}
                                 {{ label }}{% if floor.name %} ({{ floor.name }}){% endif %}
                             </h3>
                             {% if floor.electric_contract_number %}
-                                <small style="color:#667eea;font-weight:500;">⚡
+                                <small class="u-color-primary-color u-weight-500">
                                     계약번호: {{ floor.electric_contract_number }}</small>
                             {% endif %}
                         </div>
-                        <div>
+                        <div class="floor-actions">
                             <button class="btn btn-secondary" data-open-add-unit data-floor-id="{{ floor.id }}">+ 세대 추가</button>
                             <button class="btn" data-open-rename-floor data-floor-id="{{ floor.id }}"
                                     data-floor-number="{{ floor.floor_number }}"
@@ -47,7 +48,7 @@
                     </div>
 
                     {% if floor.units %}
-                        <table>
+                        <table class="mobile-cards units-settings-table">
                             <thead>
                             <tr>
                                 <th>세대명</th>
@@ -68,19 +69,19 @@
                                     <td>{{ unit.residents_count }}명</td>
                                     <td>{% if unit.electric_welfare %}
                                         <span class="badge badge-success">적용</span>{% else %}
-                                        <span class="badge badge-warning">미적용</span>{% endif %}</td>
+                                        <span class="badge badge-secondary">미적용</span>{% endif %}</td>
                                     <td>{% if unit.electric_voucher %}
                                         <span class="badge badge-success">적용</span>{% else %}
-                                        <span class="badge badge-warning">미적용</span>{% endif %}</td>
+                                        <span class="badge badge-secondary">미적용</span>{% endif %}</td>
                                     <td>{% if unit.has_tv %}<span class="badge badge-primary">보유</span>{% else %}
-                                        <span class="badge badge-warning">미보유</span>{% endif %}</td>
+                                        <span class="badge badge-secondary">미보유</span>{% endif %}</td>
                                     <td>{% if unit.water_welfare %}<span class="badge badge-success">적용</span>{% else %}
-                                        <span class="badge badge-warning">미적용</span>{% endif %}</td>
+                                        <span class="badge badge-secondary">미적용</span>{% endif %}</td>
                                     <td>{% if unit.is_vacant %}<span class="badge badge-danger">공실</span>{% else %}
                                         <span class="badge badge-info">재실</span>{% endif %}</td>
                                     <td>{{ unit.memo|default('-', true) }}</td>
                                     <td>
-                                        <button class="btn btn-secondary" style="padding:5px 10px;"
+                                        <button class="btn btn-secondary u-p-5px-10px"
                                                 data-edit-unit
                                                 data-unit-id="{{ unit.id }}"
                                                 data-unit='{{ {
@@ -95,7 +96,7 @@
                 } | tojson | e }}'
                                         >수정
                                         </button>
-                                        <button class="btn btn-danger" style="padding:5px 10px;" data-delete-unit
+                                        <button class="btn btn-danger u-p-5px-10px" data-delete-unit
                                                 data-unit-id="{{ unit.id }}">삭제
                                         </button>
                                     </td>
@@ -104,8 +105,8 @@
                             </tbody>
                         </table>
                     {% else %}
-                        <div style="text-align:center;padding:30px;background:#f8fafc;border-radius:8px;border:2px dashed #cbd5e1;">
-                            <p style="color:#94a3b8;margin:0;">
+                        <div class="u-align-center u-p-30px u-bg-surface-subtle u-rounded-6px u-border-1px-dashed-border">
+                            <p class="u-color-text-muted u-m-0">
                                 등록된 세대가 없습니다. 위의 "+ 세대 추가" 버튼을 클릭하여 세대를 추가해주세요.
                             </p>
                         </div>
@@ -114,9 +115,9 @@
             {% endfor %}
 
             {% if not floors %}
-                <div style="text-align:center;padding:60px;background:white;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
-                    <div style="font-size:48px;margin-bottom:20px;">🏢</div>
-                    <p style="color:#94a3b8;font-size:16px;margin-bottom:25px;">
+                <div class="u-align-center u-p-60px u-bg-surface u-rounded-6px">
+
+                    <p class="u-color-text-muted u-text-16px u-mb-25px">
                         아직 등록된 층이 없습니다.<br>
                         첫 번째 층을 추가하여 시작하세요.
                     </p>
@@ -127,12 +128,12 @@
 
         <!-- 요금 설정 탭 -->
         <div id="settings-tab" class="tab-content">
-            <h2 style="margin-bottom:8px;">💰 요금 설정</h2>
-            <p style="color:#64748b;margin-bottom:30px;">
+            <h2 class="u-mb-8px"> 요금 설정</h2>
+            <p class="u-color-text-muted u-mb-30px">
                 공과금 계산에 사용되는 기본 요금과 할인 금액을 설정합니다.
             </p>
 
-            <div class="content-card" style="margin-bottom:20px;">
+            <div class="content-card u-mb-20px">
                 <form action="{{ url_for('save_settings') }}" method="POST">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <!-- 정산서 설정값도 함께 전송 -->
@@ -147,40 +148,40 @@
                         <div class="form-group">
                             <label>TV 수신료 (세대당)</label>
                             <input type="number" name="tv_fee" value="{{ tv_fee }}" required>
-                            <small style="color:#94a3b8;">기본값: 2,500원</small>
+                            <small class="u-color-text-muted">기본값: 2,500원</small>
                         </div>
                         <div class="form-group">
                             <label>전기 복지 할인 금액</label>
                             <input type="number" name="electric_welfare_amount" value="{{ electric_welfare_amount }}"
                                    required>
-                            <small style="color:#94a3b8;">기본값: 0원</small>
+                            <small class="u-color-text-muted">기본값: 0원</small>
                         </div>
                         <div class="form-group">
                             <label>전기 바우처 할인 금액</label>
                             <input type="number" name="electric_voucher_amount" value="{{ electric_voucher_amount }}"
                                    required>
-                            <small style="color:#94a3b8;">기본값: 0원</small>
+                            <small class="u-color-text-muted">기본값: 0원</small>
                         </div>
                         <div class="form-group">
                             <label>수도 복지 할인 금액</label>
                             <input type="number" name="water_welfare_amount" value="{{ water_welfare_amount }}" required>
-                            <small style="color:#94a3b8;">기본값: 0원</small>
+                            <small class="u-color-text-muted">기본값: 0원</small>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="margin-top:10px;">설정 저장</button>
+                    <button type="submit" class="btn btn-primary u-mt-10px">설정 저장</button>
                 </form>
             </div>
         </div>
 
         <!-- 요금 조회 설정 탭 -->
         <div id="bill-inquiry-tab" class="tab-content">
-            <h2 style="margin-bottom:8px;">💻 요금 조회 설정</h2>
-            <p style="color:#64748b;margin-bottom:30px;">
+            <h2 class="u-mb-8px"> 요금 조회 설정</h2>
+            <p class="u-color-text-muted u-mb-30px">
                 전기요금 및 수도요금 조회를 위한 웹사이트 URL을 설정하세요.
                 계산기 페이지에서 빠르게 접근할 수 있습니다.
             </p>
 
-            <div class="content-card" style="margin-bottom:20px;">
+            <div class="content-card u-mb-20px">
                 <form action="{{ url_for('save_settings') }}" method="POST">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <!-- 요금 설정값도 함께 전송 -->
@@ -193,56 +194,54 @@
                     <input type="hidden" name="invoice_footer" value="{{ invoice_footer }}">
 
                     <div class="form-group">
-                        <label>⚡ 전기요금 조회 URL</label>
-                        <input type="text" name="electric_bill_url" value="{{ electric_bill_url }}"
-                               placeholder="https://example.com/electric"
-                               style="font-family:monospace;font-size:13px;">
-                        <small style="color:#94a3b8;">
+                        <label> 전기요금 조회 URL</label>
+                        <input class="u-font-family-monospace u-text-13px" type="text" name="electric_bill_url" value="{{ electric_bill_url }}"
+                               placeholder="https://example.com/electric">
+                        <small class="u-color-text-muted">
                             예: 한국전력공사 요금 조회 페이지 URL
                         </small>
                     </div>
 
                     <div class="form-group">
-                        <label>💧 수도요금 조회 URL</label>
-                        <input type="text" name="water_bill_url" value="{{ water_bill_url }}"
-                               placeholder="https://example.com/water"
-                               style="font-family:monospace;font-size:13px;">
-                        <small style="color:#94a3b8;">
+                        <label> 수도요금 조회 URL</label>
+                        <input class="u-font-family-monospace u-text-13px" type="text" name="water_bill_url" value="{{ water_bill_url }}"
+                               placeholder="https://example.com/water">
+                        <small class="u-color-text-muted">
                             예: 지역 상수도사업소 요금 조회 페이지 URL
                         </small>
                     </div>
 
                     <div class="form-group">
-                        <label>🏠 주택 수도 고객번호</label>
+                        <label> 주택 수도 고객번호</label>
                         <input type="text" name="water_customer_number" value="{{ water_customer_number }}"
                                placeholder="예: 12345-67890">
-                        <small style="color:#94a3b8;">
+                        <small class="u-color-text-muted">
                             주택 전체에 적용되는 수도 고객번호입니다. 계산기 페이지에서 참조용으로 표시됩니다.
                         </small>
                     </div>
 
-                    <div style="background:#e0f2fe;padding:20px;border-radius:8px;margin-top:20px;">
-                        <h4 style="margin:0 0 12px 0;color:#0c4a6e;font-size:15px;">💡 사용 방법</h4>
-                        <ul style="color:#0c4a6e;font-size:14px;line-height:1.8;margin:0;padding-left:20px;">
+                    <div class="u-bg-info-light u-p-20px u-rounded-6px u-mt-20px">
+                        <h4 class="u-m-0-0-12px-0 u-color-primary-dark u-text-15px"> 사용 방법</h4>
+                        <ul class="u-color-primary-dark u-text-14px u-leading-1_8 u-m-0 u-pl-20px">
                             <li>계산기 페이지에서 "요금 조회" 버튼을 클릭하면 여기서 설정한 URL이 새 창으로 열립니다.</li>
                             <li>수도 고객번호는 수도요금 계산 시 참조용으로 표시됩니다.</li>
                             <li>URL을 비워두면 해당 버튼이 표시되지 않습니다.</li>
                         </ul>
                     </div>
 
-                    <button type="submit" class="btn btn-primary" style="margin-top:20px;">설정 저장</button>
+                    <button type="submit" class="btn btn-primary u-mt-20px">설정 저장</button>
                 </form>
             </div>
         </div>
 
         <!-- 정산서 설정 탭 -->
         <div id="invoice-settings-tab" class="tab-content">
-            <h2 style="margin-bottom:8px;">📄 정산서 설정</h2>
-            <p style="color:#64748b;margin-bottom:30px;">
+            <h2 class="u-mb-8px"> 정산서 설정</h2>
+            <p class="u-color-text-muted u-mb-30px">
                 정산서에 항상 포함될 고정 메모와 인쇄 시 하단에 표시될 안내문을 설정할 수 있습니다.
             </p>
 
-            <div class="content-card" style="margin-bottom:20px;">
+            <div class="content-card u-mb-20px">
                 <form action="{{ url_for('save_settings') }}" method="POST">
                     <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <!-- 요금 설정값도 함께 전송 -->
@@ -256,62 +255,60 @@
                     <input type="hidden" name="water_customer_number" value="{{ water_customer_number }}">
 
                     <div class="form-group">
-                        <label>📝 정산서 고정 메모</label>
-                        <textarea name="invoice_default_memo" rows="8"
-                                  placeholder="예:&#10;&#10;입금 계좌: OO은행 123-456-789 (예금주: 홍길동)&#10;납부 기한: 매월 말일까지&#10;문의: 010-1234-5678"
-                                  style="font-family: monospace;">{{ invoice_default_memo }}</textarea>
-                        <small style="color:#94a3b8;">
+                        <label> 정산서 고정 메모</label>
+                        <textarea class="u-font-family-monospace" name="invoice_default_memo" rows="8"
+                                  placeholder="예:&#10;&#10;입금 계좌: OO은행 123-456-789 (예금주: 홍길동)&#10;납부 기한: 매월 말일까지&#10;문의: 010-1234-5678">{{ invoice_default_memo }}</textarea>
+                        <small class="u-color-text-muted">
                             이 메모는 모든 정산서 생성 시 자동으로 포함됩니다. 정산서 생성 시 추가 메모를 입력하면 이 고정 메모 뒤에 추가됩니다.
                         </small>
                     </div>
 
                     <!-- 고정 메모 미리보기 -->
-                    <div style="background:#e0f2fe;padding:20px;border-radius:8px;margin-bottom:30px;">
-                        <h4 style="margin:0 0 12px 0;color:#0c4a6e;font-size:15px;">💡 인쇄 시 표시되는 형태</h4>
-                        <div style="background:white;padding:20px;border-radius:5px;">
-                            <div style="background:#f8f9fa;padding:15px;border-radius:8px;border:1px solid #e0e0e0;">
-                                <h3 style="margin-bottom:12px;color:#333;font-size:16px;font-family:'Malgun Gothic','맑은 고딕',sans-serif;">
+                    <div class="u-bg-info-light u-p-20px u-rounded-6px u-mb-30px">
+                        <h4 class="u-m-0-0-12px-0 u-color-primary-dark u-text-15px"> 인쇄 시 표시되는 형태</h4>
+                        <div class="u-bg-surface u-p-20px u-rounded-6px">
+                            <div class="u-bg-f8f9fa u-p-15px u-rounded-6px u-border-1px-solid-border">
+                                <h3 class="u-mb-12px u-color-333 u-text-16px u-font-family-Malgun-Gothic-sans-serif">
                                     안내사항</h3>
-                                <p style="white-space:pre-wrap;margin:0;color:#444;line-height:1.8;font-family:'Malgun Gothic','맑은 고딕',sans-serif;">{{ invoice_default_memo if invoice_default_memo else '(아직 설정된 고정 메모가 없습니다)' }}</p>
+                                <p class="u-white-space-pre-wrap u-m-0 u-color-444 u-leading-1_8 u-font-family-Malgun-Gothic-sans-serif">{{ invoice_default_memo if invoice_default_memo else '(아직 설정된 고정 메모가 없습니다)' }}</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label>📄 인쇄용 하단 안내문 (Footer)</label>
-                        <textarea name="invoice_footer" rows="4"
-                                  placeholder="예:&#10;* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.&#10;* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다."
-                                  style="font-family: monospace;">{{ invoice_footer }}</textarea>
-                        <small style="color:#94a3b8;">
+                        <label> 인쇄용 하단 안내문 (Footer)</label>
+                        <textarea class="u-font-family-monospace" name="invoice_footer" rows="4"
+                                  placeholder="예:&#10;* 본 청구서는 자동 계산된 금액으로, 10원 단위로 올림 처리되었습니다.&#10;* 문의사항이 있으시면 관리사무소로 연락 부탁드립니다.">{{ invoice_footer }}</textarea>
+                        <small class="u-color-text-muted">
                             정산서 인쇄 시 각 페이지 하단에 표시될 안내문입니다. 납부 안내, 문의처 등을 입력하세요.
                         </small>
                     </div>
 
                     <!-- Footer 미리보기 -->
-                    <div style="background:#e0f2fe;padding:20px;border-radius:8px;margin-top:20px;">
-                        <h4 style="margin:0 0 12px 0;color:#0c4a6e;font-size:15px;">💡 인쇄 시 표시되는 형태</h4>
-                        <div style="background:white;padding:20px;border-radius:5px;">
-                            <div style="padding-top:20px;border-top:2px solid #ddd;font-size:13px;color:#666;text-align:center;white-space:pre-wrap;line-height:1.8;font-family:'Malgun Gothic','맑은 고딕',sans-serif;">{{ invoice_footer if invoice_footer else '* Footer 문구를 설정에서 커스텀 할 수 있습니다.' }}</div>
+                    <div class="u-bg-info-light u-p-20px u-rounded-6px u-mt-20px">
+                        <h4 class="u-m-0-0-12px-0 u-color-primary-dark u-text-15px"> 인쇄 시 표시되는 형태</h4>
+                        <div class="u-bg-surface u-p-20px u-rounded-6px">
+                            <div class="u-pt-20px u-border-top-1px-solid-border u-text-13px u-color-666 u-align-center u-white-space-pre-wrap u-leading-1_8 u-font-family-Malgun-Gothic-sans-serif">{{ invoice_footer if invoice_footer else '* Footer 문구를 설정에서 커스텀 할 수 있습니다.' }}</div>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary" style="margin-top:20px;">설정 저장</button>
+                    <button type="submit" class="btn btn-primary u-mt-20px">설정 저장</button>
                 </form>
             </div>
         </div>
 
         <!-- 가져오기/내보내기 탭 -->
         <div id="import-export-tab" class="tab-content">
-            <h2 style="margin-bottom:8px;">💾 데이터 가져오기/내보내기</h2>
-            <p style="color:#64748b;margin-bottom:30px;">
+            <h2 class="u-mb-8px"> 데이터 가져오기/내보내기</h2>
+            <p class="u-color-text-muted u-mb-30px">
                 층/세대 설정 데이터를 백업하거나 복원할 수 있습니다.
             </p>
 
-            <div class="grid grid-2" style="gap:20px;">
+            <div class="grid grid-2 u-gap-20px">
                 <!-- 내보내기 카드 -->
-                <div class="content-card" style="margin-bottom:20px;">
-                    <h3 style="color:#667eea;margin-bottom:15px;font-size:18px;">📤 내보내기</h3>
-                    <p style="color:#64748b;margin-bottom:20px;line-height:1.6;">
+                <div class="content-card u-mb-20px">
+                    <h3 class="u-color-primary-color u-mb-15px u-text-18px"> 내보내기</h3>
+                    <p class="u-color-text-muted u-mb-20px u-leading-1_6">
                         현재 층/세대 설정을 JSON 파일로 내보냅니다.
                         백업 또는 다른 시스템으로의 이전에 활용할 수 있습니다.
                     </p>
@@ -321,14 +318,13 @@
                 </div>
 
                 <!-- 가져오기 카드 -->
-                <div class="content-card" style="margin-bottom:20px;">
-                    <h3 style="color:#10b981;margin-bottom:15px;font-size:18px;">📥 가져오기</h3>
-                    <p style="color:#64748b;margin-bottom:20px;line-height:1.6;">
+                <div class="content-card u-mb-20px">
+                    <h3 class="u-color-success-color u-mb-15px u-text-18px"> 가져오기</h3>
+                    <p class="u-color-text-muted u-mb-20px u-leading-1_6">
                         JSON 파일에서 층/세대 설정을 가져옵니다.
-                        기존 설정은 모두 삭제되고 새 설정으로 교체됩니다.
+                        파일에 포함된 설정을 적용합니다. 포함되지 않은 설정은 현재 값을 유지합니다.
                     </p>
-                    <input type="file" id="importFile" accept=".json"
-                           style="margin-bottom:15px;padding:10px;border:2px dashed #cbd5e1;border-radius:8px;width:100%;">
+                    <input class="u-mb-15px u-p-10px u-border-1px-dashed-border u-rounded-6px u-width-100" type="file" id="importFile" accept=".json">
                     <button class="btn btn-success" id="importBtn">
                         설정 가져오기
                     </button>
@@ -336,9 +332,9 @@
             </div>
 
             <!-- 주의사항 -->
-            <div style="background:#fef3c7;padding:20px;border-radius:8px;margin-top:30px;border:2px solid #fbbf24;">
-                <h4 style="margin:0 0 12px 0;color:#92400e;font-size:15px;">⚠️ 주의사항</h4>
-                <ul style="color:#92400e;font-size:14px;line-height:1.8;margin:0;padding-left:20px;">
+            <div class="u-bg-warning-light u-p-20px u-rounded-6px u-mt-30px u-border-1px-solid-border">
+                <h4 class="u-m-0-0-12px-0 u-color-warning-dark u-text-15px"> 주의사항</h4>
+                <ul class="u-color-warning-dark u-text-14px u-leading-1_8 u-m-0 u-pl-20px">
                     <li><strong>가져오기 작업은 되돌릴 수 없습니다.</strong> 기존 설정이 모두 삭제됩니다.</li>
                     <li>가져오기 전에 반드시 현재 설정을 내보내기로 백업하세요.</li>
                     <li>JSON 파일 형식이 올바르지 않으면 가져오기가 실패할 수 있습니다.</li>
@@ -357,18 +353,18 @@
                 <div class="form-group">
                     <label>층 번호</label>
                     <input type="number" name="floor_number" required>
-                    <small style="color:#94a3b8;">지하층은 음수로 입력 (예: -1)</small>
+                    <small class="u-color-text-muted">지하층은 음수로 입력 (예: -1)</small>
                 </div>
                 <div class="form-group">
                     <label>층 이름 (선택)</label>
                     <input type="text" name="name" placeholder="예: 1층">
                 </div>
                 <div class="form-group">
-                    <label>⚡ 전기 계약번호 (선택)</label>
+                    <label> 전기 계약번호 (선택)</label>
                     <input type="text" name="electric_contract_number" placeholder="예: 1234-5678-9012">
-                    <small style="color:#94a3b8;">이 층의 전기 계약번호입니다. 계산기에서 참조용으로 표시됩니다.</small>
+                    <small class="u-color-text-muted">이 층의 전기 계약번호입니다. 계산기에서 참조용으로 표시됩니다.</small>
                 </div>
-                <div style="display:flex;gap:10px;">
+                <div class="u-display-flex u-gap-10px">
                     <button type="submit" class="btn btn-primary">추가</button>
                     <button type="button" class="btn btn-secondary" data-close-modal="addFloorModal">취소</button>
                 </div>
@@ -408,7 +404,7 @@
                     <label>비고</label>
                     <textarea name="memo" rows="2"></textarea>
                 </div>
-                <div style="display:flex;gap:10px;">
+                <div class="u-display-flex u-gap-10px">
                     <button type="submit" class="btn btn-primary">추가</button>
                     <button type="button" class="btn btn-secondary" data-close-modal="addUnitModal">취소</button>
                 </div>
@@ -449,7 +445,7 @@
                     <label>비고</label>
                     <textarea name="memo" id="edit_memo" rows="2"></textarea>
                 </div>
-                <div style="display:flex;gap:10px;">
+                <div class="u-display-flex u-gap-10px">
                     <button type="submit" class="btn btn-primary">수정</button>
                     <button type="button" class="btn btn-secondary" data-close-modal="editUnitModal">취소</button>
                 </div>
@@ -472,12 +468,12 @@
                     <input type="text" name="name" id="rename_floor_name" placeholder="예: B1층" required>
                 </div>
                 <div class="form-group">
-                    <label>⚡ 전기 계약번호 (선택)</label>
+                    <label> 전기 계약번호 (선택)</label>
                     <input type="text" name="electric_contract_number" id="rename_floor_contract"
                            placeholder="예: 1234-5678-9012">
-                    <small style="color:#94a3b8;">이 층의 전기 계약번호입니다.</small>
+                    <small class="u-color-text-muted">이 층의 전기 계약번호입니다.</small>
                 </div>
-                <div style="display:flex;gap:10px;">
+                <div class="u-display-flex u-gap-10px">
                     <button type="submit" class="btn btn-primary">저장</button>
                     <button type="button" class="btn btn-secondary" data-close-modal="renameFloorModal">취소</button>
                 </div>
@@ -488,12 +484,7 @@
 
 {% block scripts %}
     <script>
-        function showTab(tabId, ev) {
-            document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-            document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).style.display = 'block';
-            if (ev && ev.target) ev.target.classList.add('active');
-        }
+        function showTab(tabId) { selectTab(tabId); }
 
         // Modal helpers
         document.addEventListener('click', (e) => {

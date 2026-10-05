@@ -92,14 +92,14 @@ def all_unit_balances(units=None):
     Parameters
     ----------
     units : list[Unit] | None
-        None 이면 재실 세대 전체.
+        None 이면 공실을 포함한 전체 세대. 과거 미납액은 공실 전환 후에도 남는다.
 
     Returns
     -------
     dict: ``{unit_id: {'unit_name', 'floor_name', 'total_billed', 'total_paid', 'balance'}}``
     """
     if units is None:
-        units = Unit.query.filter_by(is_vacant=False).all()
+        units = Unit.query.all()
     unit_ids = [u.id for u in units]
 
     invoices_by_unit = _invoices_by_unit(unit_ids)

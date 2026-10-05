@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% block title %}수도요금 상세 - 공과금 정산 시스템{% endblock %}
 {% block content %}
-    <h1><span class="emoji">💧</span> 수도요금 상세 내역</h1>
+    <h1>수도요금 상세 내역</h1>
 
-    <div style="display:flex; justify-content:space-between; margin-bottom:20px;">
+    <div class="u-display-flex u-justify-content-space-between u-mb-20px">
         <div>
             <h2>{{ bill.billing_month.strftime('%Y년 %m월') }}</h2>
-            <p style="color:#64748b;">
+            <p class="u-color-text-muted">
                 총액: {{ "{:,.0f}".format(bill.total_amount) }}원 |
                 복지 할인 총액: -{{ "{:,.0f}".format(bill.welfare_discount_total|default(0)) }}원
             </p>
@@ -17,58 +17,57 @@
     {% set included_details = details|selectattr('is_excluded', 'false')|list %}
     {% set excluded_details = details|selectattr('is_excluded', 'true')|list %}
 
-    <div class="grid grid-2" style="margin-bottom:30px;">
-        <div style="background:#f8fafc; padding:20px; border-radius:12px;">
+    <div class="grid grid-2 u-mb-30px">
+        <div class="u-bg-surface-subtle u-p-20px u-rounded-6px">
             <h3>청구 정보</h3>
-            <table style="width:100%;">
+            <table class="u-width-100">
                 <tr>
                     <td>수도요금 총액:</td>
-                    <td style="text-align:right"><strong>{{ "{:,.0f}".format(bill.total_amount) }}원</strong></td>
+                    <td class="u-align-right"><strong>{{ "{:,.0f}".format(bill.total_amount) }}원</strong></td>
                 </tr>
                 <tr>
                     <td>복지 할인 총액:</td>
-                    <td style="text-align:right">-{{ "{:,.0f}".format(bill.welfare_discount_total|default(0)) }}원</td>
+                    <td class="u-align-right">-{{ "{:,.0f}".format(bill.welfare_discount_total|default(0)) }}원</td>
                 </tr>
                 <tr>
                     <td>전체 세대수:</td>
-                    <td style="text-align:right"><strong>{{ details|length }}세대</strong></td>
+                    <td class="u-align-right"><strong>{{ details|length }}세대</strong></td>
                 </tr>
                 <tr>
                     <td>정산 세대수:</td>
-                    <td style="text-align:right"><strong style="color:#0284c7;">{{ included_details|length }}세대</strong>
+                    <td class="u-align-right"><strong class="u-color-primary-color">{{ included_details|length }}세대</strong>
                     </td>
                 </tr>
                 {% if excluded_details|length > 0 %}
                     <tr>
                         <td>제외 세대수:</td>
-                        <td style="text-align:right"><strong
-                                style="color:#dc2626;">{{ excluded_details|length }}세대</strong></td>
+                        <td class="u-align-right"><strong class="u-color-danger-dark">{{ excluded_details|length }}세대</strong></td>
                     </tr>
                 {% endif %}
                 <tr>
                     <td>최종 청구 총액:</td>
-                    <td style="text-align:right">
+                    <td class="u-align-right">
                         <strong>{{ "{:,.0f}".format(included_details|sum(attribute='charged_amount')) }}원</strong></td>
                 </tr>
             </table>
         </div>
-        <div style="background:#f8fafc; padding:20px; border-radius:12px;">
+        <div class="u-bg-surface-subtle u-p-20px u-rounded-6px">
             <h3>정산 방식</h3>
-            <p style="color:#475569; line-height:1.7;">
+            <p class="u-color-text-secondary u-leading-1_7">
                 • 기본 배분액 = (세대 거주 인원 ÷ 정산 대상 인원) × (총액 + 복지 할인 총액)<br>
                 • 최종 금액 = 기본 배분액 - 세대별 수도 복지 할인<br>
                 • 청구 금액 = 최종 금액을 10원 단위로 올림 처리<br>
                 {% if excluded_details|length > 0 %}
-                    <strong style="color:#dc2626;">• 제외된 세대는 정산 대상에서 제외되어 0원으로 청구됩니다.</strong>
+                    <strong class="u-color-danger-dark">• 제외된 세대는 정산 대상에서 제외되어 0원으로 청구됩니다.</strong>
                 {% endif %}
             </p>
         </div>
     </div>
 
     {% if excluded_details|length > 0 %}
-        <div style="background:#fee2e2;padding:16px;border-radius:12px;margin-bottom:20px;border-left:4px solid #dc2626;">
-            <h4 style="margin:0 0 8px 0;color:#991b1b;">⚠️ 정산 제외 세대</h4>
-            <p style="color:#991b1b;margin:0;font-size:14px;">
+        <div class="u-bg-danger-light u-p-16px u-rounded-6px u-mb-20px u-border-left-1px-solid-border">
+            <h4 class="u-m-0-0-8px-0 u-color-danger-dark"> 정산 제외 세대</h4>
+            <p class="u-color-danger-dark u-m-0 u-text-14px">
                 다음 세대는 정산 대상에서 제외되어 0원으로 청구됩니다:
                 <strong>
                     {% for d in excluded_details %}
@@ -82,52 +81,52 @@
     <h3>세대별 상세 내역</h3>
     <table>
         <thead>
-        <tr style="background:#e2e8f0;">
+        <tr class="u-bg-surface-subtle">
             <th>세대</th>
             <th>상태</th>
             <th>기본 배분액</th>
             <th>수도 복지 할인</th>
             <th>최종 금액</th>
-            <th style="background:#fef3c7;">청구 금액<br>(10원 단위)</th>
+            <th class="u-bg-warning-light">청구 금액<br>(10원 단위)</th>
         </tr>
         </thead>
         <tbody>
         {% for d in details %}
-            <tr {% if d.is_excluded %}style="background:#f9fafb;opacity:0.7;"{% endif %}>
+            <tr class="{% if d.is_excluded %}u-bg-surface-subtle u-opacity-0_7{% endif %}">
                 <td><strong>{{ d.unit.unit_name }}</strong></td>
-                <td style="text-align:center;">
+                <td class="u-align-center">
                     {% if d.is_excluded %}
                         <span class="badge badge-danger">제외됨</span>
                     {% else %}
                         <span class="badge badge-success">포함</span>
                     {% endif %}
                 </td>
-                <td style="text-align:right">
+                <td class="u-align-right">
                     {% if d.is_excluded %}
-                        <span style="color:#94a3b8;">-</span>
+                        <span class="u-color-text-muted">-</span>
                     {% else %}
                         {{ "{:,.0f}".format(d.base_amount) }}원
                     {% endif %}
                 </td>
-                <td style="text-align:right; color:#059669;">
+                <td class="u-align-right u-color-success-dark">
                     {% if d.is_excluded %}
-                        <span style="color:#94a3b8;">-</span>
+                        <span class="u-color-text-muted">-</span>
                     {% elif d.welfare_discount > 0 %}
                         -{{ "{:,.0f}".format(d.welfare_discount) }}원
                     {% else %}
                         -
                     {% endif %}
                 </td>
-                <td style="text-align:right">
+                <td class="u-align-right">
                     {% if d.is_excluded %}
-                        <span style="color:#94a3b8;">-</span>
+                        <span class="u-color-text-muted">-</span>
                     {% else %}
                         {{ "{:,.0f}".format(d.final_amount) }}원
                     {% endif %}
                 </td>
-                <td style="text-align:right; {% if not d.is_excluded %}background:#fef3c7; font-weight:bold; font-size:1.1em;{% endif %}">
+                <td class="u-align-right {% if not d.is_excluded %}u-bg-warning-light u-weight-bold u-text-1_1em{% endif %}">
                     {% if d.is_excluded %}
-                        <span style="color:#dc2626;font-weight:bold;">0원</span>
+                        <span class="u-color-danger-dark u-weight-bold">0원</span>
                     {% else %}
                         {{ "{:,.0f}".format(d.charged_amount) }}원
                     {% endif %}
@@ -136,24 +135,24 @@
         {% endfor %}
         </tbody>
         <tfoot>
-        <tr style="background:#e2e8f0; font-weight:bold;">
+        <tr class="u-bg-surface-subtle u-weight-bold">
             <td colspan="2">합계 (정산 대상)</td>
-            <td style="text-align:right">{{ "{:,.0f}".format(included_details|sum(attribute='base_amount')) }}원</td>
-            <td style="text-align:right; color:#059669;">
+            <td class="u-align-right">{{ "{:,.0f}".format(included_details|sum(attribute='base_amount')) }}원</td>
+            <td class="u-align-right u-color-success-dark">
                 {% set total_welfare = included_details|sum(attribute='welfare_discount') %}
                 {% if total_welfare > 0 %}-{{ "{:,.0f}".format(total_welfare) }}원{% else %}-{% endif %}
             </td>
-            <td style="text-align:right">{{ "{:,.0f}".format(included_details|sum(attribute='final_amount')) }}원</td>
-            <td style="text-align:right; background:#fbbf24; font-size:1.2em;">
+            <td class="u-align-right">{{ "{:,.0f}".format(included_details|sum(attribute='final_amount')) }}원</td>
+            <td class="u-align-right u-bg-warning-light u-text-1_2em">
                 {{ "{:,.0f}".format(included_details|sum(attribute='charged_amount')) }}원
             </td>
         </tr>
         </tfoot>
     </table>
 
-    <div style="margin-top:30px; padding:20px; background:#dbeafe; border-radius:12px;">
-        <p style="color:#1e40af;">
-            💡 <strong>안내사항</strong><br>
+    <div class="u-mt-30px u-p-20px u-bg-info-light u-rounded-6px">
+        <p class="u-color-primary-dark">
+             <strong>안내사항</strong><br>
             • 정산 대상 세대: {{ included_details|length }}세대 (거주
             인원: {{ included_details|sum(attribute='unit_snapshot.residents_count') }}명)<br>
             {% if excluded_details|length > 0 %}

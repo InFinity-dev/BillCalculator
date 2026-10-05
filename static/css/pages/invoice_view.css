@@ -1,0 +1,5 @@
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.stat-card { text-align: left; } .stat-card .value { font-size: 24px; } .stat-card .value.primary { color: var(--primary-color); }
+.additional-details { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+.charge-item { color: var(--danger-dark); } .refund-item { color: var(--success-dark); }
+@media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .stat-card .value { font-size: 20px; } }

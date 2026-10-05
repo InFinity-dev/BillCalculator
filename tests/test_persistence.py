@@ -276,8 +276,8 @@ def test_electric_vacant_units_excluded(app, client, csrf, floor, units):
     assert vacant.id not in _by_unit(bill.id)
 
 
-def test_electric_negative_usage_is_persisted(app, client, csrf, floor, units):
-    """백엔드에는 음수 사용량 검증이 없다. 현재 동작을 보존한다."""
+def test_electric_negative_usage_is_rejected(app, client, csrf, floor, units):
+    """검침값 감소로 전체 청구액이 고지액보다 커지는 것을 막는다."""
     occupied = [u for u in units if not u.is_vacant]
     readings = {
         occupied[0].id: (200, 100),   # 음수
@@ -290,9 +290,8 @@ def test_electric_negative_usage_is_persisted(app, client, csrf, floor, units):
             csrf, floor.id, [{"month": "2025-03", "amount": 30000}], readings
         ),
     )
-    assert response.get_json()["success"] is True
-    bill = ElectricBill.query.one()
-    assert _by_unit(bill.id)[occupied[0].id].usage_amount == Decimal("-100.00")
+    assert response.get_json()["success"] is False
+    assert ElectricBill.query.count() == 0
 
 
 def test_electric_duplicate_month_rejected(app, client, csrf, floor, units):
@@ -335,7 +334,7 @@ def test_electric_overwrite_replaces_bill(app, client, csrf, floor, units):
         {u.id: (0, 100) for u in occupied},
     )
     client.post("/calculate/electric", data=first)
-    original_id = ElectricBill.query.one().id
+    original_charges = [d.charged_amount for d in ElectricBill.query.one().details]
 
     second = _electric_form(
         csrf, floor.id, [{"month": "2025-03", "amount": 90000}],
@@ -347,9 +346,10 @@ def test_electric_overwrite_replaces_bill(app, client, csrf, floor, units):
 
     bill = ElectricBill.query.one()
     assert bill.total_amount == 90000
-    assert bill.id != original_id
-    assert ElectricBillMonth.query.filter_by(electric_bill_id=original_id).count() == 0
-    assert ElectricBillDetail.query.filter_by(electric_bill_id=original_id).count() == 0
+    assert len(bill.months) == 1
+    assert bill.months[0].amount == 90000
+    assert [d.charged_amount for d in bill.details] != original_charges
+    assert ElectricBillDetail.query.count() == len(occupied)
 
 
 def test_electric_missing_month_rejected(app, client, csrf, floor, units):
@@ -450,25 +450,24 @@ def test_water_all_units_excluded(app, client, csrf, floor, units):
             "excluded_units": str(ids),
         },
     )
-    assert response.get_json()["success"] is True
-    bill = WaterBill.query.one()
-    assert all(d.is_excluded for d in bill.details)
+    assert response.get_json()["success"] is False
+    assert WaterBill.query.count() == 0
 
 
-def test_water_invalid_excluded_json_includes_everyone(app, client, csrf, floor, units):
-    """현재 동작 보존: 파싱 실패 시 제외 지정이 무시된다 (침묵 실패)."""
+@pytest.mark.parametrize("excluded_units", ["not-json", '{"1": true}', '["1"]'])
+def test_water_invalid_excluded_json_is_rejected(app, client, csrf, floor, units, excluded_units):
+    """잘못된 제외 목록을 전체 세대 포함으로 조용히 바꾸지 않는다."""
     response = client.post(
         "/calculate/water",
         data={
             "_csrf_token": csrf,
             "billing_month": "2025-03",
             "total_amount": "60000",
-            "excluded_units": "not-json",
+            "excluded_units": excluded_units,
         },
     )
-    assert response.get_json()["success"] is True
-    bill = WaterBill.query.one()
-    assert not any(d.is_excluded for d in bill.details)
+    assert response.get_json()["success"] is False
+    assert WaterBill.query.count() == 0
 
 
 def test_water_overwrite(app, client, csrf, floor, units):

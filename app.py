@@ -9,8 +9,7 @@ MySQL 의존성과 하드코딩된 자격증명은 제거되었다.
     flask seed-settings     # 설정 기본값 시딩 (멱등)
     python app.py
 
-계산 로직(전기/수도/공동 배분, grossing-up, 10원 단위 올림)은
-DB 전환 과정에서 **변경하지 않았다**.
+배분 계산은 Decimal 기반으로 처리하며, 사용자 입력은 저장 전에 검증한다.
 """
 
 import json
@@ -95,6 +94,29 @@ def dec(val, q=None):
     return x
 
 
+def parse_amount(value, label, *, allow_negative=False, default=None):
+    """사용자 금액 입력을 검증한다. 생략 가능한 필드는 default 를 지정한다."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        if default is None:
+            raise ValueError("{}을(를) 입력해주세요.".format(label))
+        return Decimal(str(default))
+    try:
+        amount = Decimal(str(value).strip().replace(",", ""))
+    except (InvalidOperation, ValueError):
+        raise ValueError("{}이(가) 올바른 숫자가 아닙니다.".format(label))
+    if not amount.is_finite():
+        raise ValueError("{}이(가) 올바른 숫자가 아닙니다.".format(label))
+    if amount < 0 and not allow_negative:
+        raise ValueError("{}은(는) 음수일 수 없습니다.".format(label))
+    return amount
+
+
+def parse_json_bool(value, label):
+    if not isinstance(value, bool):
+        raise ValueError("{}은(는) true 또는 false여야 합니다.".format(label))
+    return value
+
+
 def to_int(val, default=0):
     try:
         s = (val if val is not None else "").strip()
@@ -103,9 +125,19 @@ def to_int(val, default=0):
     if s == "":
         return default
     try:
-        return int(float(s.replace(",", "")))
-    except (TypeError, ValueError):
+        number = Decimal(s.replace(",", ""))
+        if not number.is_finite() or number != number.to_integral_value():
+            return default
+        return int(number)
+    except (InvalidOperation, TypeError, ValueError):
         return default
+
+
+def parse_nonnegative_int(value, label):
+    number = to_int(value, None)
+    if number is None or number < 0:
+        raise ValueError("{}은(는) 0 이상의 정수여야 합니다.".format(label))
+    return number
 
 
 # ======================================================
@@ -389,7 +421,9 @@ def _validate_import_payload(data):
             errors.append("floors[{}] 가 객체가 아닙니다.".format(idx))
             continue
         try:
-            floor_number = int(f.get("floor_number"))
+            floor_number = to_int(f.get("floor_number"), None)
+            if floor_number is None:
+                raise ValueError()
         except (TypeError, ValueError):
             errors.append("floors[{}].floor_number 가 정수가 아닙니다.".format(idx))
             continue
@@ -417,10 +451,17 @@ def _validate_import_payload(data):
             seen_unit_names.add(name)
             residents = u.get("residents_count", 1)
             try:
-                if int(residents) < 0:
+                parsed_residents = to_int(residents, None)
+                if parsed_residents is None:
+                    raise ValueError()
+                if parsed_residents < 0:
                     errors.append("세대 '{}' 의 거주인원이 음수입니다.".format(name))
             except (TypeError, ValueError):
                 errors.append("세대 '{}' 의 거주인원이 정수가 아닙니다.".format(name))
+            for key in ("electric_welfare", "electric_voucher", "has_tv",
+                        "water_welfare", "is_vacant"):
+                if key in u and not isinstance(u[key], bool):
+                    errors.append("세대 '{}' 의 {} 값은 true/false여야 합니다.".format(name, key))
     return errors
 
 
@@ -468,7 +509,7 @@ def import_settings():
         incoming_floor_numbers = set()
 
         for f in data.get("floors", []):
-            floor_number = int(f.get("floor_number"))
+            floor_number = to_int(f.get("floor_number"), None)
             incoming_floor_numbers.add(floor_number)
             floor = existing_floors.get(floor_number)
             if floor is None:
@@ -478,7 +519,8 @@ def import_settings():
             else:
                 summary["floors_updated"] += 1
             floor.name = f.get("name") or floor.name
-            floor.electric_contract_number = f.get("electric_contract_number")
+            if "electric_contract_number" in f:
+                floor.electric_contract_number = f["electric_contract_number"]
             db.session.flush()
 
             existing_units = {u.unit_name: u for u in floor.units}
@@ -491,13 +533,14 @@ def import_settings():
                     summary["units_created"] += 1
                 else:
                     summary["units_updated"] += 1
-                unit.memo = u.get("memo", "") or ""
-                unit.electric_welfare = bool(u.get("electric_welfare", False))
-                unit.electric_voucher = bool(u.get("electric_voucher", False))
-                unit.has_tv = bool(u.get("has_tv", True))
-                unit.water_welfare = bool(u.get("water_welfare", False))
-                unit.residents_count = int(u.get("residents_count", 1))
-                unit.is_vacant = bool(u.get("is_vacant", False))
+                if "memo" in u:
+                    unit.memo = u["memo"] or ""
+                for key in ("electric_welfare", "electric_voucher", "has_tv",
+                            "water_welfare", "is_vacant"):
+                    if key in u:
+                        setattr(unit, key, u[key])
+                if "residents_count" in u:
+                    unit.residents_count = parse_nonnegative_int(u["residents_count"], "거주 인원")
 
             summary["units_kept"] += len(
                 [n for n in existing_units if n not in {
@@ -668,7 +711,9 @@ def add_unit():
             electric_voucher=request.form.get("electric_voucher") == "true",
             has_tv=request.form.get("has_tv") == "true",
             water_welfare=request.form.get("water_welfare") == "true",
-            residents_count=to_int(request.form.get("residents_count", "1"), 1),
+            residents_count=parse_nonnegative_int(
+                request.form.get("residents_count", "1"), "거주 인원"
+            ),
             is_vacant=request.form.get("is_vacant") == "true",
         )
         db.session.add(unit)
@@ -695,8 +740,8 @@ def update_unit(unit_id):
         unit.electric_voucher = request.form.get("electric_voucher") == "true"
         unit.has_tv = request.form.get("has_tv") == "true"
         unit.water_welfare = request.form.get("water_welfare") == "true"
-        unit.residents_count = to_int(
-            request.form.get("residents_count"), unit.residents_count or 1
+        unit.residents_count = parse_nonnegative_int(
+            request.form.get("residents_count", unit.residents_count), "거주 인원"
         )
         unit.is_vacant = request.form.get("is_vacant") == "true"
         db.session.commit()
@@ -811,14 +856,14 @@ def calculate_electric():
         if not floor_id:
             return json_error("층을 선택해주세요.")
         tv_distribution_mode = request.form.get("tv_distribution_mode", "INDIVIDUAL")
+        if tv_distribution_mode not in ("INDIVIDUAL", "EQUAL"):
+            return json_error("TV 수신료 분배 방식이 올바르지 않습니다.")
 
         monthly_details = []
         total_amount = dec(0)
         welfare_discount_input = dec(0)
         voucher_discount_input = dec(0)
         tv_fee_total = dec(0)
-
-        month_count = to_int(request.form.get("month_count", "1"), 1)
 
         # FormData 에서 bill_month_ 로 시작하는 키를 찾아 동적 rowId 를 추출한다.
         bill_months = {}
@@ -827,10 +872,10 @@ def calculate_electric():
                 row_id = key.replace("bill_month_", "")
                 bill_months[row_id] = {
                     "month": request.form.get("bill_month_{}".format(row_id)),
-                    "amount": dec(request.form.get("bill_amount_{}".format(row_id), 0)),
-                    "welfare": dec(request.form.get("bill_welfare_{}".format(row_id), 0)),
-                    "voucher": dec(request.form.get("bill_voucher_{}".format(row_id), 0)),
-                    "tv_fee": dec(request.form.get("bill_tv_fee_{}".format(row_id), 0)),
+                    "amount": parse_amount(request.form.get("bill_amount_{}".format(row_id)), "고지 금액"),
+                    "welfare": parse_amount(request.form.get("bill_welfare_{}".format(row_id)), "복지 할인", default=0),
+                    "voucher": parse_amount(request.form.get("bill_voucher_{}".format(row_id)), "바우처 할인", default=0),
+                    "tv_fee": parse_amount(request.form.get("bill_tv_fee_{}".format(row_id)), "TV 수신료", default=0),
                 }
 
         # 월별 데이터를 리스트로 변환하고 합계 계산
@@ -853,6 +898,9 @@ def calculate_electric():
             welfare_discount_input += month_data["welfare"]
             voucher_discount_input += month_data["voucher"]
             tv_fee_total += month_data["tv_fee"]
+        if not monthly_details:
+            return json_error("월별 고지 내역을 하나 이상 입력해주세요.")
+        month_count = len(monthly_details)
 
         existing = ElectricBill.query.filter_by(
             billing_month=billing_month, floor_id=floor_id
@@ -907,12 +955,16 @@ def calculate_electric():
             return json_error("선택한 층을 찾을 수 없습니다.")
 
         units = [u for u in floor.units if not u.is_vacant]
+        if not units:
+            raise ValueError("전기요금을 배분할 재실 세대가 없습니다.")
         total_usage = dec(0)
         readings = []
 
         for unit in units:
-            prev_reading = dec(request.form.get("prev_{}".format(unit.id), 0))
-            curr_reading = dec(request.form.get("curr_{}".format(unit.id), 0))
+            prev_reading = parse_amount(request.form.get("prev_{}".format(unit.id)), "이전 검침값")
+            curr_reading = parse_amount(request.form.get("curr_{}".format(unit.id)), "현재 검침값")
+            if curr_reading < prev_reading:
+                raise ValueError("{}의 현재 검침값이 이전 검침값보다 작습니다.".format(unit.unit_name))
             total_usage += curr_reading - prev_reading
             reading = ElectricReading(
                 electric_bill_id=bill.id,
@@ -1016,14 +1068,21 @@ def calculate_water():
         if billing_month is None:
             return json_error("정산월을 올바르게 입력해주세요.")
 
-        total_amount = dec(request.form.get("total_amount"))
-        welfare_discount_input = dec(request.form.get("welfare_discount_total", "0"))
+        total_amount = parse_amount(request.form.get("total_amount"), "수도요금")
+        welfare_discount_input = parse_amount(
+            request.form.get("welfare_discount_total"), "수도 복지 할인", default=0
+        )
 
         excluded_units_json = request.form.get("excluded_units", "[]")
         try:
-            excluded_unit_ids = set(map(int, json.loads(excluded_units_json)))
+            excluded_values = json.loads(excluded_units_json)
         except (ValueError, TypeError):
-            excluded_unit_ids = set()
+            return json_error("제외 세대 목록이 올바르지 않습니다.")
+        if not isinstance(excluded_values, list) or any(
+            type(value) is not int or value <= 0 for value in excluded_values
+        ):
+            return json_error("제외 세대 목록이 올바르지 않습니다.")
+        excluded_unit_ids = set(excluded_values)
 
         existing = WaterBill.query.filter_by(billing_month=billing_month).first()
         if existing and request.form.get("overwrite") != "true":
@@ -1054,7 +1113,14 @@ def calculate_water():
         db.session.flush()
 
         all_units = Unit.query.filter_by(is_vacant=False).all()
+        if not all_units:
+            raise ValueError("수도요금을 배분할 재실 세대가 없습니다.")
+        unknown_exclusions = excluded_unit_ids - {u.id for u in all_units}
+        if unknown_exclusions:
+            raise ValueError("제외 세대 목록에 존재하지 않는 재실 세대가 있습니다.")
         included_units = [u for u in all_units if u.id not in excluded_unit_ids]
+        if not included_units and total_amount > 0:
+            raise ValueError("모든 세대를 제외하면 수도요금을 배분할 수 없습니다.")
         total_residents = sum(u.residents_count for u in included_units)
         welfare_units = [u for u in included_units if u.water_welfare]
 
@@ -1123,35 +1189,58 @@ def calculate_water():
 @app.route("/calculate/common", methods=["POST"])
 @csrf_protect
 def calculate_common():
-    """공동 공과금을 인원 비례 또는 세대 균등으로 배분한다. 알고리즘 변경 없음."""
+    """화면의 항목별 금액 또는 기존 단일 항목 요청을 배분한다."""
     try:
         billing_month = parse_month_input(request.form.get("billing_month"))
         if billing_month is None:
             return json_error("정산월을 올바르게 입력해주세요.")
 
-        description = request.form.get("description")
-        total_amount = dec(request.form.get("total_amount"))
-        distribution_method = request.form.get("distribution_method", "BY_RESIDENTS")
+        if "total_amount" in request.form:
+            distribution_method = request.form.get("distribution_method", "BY_RESIDENTS")
+            bill_inputs = [(
+                (request.form.get("description") or "").strip(),
+                parse_amount(request.form.get("total_amount"), "공동 공과금"),
+            )]
+        else:
+            distribution_method = {"RESIDENTS": "BY_RESIDENTS", "UNIT": "BY_UNITS"}.get(
+                request.form.get("distribution_mode")
+            )
+            bill_inputs = [
+                (label, parse_amount(request.form.get(field), label, default=0))
+                for label, field in (
+                    ("인터넷", "internet_amount"),
+                    ("관리비", "management_amount"),
+                    ("기타", "other_amount"),
+                )
+            ]
+            bill_inputs = [(label, amount) for label, amount in bill_inputs if amount > 0]
+            if not bill_inputs:
+                return json_error("공동 공과금 금액을 하나 이상 입력해주세요.")
 
-        bill = CommonBill(
-            billing_month=billing_month,
-            description=description,
-            total_amount=total_amount,
-            distribution_method=distribution_method,
-        )
-        db.session.add(bill)
-        db.session.flush()
+        if distribution_method not in ("BY_RESIDENTS", "BY_UNITS"):
+            return json_error("분배 방식이 올바르지 않습니다.")
+        if any(amount <= 0 for _, amount in bill_inputs):
+            return json_error("공동 공과금은 0원보다 커야 합니다.")
 
         units = Unit.query.filter_by(is_vacant=False).all()
+        if not units:
+            return json_error("배분할 재실 세대가 없습니다.")
 
-        if distribution_method == "BY_RESIDENTS":
-            total_residents = sum(u.residents_count for u in units)
+        total_residents = sum(u.residents_count for u in units)
+        for description, total_amount in bill_inputs:
+            bill = CommonBill(
+                billing_month=billing_month,
+                description=description,
+                total_amount=total_amount,
+                distribution_method=distribution_method,
+            )
+            db.session.add(bill)
+            db.session.flush()
             for unit in units:
-                amount = (
-                    (dec(unit.residents_count) / dec(total_residents) * total_amount)
-                    if total_residents > 0
-                    else (total_amount / len(units) if units else dec(0))
-                )
+                if distribution_method == "BY_RESIDENTS" and total_residents > 0:
+                    amount = dec(unit.residents_count) / dec(total_residents) * total_amount
+                else:
+                    amount = total_amount / len(units)
                 charged_amount = dec(round_up_to_10(amount))
                 db.session.add(
                     CommonBillDetail(
@@ -1162,22 +1251,9 @@ def calculate_common():
                         unit_snapshot=create_unit_snapshot(unit),
                     )
                 )
-        else:
-            amount_per_unit = total_amount / len(units) if units else dec(0)
-            for unit in units:
-                charged_amount = dec(round_up_to_10(amount_per_unit))
-                db.session.add(
-                    CommonBillDetail(
-                        common_bill_id=bill.id,
-                        unit_id=unit.id,
-                        amount=amount_per_unit,
-                        charged_amount=charged_amount,
-                        unit_snapshot=create_unit_snapshot(unit),
-                    )
-                )
 
         db.session.commit()
-        return jsonify({"success": True, "message": "공동 공과금이 계산되었습니다."})
+        return jsonify({"success": True, "message": "공동 공과금 {}건이 계산되었습니다.".format(len(bill_inputs))})
     except Exception as e:  # noqa: BLE001
         db.session.rollback()
         return json_error(str(e))
@@ -1345,13 +1421,16 @@ def delete_bill(bill_type, bill_id):
 def invoice_combination():
     electric_bills = (
         ElectricBill.query.options(selectinload(ElectricBill.months))
+        .filter(~ElectricBill.invoice_items.any())
         .order_by(ElectricBill.billing_month.desc())
         .all()
     )
-    water_bills = WaterBill.query.order_by(WaterBill.billing_month.desc()).all()
+    water_bills = WaterBill.query.filter(~WaterBill.invoice_items.any()).order_by(
+        WaterBill.billing_month.desc()
+    ).all()
     common_bills = CommonBill.query.order_by(
         CommonBill.billing_month.desc(), CommonBill.id.desc()
-    ).all()
+    ).filter(~CommonBill.invoice_items.any()).all()
     combinations = InvoiceCombination.query.order_by(
         InvoiceCombination.created_at.desc()
     ).all()
@@ -1409,8 +1488,38 @@ def create_invoice():
             return json_error("정산서 이름을 입력해주세요.")
 
         items = data.get("items", [])
-        if not items:
+        if not isinstance(items, list) or not items:
             return json_error("최소 하나 이상의 항목을 선택해주세요.")
+
+        bill_models = {"ELECTRIC": ElectricBill, "WATER": WaterBill, "COMMON": CommonBill}
+        selected_refs = set()
+        normalized_items = []
+        for item in items:
+            if not isinstance(item, dict) or item.get("type") not in _ITEM_FK_BY_TYPE:
+                return json_error("알 수 없는 항목 유형입니다.")
+            item_type = item["type"]
+            try:
+                bill_id = int(item["id"])
+            except (KeyError, TypeError, ValueError):
+                return json_error("항목 ID가 올바르지 않습니다.")
+            bill = db.session.get(bill_models[item_type], bill_id)
+            if bill is None:
+                return json_error("선택한 고지 항목을 찾을 수 없습니다.")
+            month = parse_month_input(item.get("month"))
+            if month is None or month != bill.billing_month:
+                return json_error("항목의 정산월이 원본 고지월과 일치하지 않습니다.")
+            ref = (item_type, bill_id)
+            if ref in selected_refs:
+                return json_error("같은 고지 항목을 한 정산서에 두 번 넣을 수 없습니다.")
+            selected_refs.add(ref)
+            if InvoiceCombinationItem.query.filter_by(
+                **{_ITEM_FK_BY_TYPE[item_type]: bill_id}
+            ).first():
+                return json_error("이미 다른 정산서에 포함된 고지 항목입니다.")
+            normalized_items.append({
+                "type": item_type, "id": bill_id, "month": month,
+                "description": item.get("description", ""),
+            })
 
         default_memo = get_setting("invoice_default_memo")
         user_memo = data.get("memo", "")
@@ -1426,21 +1535,12 @@ def create_invoice():
         db.session.add(combination)
         db.session.flush()
 
-        for item in items:
-            item_type = item.get("type")
-            if item_type not in _ITEM_FK_BY_TYPE:
-                db.session.rollback()
-                return json_error("알 수 없는 항목 유형입니다: {}".format(item_type))
-
-            month = parse_month_input(item.get("month"))
-            if month is None:
-                db.session.rollback()
-                return json_error("항목의 정산월을 해석할 수 없습니다.")
-
+        for item in normalized_items:
+            item_type = item["type"]
             item_data = {
                 "combination_id": combination.id,
                 "item_type": item_type,
-                "billing_month": month,
+                "billing_month": item["month"],
                 "item_description": item.get("description", ""),
                 _ITEM_FK_BY_TYPE[item_type]: item["id"],
             }
@@ -1448,14 +1548,28 @@ def create_invoice():
 
         unit_additional_data = data.get("unit_additional_data", {}) or {}
 
-        units = Unit.query.filter_by(is_vacant=False).all()
+        # 고지 계산 당시의 세대는 이후 공실로 바뀌어도 청구 대상이다.
+        unit_ids = {u.id for u in Unit.query.filter_by(is_vacant=False).all()}
+        for item in normalized_items:
+            detail_model, bill_fk = {
+                "ELECTRIC": (ElectricBillDetail, ElectricBillDetail.electric_bill_id),
+                "WATER": (WaterBillDetail, WaterBillDetail.water_bill_id),
+                "COMMON": (CommonBillDetail, CommonBillDetail.common_bill_id),
+            }[item["type"]]
+            unit_ids.update(
+                unit_id for (unit_id,) in db.session.query(detail_model.unit_id)
+                .filter(bill_fk == item["id"]).all()
+            )
+        units = Unit.query.filter(Unit.id.in_(unit_ids)).all()
+        if not units:
+            raise ValueError("정산서를 발행할 세대가 없습니다.")
         for unit in units:
             electric_total = dec(0)
             water_total = dec(0)
             common_total = dec(0)
             common_details_list = []
 
-            for item in items:
+            for item in normalized_items:
                 if item["type"] == "ELECTRIC":
                     d = ElectricBillDetail.query.filter_by(
                         electric_bill_id=item["id"], unit_id=unit.id
@@ -1488,7 +1602,9 @@ def create_invoice():
             charge_rows = []
 
             for order, charge in enumerate(charges_input):
-                charge_amount = dec(charge.get("amount", 0))
+                charge_amount = parse_amount(
+                    charge.get("amount"), "기타 항목 금액", allow_negative=True
+                )
                 additional_total += charge_amount
                 charge_rows.append(
                     {
@@ -1496,7 +1612,9 @@ def create_invoice():
                         "amount": charge_amount,
                         # 프론트엔드가 보내는 명시적 플래그를 그대로 보존한다.
                         # 문자열 추론은 더 이상 사용하지 않는다.
-                        "is_carryover": bool(charge.get("is_carryover", False)),
+                        "is_carryover": parse_json_bool(
+                            charge.get("is_carryover", False), "이월 여부"
+                        ),
                         "sort_order": order,
                     }
                 )
@@ -1633,7 +1751,7 @@ def get_previous_readings(floor_id, billing_month):
 @app.route("/payments")
 def payments():
     units = (
-        Unit.query.filter_by(is_vacant=False).order_by(Unit.floor_id, Unit.unit_name).all()
+        Unit.query.order_by(Unit.floor_id, Unit.unit_name).all()
     )
     combinations = InvoiceCombination.query.order_by(
         InvoiceCombination.created_at.desc()
@@ -1679,11 +1797,15 @@ def payment_balance(unit_id):
 def add_payment():
     try:
         data = request.get_json(silent=True) or {}
+        if not FinalInvoice.query.filter_by(
+            combination_id=data["combination_id"], unit_id=data["unit_id"]
+        ).first():
+            return json_error("해당 세대의 정산서가 없어 입금을 등록할 수 없습니다.")
         payment = Payment(
             combination_id=data["combination_id"],
             unit_id=data["unit_id"],
             payment_date=datetime.strptime(data["payment_date"], "%Y-%m-%d").date(),
-            payment_amount=dec(data["payment_amount"]),
+            payment_amount=parse_amount(data.get("payment_amount"), "입금액"),
             payment_method=data.get("payment_method", "계좌이체"),
             memo=data.get("memo", ""),
         )
@@ -1707,7 +1829,7 @@ def update_payment(payment_id):
         data = request.get_json(silent=True) or {}
 
         payment.payment_date = datetime.strptime(data["payment_date"], "%Y-%m-%d").date()
-        payment.payment_amount = dec(data["payment_amount"])
+        payment.payment_amount = parse_amount(data.get("payment_amount"), "입금액")
         payment.payment_method = data.get("payment_method", "계좌이체")
         payment.memo = data.get("memo", "")
 
@@ -1757,8 +1879,7 @@ def validate_balances():
     """전체 세대의 잔액 정합성 검증 (관리자용)."""
     try:
         units = (
-            Unit.query.filter_by(is_vacant=False)
-            .order_by(Unit.floor_id, Unit.unit_name)
+            Unit.query.order_by(Unit.floor_id, Unit.unit_name)
             .all()
         )
         balances = balance_service.all_unit_balances(units)

@@ -3,109 +3,25 @@
 {% block title %}정산서 조회 - 공과금 정산 시스템{% endblock %}
 
 {% block extra_css %}
-    <style>
-        /* 통계 요약 카드 디자인 */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: var(--space-xl);
-            margin-bottom: var(--space-2xl);
-        }
-
-        .stat-card {
-            background: white;
-            padding: var(--space-xl);
-            border-radius: var(--radius-lg);
-            border: 2px solid var(--gray-200);
-            text-align: center;
-            transition: var(--transition-base);
-        }
-
-        .stat-card:hover {
-            border-color: var(--primary-color);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-            transform: translateY(-2px);
-        }
-
-        .stat-card .label {
-            font-size: var(--font-small);
-            color: var(--gray-500);
-            margin-bottom: var(--space-sm);
-            font-weight: 500;
-        }
-
-        .stat-card .value {
-            font-size: var(--font-2xl);
-            font-weight: 700;
-            color: var(--gray-800);
-        }
-
-        .stat-card .value.primary {
-            color: var(--primary-color);
-        }
-
-        /* 기타 금액 상세 표시 스타일 */
-        .additional-details {
-            font-size: var(--font-xs);
-            color: var(--gray-500);
-            margin-top: var(--space-xs);
-            padding-left: var(--space-sm);
-        }
-
-        .charge-item {
-            color: var(--danger-dark);
-        }
-
-        .refund-item {
-            color: var(--success-dark);
-        }
-
-        /* 금액 컬럼 헤더 우측 정렬 */
-        table th.text-right {
-            text-align: right !important;
-        }
-
-        /* 금액 데이터 우측 정렬 */
-        table td.text-right {
-            text-align: right !important;
-            font-weight: 500;
-        }
-
-        /* 반응형 */
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
-            .stat-card .value {
-                font-size: 20px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/invoice_view.css') }}">
 {% endblock %}
 
 {% block content %}
-    <div style="display: flex; align-items: center; justify-content: space-between;">
-        <h1><span class="emoji">📄</span> {{ combination.invoice_name }}</h1>
-        <div>
+    <div class="page-heading">
+        <h1>{{ combination.invoice_name }}</h1>
+        <div class="btn-group">
             <a href="{{ url_for('print_invoice', combination_id=combination.id) }}" target="_blank"
-               class="btn btn-primary">🖨️ 인쇄용 보기</a>
+               class="btn btn-primary"> 인쇄용 보기</a>
             <a href="{{ url_for('invoice_combination') }}" class="btn btn-secondary">목록으로</a>
         </div>
     </div>
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <div class="u-display-flex u-justify-content-space-between u-align-items-center u-mb-20px">
         <div>
-            <p style="color: #64748b;">생성일: {{ combination.created_at.strftime('%Y년 %m월 %d일 %H:%M') }}</p>
+            <p class="u-color-text-muted">생성일: {{ combination.created_at.strftime('%Y년 %m월 %d일 %H:%M') }}</p>
             {% if combination.memo %}
-                <details style="margin-top:10px;">
-                    <summary style="cursor:pointer;color:#667eea;font-weight:500;">📝 공통 메모 보기</summary>
-                    <div style="background:#f8fafc;padding:15px;border-radius:8px;margin-top:10px;white-space:pre-line;font-size:14px;">
+                <details class="u-mt-10px">
+                    <summary class="u-cursor-pointer u-color-primary-color u-weight-500"> 공통 메모 보기</summary>
+                    <div class="u-bg-surface-subtle u-p-15px u-rounded-6px u-mt-10px u-white-space-pre-line u-text-14px">
                         {{ combination.memo | trim }}
                     </div>
                 </details>
@@ -138,9 +54,9 @@
     </div>
 
     <!-- 포함된 항목 -->
-    <div style="background: #f8fafc; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+    <div class="u-bg-surface-subtle u-p-20px u-rounded-6px u-mb-30px">
         <h3>포함된 청구 항목</h3>
-        <ul style="line-height: 2;">
+        <ul class="u-leading-2">
             {% for item in combination.items %}
                 <li>
                     {% if item.item_type == 'ELECTRIC' %}
@@ -148,7 +64,7 @@
                             {% set ebill = item.electric_bill_ref %}
                             {% set floor_name = ebill.floor_ref.name if ebill.floor_ref else '' %}
 
-                            ⚡
+
                             {% if ebill.monthly_details and ebill.monthly_details|length > 0 %}
                                 {% set months = ebill.monthly_details | map(attribute='month') | select | list %}
                                 {% if months|length > 1 %}
@@ -176,10 +92,10 @@
                         {% endif %}
 
                     {% elif item.item_type == 'WATER' %}
-                        💧 {{ item.billing_month.strftime('%Y년 %m월') }} 수도요금
+                         {{ item.billing_month.strftime('%Y년 %m월') }} 수도요금
 
                     {% elif item.item_type == 'COMMON' %}
-                        🏘️ {{ item.billing_month.strftime('%Y년 %m월') }} {{ item.item_description|default('공동 공과금') }}
+                         {{ item.billing_month.strftime('%Y년 %m월') }} {{ item.item_description|default('공동 공과금') }}
                     {% endif %}
                 </li>
             {% endfor %}
@@ -198,7 +114,7 @@
             <th class="text-right">공동공과금</th>
             <th class="text-right">기타</th>
             <th class="text-right">세대 메모</th>
-            <th class="text-right" style="background: #fef3c7;">최종 청구금액</th>
+            <th class="text-right u-bg-warning-light">최종 청구금액</th>
         </tr>
         </thead>
         <tbody>
@@ -209,7 +125,7 @@
                     {% if invoice.unit.memo %}
                         {{ invoice.unit.memo }}
                     {% else %}
-                        <span style="color:#94a3b8;">-</span>
+                        <span class="u-color-text-muted">-</span>
                     {% endif %}
                 </td>
                 <td class="text-right">
@@ -236,7 +152,7 @@
                 <td class="text-right">
                     {% if invoice.additional_charges %}
                         {% set additional_total = invoice.additional_charges | sum(attribute='amount') %}
-                        <div style="font-weight:600;">
+                        <div class="u-weight-600">
                             {{ "{:,}".format(additional_total|int) }}원
                         </div>
                         <!-- 기타 항목 상세 표시 -->
@@ -258,14 +174,14 @@
                         -
                     {% endif %}
                 </td>
-                <td class="text-right" style="background: #fef3c7; font-weight: bold; font-size: 1.1em;">
+                <td class="text-right u-bg-warning-light u-weight-bold u-text-1_1em">
                     {{ "{:,.0f}".format(invoice.total_amount) }}원
                 </td>
             </tr>
         {% endfor %}
         </tbody>
         <tfoot>
-        <tr style="background: #e2e8f0; font-weight: bold;">
+        <tr class="u-bg-surface-subtle u-weight-bold">
             <td>합계</td>
             <td>-</td>
             <td class="text-right">{{ "{:,.0f}".format(invoices|sum(attribute='electric_amount')) }}원</td>
@@ -279,7 +195,7 @@
                     {% endif %}
                 {% endfor %}
                 {% if total_additional.value != 0 %}
-                    <span style="color:{{ '#dc2626' if total_additional.value > 0 else '#059669' }};">
+                    <span class="{{ 'text-danger' if total_additional.value > 0 else 'text-success' }}">
                         {{ "+" if total_additional.value > 0 else "" }}{{ "{:,.0f}".format(total_additional.value) }}원
                     </span>
                 {% else %}
@@ -287,22 +203,22 @@
                 {% endif %}
             </td>
             <td class="text-right">-</td>
-            <td class="text-right" style="background: #fbbf24; font-size: 1.2em;">
+            <td class="text-right u-bg-warning-light u-text-1_2em">
                 {{ "{:,.0f}".format(invoices|sum(attribute='total_amount')) }}원
             </td>
         </tr>
         </tfoot>
     </table>
 
-    <div style="margin-top: 30px; padding: 20px; background: #dbeafe; border-radius: 12px;">
-        <p style="color: #1e40af; margin: 0 0 10px 0;">
-            💡 <strong>안내:</strong>
+    <div class="u-mt-30px u-p-20px u-bg-info-light u-rounded-6px">
+        <p class="u-color-primary-dark u-m-0-0-10px-0">
+             <strong>안내:</strong>
             각 항목별 금액은 10원 단위로 올림 처리되어 있습니다.
             기타 항목은 세대별로 개별 부과된 항목입니다.
             인쇄용 보기에서는 세대별로 잘라서 배부할 수 있는 형식으로 출력됩니다.
         </p>
-        <p style="color: #1e40af; margin: 0;">
-            📌 <strong>[이월]</strong> 표시가 있는 항목은 전월 미납금/초과납부를 참고용으로 표시한 것으로,
+        <p class="u-color-primary-dark u-m-0">
+             <strong>[이월]</strong> 표시가 있는 항목은 전월 미납금/초과납부를 참고용으로 표시한 것으로,
             실제 누적 잔액 계산 시에는 중복 계산되지 않습니다.
         </p>
     </div>

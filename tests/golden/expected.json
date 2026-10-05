@@ -1,17 +1,19 @@
 {
   "aggregates": {
-    "sum_charges": 70230,
+    "sum_charges": -169770,
     "sum_common_charged": 103020,
     "sum_electric_charged": 446720,
-    "sum_final_invoice_total": 807290,
-    "sum_payments": 260640,
+    "sum_final_invoice_total": 567290,
+    "sum_payments": 500640,
     "sum_water_charged": 187320
   },
   "balances": {
     "101호": 8000,
     "102호": 103230,
-    "201호": 181350,
-    "202호": 147440,
+    "103호": 0,
+    "201호": -56790,
+    "202호": 145580,
+    "203호": 0,
     "B101호": 27540,
     "B102호": 15860
   },
@@ -127,10 +129,10 @@
       "welfare_discount": "0.00"
     },
     {
-      "base_amount": "175849.22",
+      "base_amount": "177708.74",
       "billing_month": "2025-03-01",
-      "charged_amount": 183350,
-      "final_amount": "183349.22",
+      "charged_amount": 185210,
+      "final_amount": "185208.74",
       "floor": "2층",
       "tv_fee": "7500.00",
       "unit": "201호",
@@ -139,15 +141,15 @@
       "welfare_discount": "0.00"
     },
     {
-      "base_amount": "107850.78",
+      "base_amount": "108991.26",
       "billing_month": "2025-03-01",
-      "charged_amount": 115360,
-      "final_amount": "115350.78",
+      "charged_amount": 113500,
+      "final_amount": "113491.26",
       "floor": "2층",
       "tv_fee": "7500.00",
       "unit": "202호",
       "usage_amount": "380.50",
-      "voucher_discount": "0.00",
+      "voucher_discount": "3000.00",
       "welfare_discount": "0.00"
     }
   ],
@@ -274,16 +276,16 @@
     {
       "charges": [
         {
-          "amount": -10000,
+          "amount": -250000,
           "description": "[이월] 전월 초과납부 환급",
           "is_carryover": true,
           "sort_order": 0
         }
       ],
       "common_amount": 8000,
-      "electric_amount": 183350,
+      "electric_amount": 185210,
       "invoice": "2025년 3월 정산 (2차)",
-      "total_amount": 181350,
+      "total_amount": -56790,
       "unit": "201호",
       "water_amount": 0
     },
@@ -297,9 +299,9 @@
         }
       ],
       "common_amount": 8000,
-      "electric_amount": 115360,
+      "electric_amount": 113500,
       "invoice": "2025년 3월 정산 (2차)",
-      "total_amount": 108360,
+      "total_amount": 106500,
       "unit": "202호",
       "water_amount": 0
     },

@@ -2,119 +2,30 @@
 {% block title %}전체 조회 - 공과금 정산 시스템{% endblock %}
 
 {% block extra_css %}
-    <style>
-        .chart-container {
-            position: relative;
-            height: 400px;
-            margin: var(--space-xl) 0;
-            padding: var(--space-xl);
-            background: var(--gray-50);
-            border-radius: var(--radius-lg);
-        }
-
-        .chart-info {
-            background: var(--info-bg);
-            padding: var(--space-md) var(--space-lg);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-lg);
-            border-left: 4px solid var(--info-color);
-        }
-
-        .chart-info p {
-            margin: 0;
-            color: var(--info-dark);
-            font-size: var(--font-small);
-            line-height: 1.6;
-        }
-
-        /* 개선된 테이블 스타일 */
-        table th {
-            background: var(--gray-100) !important;
-            font-weight: 600 !important;
-            color: var(--gray-700) !important;
-            border-bottom: 2px solid var(--gray-300) !important;
-            white-space: nowrap;
-            padding: var(--space-md) var(--space-lg) !important;
-        }
-
-        /* 금액 컬럼 헤더도 우측 정렬 */
-        table th.text-right {
-            text-align: right !important;
-        }
-
-        /* 금액 데이터 우측 정렬 */
-        table td.text-right {
-            text-align: right !important;
-            font-weight: 500;
-        }
-
-        /* 테이블 호버 효과 개선 */
-        table tbody tr:hover {
-            background: var(--gray-50) !important;
-            transition: var(--transition-fast);
-        }
-
-        /* 할인 금액 스타일 */
-        .discount-amount {
-            color: var(--success-dark);
-            font-weight: 600;
-        }
-
-        /* TV 수신료 스타일 */
-        .tv-fee-amount {
-            color: var(--danger-dark);
-            font-weight: 600;
-        }
-
-        /* 작업 버튼 컨테이너 */
-        .action-buttons {
-            white-space: nowrap;
-            display: flex;
-            gap: var(--space-xs);
-            justify-content: flex-end;
-        }
-
-        /* 고지월 정보 셀 스타일 */
-        td .badge {
-            display: inline-flex;
-            align-items: center;
-            padding: var(--space-xs) var(--space-md);
-            font-size: var(--font-xs);
-            font-weight: 600;
-            white-space: nowrap;
-        }
-
-        /* 월 목록 래퍼 */
-        .month-list-wrapper {
-            display: inline-flex;
-            flex-wrap: wrap;
-            gap: var(--space-xs);
-            align-items: center;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/view.css') }}">
 {% endblock %}
 
 {% block content %}
-    <h1><span class="emoji">📊</span> 전체 조회</h1>
+    <div class="page-heading"><div><h1>계산 내역</h1><p class="page-description">월별 요금 추이와 세대별 분배 결과를 확인하세요.</p></div></div>
 
     <div class="tabs">
-        <button class="tab active" onclick="showTab('tab-electric', event)">⚡ 전기</button>
-        <button class="tab" onclick="showTab('tab-water', event)">💧 수도</button>
-        <button class="tab" onclick="showTab('tab-common', event)">🏘️ 공동 공과금</button>
+        <button class="tab active" onclick="showTab('tab-electric', event)"> 전기</button>
+        <button class="tab" onclick="showTab('tab-water', event)"> 수도</button>
+        <button class="tab" onclick="showTab('tab-common', event)"> 공동 공과금</button>
     </div>
     <div class="tabs-container">
         <!-- 전기요금 탭 -->
         <div id="tab-electric" class="tab-content">
-            <h2>⚡ 전기요금</h2>
+            <h2> 전기요금</h2>
 
             <!-- 전기 그래프 섹션 -->
-            <div class="content-card" style="margin-bottom:20px;">
-                <h3>📈 고지월별 전기요금 추이 (층별)</h3>
+            <div class="content-card u-mb-20px">
+                <h3> 고지월별 전기요금 추이 (층별)</h3>
 
                 <div class="chart-info">
                     <p>
-                        💡 각 정산월에 포함된 고지월별 순수 전기요금(TV수신료 제외)을 층별로 표시합니다.<br>
-                        📊 <strong>범례를 클릭</strong>하여 특정 층의 데이터를 숨기거나 표시할 수 있습니다.
+                         각 정산월에 포함된 고지월별 순수 전기요금(TV수신료 제외)을 층별로 표시합니다.<br>
+                         <strong>범례를 클릭</strong>하여 특정 층의 데이터를 숨기거나 표시할 수 있습니다.
                     </p>
                 </div>
 
@@ -129,11 +40,11 @@
 
         <!-- 수도요금 탭 -->
         <div id="tab-water" class="tab-content">
-            <h2>💧 수도요금</h2>
+            <h2> 수도요금</h2>
 
             <!-- 수도 그래프 섹션 -->
-            <div class="content-card" style="margin-bottom:20px;">
-                <h3>📈 요금 추이</h3>
+            <div class="content-card u-mb-20px">
+                <h3> 요금 추이</h3>
 
                 <div class="chart-container">
                     <canvas id="waterChart"></canvas>
@@ -146,7 +57,7 @@
 
         <!-- 공동 공과금 탭 -->
         <div id="tab-common" class="tab-content">
-            <h2>🏘️ 공동 공과금</h2>
+            <h2> 공동 공과금</h2>
             <div id="commonList"></div>
         </div>
     </div>
@@ -156,12 +67,7 @@
 {% block scripts %}
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script>
-        function showTab(id, ev){
-            document.querySelectorAll('.tab-content').forEach(x=>x.style.display='none');
-            document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-            document.getElementById(id).style.display='block';
-            if(ev && ev.target) ev.target.classList.add('active');
-        }
+        function showTab(tabId) { selectTab(tabId); }
 
         const electricBills = {{ (electric_bills_json|default([]))|tojson }};
         const waterBills = {{ (water_bills_json|default([]))|tojson }};
@@ -172,9 +78,9 @@
 
         // 색상 팔레트
         const colors = [
-            '#667eea', '#764ba2', '#f093fb', '#4facfe',
-            '#43e97b', '#fa709a', '#fee140', '#30cfd0',
-            '#a8edea', '#fed6e3', '#ff9671', '#ffd93d'
+            '#2856a3', '#557a95', '#716887', '#6f8d78',
+            '#268074', '#aa7d46', '#687b9e', '#865d65',
+            '#54879c', '#7c8355', '#8d745f', '#626f80'
         ];
 
         // 전기 차트 데이터 준비 (층별 고지월 전기요금 추이)
@@ -404,7 +310,7 @@
         function renderElectric(){
             const el = document.getElementById('electricList');
             if(!electricBills.length){
-                el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
+                el.innerHTML = '<p class="u-color-text-muted">데이터가 없습니다.</p>';
                 return;
             }
 
@@ -413,7 +319,7 @@
       <thead>
         <tr>
           <th>정산월</th>
-          <th style="min-width:220px;">고지월 정보</th>
+          <th class="u-min-width-220px">고지월 정보</th>
           <th>층</th>
           <th class="text-right">총액</th>
           <th class="text-right">복지할인</th>
@@ -427,10 +333,10 @@
         ${electricBills.map(b => `
           <tr>
             <td><strong>${b.billing_month.slice(0,7)}</strong></td>
-            <td style="min-width:220px;">
+            <td class="u-min-width-220px">
               ${formatMonthlyDetails(b)}
             </td>
-            <td>${b.floor_name || ''}</td>
+            <td>${escapeHtml(b.floor_name)}</td>
             <td class="text-right">${Number(b.total_amount).toLocaleString()}원</td>
             <td class="text-right discount-amount">
               ${Number(b.welfare_discount||0) > 0 ? '-' + Number(b.welfare_discount).toLocaleString() + '원' : '-'}
@@ -444,8 +350,8 @@
             <td>${b.details.length}세대</td>
             <td>
               <div class="action-buttons">
-                <a href="/view/electric/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
-                <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('electric', ${b.id})">삭제</button>
+                <a href="/view/electric/${b.id}" class="btn btn-secondary u-p-5px-10px">상세</a>
+                <button class="btn btn-danger u-p-5px-10px" onclick="deleteBill('electric', ${b.id})">삭제</button>
               </div>
             </td>
           </tr>
@@ -459,7 +365,7 @@
         function renderWater(){
             const el = document.getElementById('waterList');
             if(!waterBills.length){
-                el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
+                el.innerHTML = '<p class="u-color-text-muted">데이터가 없습니다.</p>';
                 return;
             }
             el.innerHTML = `
@@ -484,8 +390,8 @@
             <td>${b.unit_count || 0}세대</td>
             <td>
               <div class="action-buttons">
-                <a href="/view/water/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
-                <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('water', ${b.id})">삭제</button>
+                <a href="/view/water/${b.id}" class="btn btn-secondary u-p-5px-10px">상세</a>
+                <button class="btn btn-danger u-p-5px-10px" onclick="deleteBill('water', ${b.id})">삭제</button>
               </div>
             </td>
           </tr>
@@ -499,7 +405,7 @@
         function renderCommon(){
             const el = document.getElementById('commonList');
             if(!commonBills.length){
-                el.innerHTML = '<p style="color:#94a3b8;">데이터가 없습니다.</p>';
+                el.innerHTML = '<p class="u-color-text-muted">데이터가 없습니다.</p>';
                 return;
             }
             el.innerHTML = `
@@ -518,14 +424,14 @@
         ${commonBills.map(b=>`
           <tr>
             <td>${b.billing_month.slice(0,7)}</td>
-            <td>${b.description||''}</td>
+            <td>${escapeHtml(b.description)}</td>
             <td class="text-right">${Number(b.total_amount).toLocaleString()}원</td>
             <td>${b.distribution_method === 'BY_RESIDENTS' ? '인원수 비례' : '세대 균등'}</td>
             <td>${b.unit_count || 0}세대</td>
             <td>
               <div class="action-buttons">
-                <a href="/view/common/${b.id}" class="btn btn-secondary" style="padding:5px 10px;">상세</a>
-                <button class="btn btn-danger" style="padding:5px 10px;" onclick="deleteBill('common', ${b.id})">삭제</button>
+                <a href="/view/common/${b.id}" class="btn btn-secondary u-p-5px-10px">상세</a>
+                <button class="btn btn-danger u-p-5px-10px" onclick="deleteBill('common', ${b.id})">삭제</button>
               </div>
             </td>
           </tr>
@@ -538,7 +444,7 @@
         // 월별 정보 포맷팅
         function formatMonthlyDetails(bill) {
             if (!bill.monthly_details || !Array.isArray(bill.monthly_details) || bill.monthly_details.length === 0) {
-                return '<span style="color:#94a3b8;">-</span>';
+                return '<span class="u-color-text-muted">-</span>';
             }
 
             const months = bill.monthly_details
@@ -546,17 +452,17 @@
                 .filter(m => m !== '-');
 
             if (months.length === 0) {
-                return '<span style="color:#94a3b8;">-</span>';
+                return '<span class="u-color-text-muted">-</span>';
             }
 
             if (months.length === 1) {
-                return `<span style="color:#64748b;">단일 월</span>`;
+                return `<span class="u-color-text-muted">단일 월</span>`;
             }
 
             return `
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-      <span class="badge badge-primary" style="font-size:13px;">${months.length}개월 묶음</span>
-      <div style="font-size:12px;color:#64748b;line-height:1.5;">
+    <div class="u-display-flex u-align-items-center u-gap-8px u-flex-wrap-wrap">
+      <span class="badge badge-primary u-text-13px">${months.length}개월 묶음</span>
+      <div class="u-text-12px u-color-text-muted u-leading-1_5">
         ${months.join(', ')}
       </div>
     </div>
@@ -584,7 +490,14 @@
         renderElectric();
         renderWater();
         renderCommon();
-        updateElectricChart();
-        updateWaterChart();
+        if (typeof Chart !== 'undefined') {
+            updateElectricChart();
+            updateWaterChart();
+        } else {
+            document.querySelectorAll('.chart-container').forEach(container => {
+                container.classList.add('empty-state');
+                container.textContent = '차트를 불러오지 못했습니다. 아래 계산 내역에서 요금을 확인하세요.';
+            });
+        }
     </script>
 {% endblock %}

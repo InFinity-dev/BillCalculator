@@ -3,472 +3,15 @@
 {% block title %}정산 조합 - 공과금 정산 시스템{% endblock %}
 
 {% block extra_css %}
-    <style>
-        .step-indicator {
-            display: flex;
-            justify-content: center;
-            gap: var(--space-xl);
-            margin: var(--space-2xl) 0;
-        }
-
-        .step {
-            display: flex;
-            align-items: center;
-            gap: var(--space-md);
-            padding: var(--space-md) var(--space-xl);
-            background: var(--gray-200);
-            border-radius: 25px;
-            transition: var(--transition-base);
-        }
-
-        .step.active {
-            background: var(--primary-gradient);
-            color: white;
-        }
-
-        .step.completed {
-            background: var(--success-color);
-            color: white;
-        }
-
-        .step-number {
-            width: 30px;
-            height: 30px;
-            border-radius: var(--radius-full);
-            background: white;
-            color: var(--gray-700);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-        }
-
-        .step.active .step-number,
-        .step.completed .step-number {
-            background: rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        .unit-card {
-            background: #ffffff;
-            border: 2px solid var(--gray-200);
-            border-radius: var(--radius-lg);
-            padding: var(--space-xl);
-            margin-bottom: var(--space-lg);
-            transition: var(--transition-base);
-        }
-
-        .unit-card:hover {
-            border-color: var(--primary-color);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-        }
-
-        .unit-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: var(--space-lg);
-            padding-bottom: var(--space-md);
-            border-bottom: 2px solid var(--gray-100);
-        }
-
-        .unit-name {
-            font-size: var(--font-large);
-            font-weight: 700;
-            color: var(--gray-800);
-        }
-
-        .unit-memo-tag {
-            font-size: var(--font-small);
-            color: var(--gray-600);
-            background: var(--gray-100);
-            padding: var(--space-xs) var(--space-md);
-            border-radius: var(--radius-lg);
-            font-weight: 500;
-            margin-left: var(--space-sm);
-        }
-
-        .section-title {
-            font-weight: 600;
-            color: var(--gray-700);
-            margin-bottom: var(--space-sm);
-            font-size: var(--font-base);
-        }
-
-        .additional-charge-row {
-            display: grid;
-            grid-template-columns: minmax(100px, 120px) 1fr minmax(120px, 150px) minmax(70px, 80px);
-            gap: var(--space-sm);
-            margin-bottom: var(--space-sm);
-            align-items: center;
-        }
-
-        .unit-summary-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: var(--space-md);
-            background: var(--gray-50);
-            border-radius: var(--radius-md);
-            margin-bottom: var(--space-sm);
-            font-size: var(--font-small);
-            color: var(--gray-600);
-        }
-
-        .unit-summary-row strong {
-            color: var(--gray-700);
-        }
-
-        /* 세대 일괄 관리 테이블 스타일 */
-        /*
-        .units-table-container {
-            background: white;
-            border-radius: var(--radius-lg);
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }*/
-
-        .units-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .units-table thead {
-            /*background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);*/
-            color: white;
-        }
-
-        .units-table th {
-            padding: var(--space-md) var(--space-lg);
-            text-align: left;
-            font-weight: 600;
-            font-size: var(--font-small);
-            white-space: nowrap;
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            background: inherit;
-        }
-
-        .units-table tbody tr {
-            border-bottom: 1px solid var(--gray-200);
-            transition: var(--transition-fast);
-        }
-
-        .units-table tbody tr:hover {
-            background: var(--gray-50);
-        }
-
-        .units-table tbody tr.floor-separator {
-            background: #f8fafc;
-            border-top: 2px solid var(--gray-300);
-            border-bottom: 2px solid var(--gray-300);
-        }
-
-        .units-table tbody tr.floor-separator td {
-            padding: var(--space-sm) var(--space-lg);
-            font-weight: 700;
-            color: var(--gray-700);
-            background: linear-gradient(90deg, #f1f5f9 0%, #f8fafc 100%);
-        }
-
-        .units-table td {
-            padding: var(--space-sm) var(--space-lg);
-            vertical-align: top;
-        }
-
-        .unit-name-cell {
-            font-weight: 600;
-            color: var(--gray-800);
-            white-space: nowrap;
-        }
-
-        .unit-memo-badge {
-            display: inline-block;
-            font-size: 11px;
-            padding: 2px 8px;
-            background: var(--gray-100);
-            color: var(--gray-600);
-            border-radius: var(--radius-md);
-            margin-left: var(--space-xs);
-        }
-
-        .balance-cell {
-            min-width: 180px;
-        }
-
-        .balance-info-container {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            align-items: flex-start;
-        }
-
-        .balance-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: var(--radius-md);
-            font-size: var(--font-small);
-            font-weight: 600;
-        }
-
-        .balance-badge.unpaid {
-            background: #fef2f2;
-            color: var(--danger-dark);
-            border: 1px solid #fecaca;
-        }
-
-        .balance-badge.overpaid {
-            background: #f0fdf4;
-            color: var(--success-dark);
-            border: 1px solid #bbf7d0;
-        }
-
-        .balance-badge.none {
-            background: var(--gray-100);
-            color: var(--gray-500);
-        }
-
-        .balance-apply-btn {
-            font-size: 11px;
-            padding: 8px;
-            white-space: nowrap;
-            width: fit-content;
-        }
-
-        .charges-cell {
-            min-width: 280px;
-        }
-
-        .charge-inline-container {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .charge-inline-row {
-            display: flex;
-            padding-left: 11px;
-            gap: 6px;
-            align-items: center;
-        }
-
-        .charge-inline-row select,
-        .charge-inline-row input {
-            font-size: 12px;
-            padding: 4px 6px;
-            border: 1px solid var(--gray-300);
-            border-radius: var(--radius-sm);
-        }
-
-        .charge-inline-row select {
-            width: 70px;
-        }
-
-        .charge-inline-row .charge-desc {
-            flex: 1;
-            min-width: 100px;
-        }
-
-        .charge-inline-row .charge-amount {
-            width: 80px;
-        }
-
-        .charge-inline-row button {
-            padding: 2px 6px;
-            font-size: 11px;
-            min-width: 35px;
-        }
-
-        /* 이월 항목 스타일 */
-        .charge-inline-row.carryover-row {
-            background: linear-gradient(90deg, #fef3c7 0%, #fef9e7 100%);
-            border-left: 3px solid #fbbf24;
-            padding-left: 8px;
-            border-radius: var(--radius-sm);
-            position: relative;
-            animation: highlightFade 0.5s ease;
-        }
-
-        @keyframes highlightFade {
-            0% {
-                background: linear-gradient(90deg, #fde68a 0%, #fef3c7 100%);
-                transform: translateX(-3px);
-            }
-            100% {
-                background: linear-gradient(90deg, #fef3c7 0%, #fef9e7 100%);
-                transform: translateX(0);
-            }
-        }
-
-        /*
-        .charge-inline-row.carryover-row::before {
-            content: "자동";
-            position: absolute;
-            left: -35px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: #fbbf24;
-            color: white;
-            font-size: 10px;
-            padding: 2px 4px;
-            border-radius: 3px;
-            font-weight: 700;
-            box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
-        }*/
-
-        .charge-inline-row.carryover-row .charge-type,
-        .charge-inline-row.carryover-row .charge-desc,
-        .charge-inline-row.carryover-row .charge-amount {
-            background: rgba(255, 255, 255, 0.8);
-            border-color: #fbbf24;
-        }
-
-        .charge-inline-row.carryover-row .charge-desc {
-            font-weight: 600;
-            color: #92400e;
-        }
-
-        /* 이월 항목 hover 효과 */
-        .charge-inline-row.carryover-row:hover {
-            background: linear-gradient(90deg, #fed7aa 0%, #fef3c7 100%);
-            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.2);
-        }
-
-        /* 이월 항목 툴팁 */
-        .carryover-tooltip {
-            position: absolute;
-            right: -20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 16px;
-            height: 16px;
-            background: #fbbf24;
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            font-weight: bold;
-            cursor: help;
-            z-index: 1;
-        }
-
-        .carryover-tooltip:hover::after {
-            content: "전월 잔액이 자동으로 추가된 항목입니다";
-            position: absolute;
-            right: 25px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: #1f2937;
-            color: white;
-            padding: 6px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            white-space: nowrap;
-            font-weight: normal;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-        }
-
-        .carryover-tooltip:hover::before {
-            content: "";
-            position: absolute;
-            right: 22px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 0;
-            height: 0;
-            border-top: 5px solid transparent;
-            border-bottom: 5px solid transparent;
-            border-left: 5px solid #1f2937;
-        }
-
-        /* 컨테이너 여백 조정 (자동 레이블 공간 확보) */
-        .charge-inline-container {
-        /*    padding-left: 40px;*/
-            position: relative;
-        }
-
-        .add-charge-btn {
-            font-size: 11px;
-            padding: 3px 8px;
-            margin-top: 4px;
-            background: var(--gray-100);
-            color: var(--gray-700);
-            border: 1px dashed var(--gray-400);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: var(--transition-fast);
-        }
-
-        .add-charge-btn:hover {
-            background: var(--primary-color);
-            color: white;
-            border-style: solid;
-        }
-
-        .memo-cell textarea {
-            width: 100%;
-            min-width: 200px;
-            font-size: 12px;
-            padding: 6px;
-            border: 1px solid var(--gray-300);
-            border-radius: var(--radius-sm);
-            resize: vertical;
-        }
-
-        /* 테이블 상단 요약 정보 */
-        .table-summary {
-            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-            border: 2px solid #0ea5e9;
-            border-radius: var(--radius-lg);
-            padding: var(--space-lg);
-            margin-bottom: var(--space-xl);
-            display: flex;
-            justify-content: space-around;
-            text-align: center;
-        }
-
-        .summary-item {
-            flex: 1;
-        }
-
-        .summary-label {
-            font-size: var(--font-small);
-            color: var(--gray-600);
-            margin-bottom: var(--space-xs);
-        }
-
-        .summary-value {
-            font-size: var(--font-xl);
-            font-weight: 700;
-            color: var(--gray-800);
-        }
-
-        .summary-value.highlight {
-            color: var(--danger-dark);
-        }
-
-        /* 반응형 스크롤 */
-        @media (max-width: 1024px) {
-            .units-table-container {
-                overflow-x: auto;
-            }
-
-            .units-table {
-                min-width: 800px;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/invoice.css') }}">
 {% endblock %}
 
 {% block content %}
-    <h1><span class="emoji">📄</span> 정산 조합</h1>
+    <div class="page-heading"><div><h1>정산서</h1><p class="page-description">계산된 요금과 추가 항목을 모아 세대별 청구서를 작성하세요.</p></div></div>
 
     <div class="tabs">
-        <button class="tab active" onclick="showTab('create-tab')">➕ 새 정산 생성</button>
-        <button class="tab" onclick="showTab('history-tab')">📋 정산 내역</button>
+        <button class="tab active" onclick="showTab('create-tab')"> 새 정산 생성</button>
+        <button class="tab" onclick="showTab('history-tab')"> 정산 내역</button>
     </div>
     <div class="tabs-container">
         <!-- 새 정산 생성 탭 -->
@@ -487,12 +30,12 @@
                     <span>최종 확인</span>
                 </div>
             </div>
-            <div class="content-card" style="margin-bottom:20px;">
+            <div class="content-card u-mb-20px">
                 <!-- Step 1: 항목 선택 -->
                 <div id="step1" class="step-content">
-                    <div style="margin-bottom: 20px;">
-                        <h2 style="margin: 0px;">Step 1. 청구 항목 선택</h2>
-                        <small style="color:#64748b;">
+                    <div class="u-mb-20px">
+                        <h2 class="u-m-0px">1. 청구 항목 선택</h2>
+                        <small class="u-color-text-muted">
                             이번달 정산서 발급에 반영할 항목별 정산월을 선택합니다.
                         </small>
                     </div>
@@ -505,14 +48,14 @@
                     <div class="form-group">
                         <label>추가 메모 (선택)</label>
                         <textarea id="invoiceMemo" rows="3" placeholder="고정 메모 외에 추가로 안내할 내용이 있으면 입력하세요"></textarea>
-                        <small style="color:#64748b;">
-                            💡 설정에서 등록한 고정 메모가 자동으로 포함됩니다. 여기에 입력한 내용은 고정 메모 뒤에 추가됩니다.
+                        <small class="u-color-text-muted">
+                             설정에서 등록한 고정 메모가 자동으로 포함됩니다. 여기에 입력한 내용은 고정 메모 뒤에 추가됩니다.
                         </small>
                     </div>
 
                     <!-- 전기요금 선택 -->
-                    <div style="margin: 30px 0;">
-                        <h3>⚡ 전기요금 선택</h3>
+                    <div class="u-m-30px-0">
+                        <h3> 전기요금 선택</h3>
                         {% if electric_bills %}
                             <table>
                                 <thead>
@@ -538,13 +81,13 @@
                                                    data-desc="{{ bill.billing_month.strftime('%Y년 %m월') }} {{ bill.floor_ref.name }} 전기요금">
                                         </td>
                                         <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
-                                        <td style="min-width:200px;">
+                                        <td class="u-min-width-200px">
                                             {% if bill.monthly_details %}
                                                 {% set months = bill.monthly_details | map(attribute='month') | select | list %}
                                                 {% if months|length > 1 %}
-                                                    <div style="display:flex;align-items:center;gap:8px;">
+                                                    <div class="u-display-flex u-align-items-center u-gap-8px">
                                                         <span class="badge badge-primary">{{ months|length }}개월 묶음</span>
-                                                        <span style="font-size:12px;color:#64748b;">
+                                                        <span class="u-text-12px u-color-text-muted">
                                                     {% for detail in bill.monthly_details %}
                                                         {% if detail.month %}
                                                             {{ detail.month[:7] }}
@@ -557,32 +100,32 @@
                                                     {# 단일 고지월인 경우 명확한 월 표시 #}
                                                     {% set first_month = months[0] if months|length > 0 else '' %}
                                                     {% if first_month %}
-                                                        <span style="font-size:13px;color:#64748b;">{{ first_month[:7] }}</span>
+                                                        <span class="u-text-13px u-color-text-muted">{{ first_month[:7] }}</span>
                                                     {% else %}
-                                                        <span style="font-size:13px;color:#64748b;">{{ bill.billing_month.strftime('%Y-%m') }}</span>
+                                                        <span class="u-text-13px u-color-text-muted">{{ bill.billing_month.strftime('%Y-%m') }}</span>
                                                     {% endif %}
                                                 {% endif %}
                                             {% else %}
-                                                <span style="font-size:13px;color:#64748b;">{{ bill.billing_month.strftime('%Y-%m') }}</span>
+                                                <span class="u-text-13px u-color-text-muted">{{ bill.billing_month.strftime('%Y-%m') }}</span>
                                             {% endif %}
                                         </td>
                                         <td>{{ bill.floor_ref.name }}</td>
                                         <td class="text-right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
-                                        <td class="text-right" style="color:#059669;">
+                                        <td class="text-right u-color-success-dark">
                                             {% if bill.welfare_discount > 0 %}
                                                 -{{ "{:,.0f}".format(bill.welfare_discount) }}원
                                             {% else %}
                                                 -
                                             {% endif %}
                                         </td>
-                                        <td class="text-right" style="color:#059669;">
+                                        <td class="text-right u-color-success-dark">
                                             {% if bill.voucher_discount > 0 %}
                                                 -{{ "{:,.0f}".format(bill.voucher_discount) }}원
                                             {% else %}
                                                 -
                                             {% endif %}
                                         </td>
-                                        <td class="text-right" style="color:#dc2626;">
+                                        <td class="text-right u-color-danger-dark">
                                             {% if bill.tv_fee_total > 0 %}
                                                 +{{ "{:,.0f}".format(bill.tv_fee_total) }}원
                                             {% else %}
@@ -595,13 +138,13 @@
                                 </tbody>
                             </table>
                         {% else %}
-                            <p style="color: #94a3b8;">선택 가능한 전기요금이 없습니다.</p>
+                            <p class="u-color-text-muted">선택 가능한 전기요금이 없습니다.</p>
                         {% endif %}
                     </div>
 
                     <!-- 수도요금 선택 -->
-                    <div style="margin: 30px 0;">
-                        <h3>💧 수도요금 선택</h3>
+                    <div class="u-m-30px-0">
+                        <h3> 수도요금 선택</h3>
                         {% if water_bills %}
                             <table>
                                 <thead>
@@ -624,7 +167,7 @@
                                         </td>
                                         <td>{{ bill.billing_month.strftime('%Y년 %m월') }}</td>
                                         <td class="text-right">{{ "{:,.0f}".format(bill.total_amount) }}원</td>
-                                        <td class="text-right" style="color:#059669;">
+                                        <td class="text-right u-color-success-dark">
                                             {% if bill.welfare_discount_total > 0 %}
                                                 -{{ "{:,.0f}".format(bill.welfare_discount_total) }}원
                                             {% else %}
@@ -637,13 +180,13 @@
                                 </tbody>
                             </table>
                         {% else %}
-                            <p style="color: #94a3b8;">선택 가능한 수도요금이 없습니다.</p>
+                            <p class="u-color-text-muted">선택 가능한 수도요금이 없습니다.</p>
                         {% endif %}
                     </div>
 
                     <!-- 공동 공과금 선택 -->
-                    <div style="margin: 30px 0;">
-                        <h3>🏘️ 공동 공과금 선택</h3>
+                    <div class="u-m-30px-0">
+                        <h3> 공동 공과금 선택</h3>
                         {% if common_bills %}
                             <table>
                                 <thead>
@@ -681,25 +224,25 @@
                                 </tbody>
                             </table>
                         {% else %}
-                            <p style="color: #94a3b8;">선택 가능한 공동 공과금이 없습니다.</p>
+                            <p class="u-color-text-muted">선택 가능한 공동 공과금이 없습니다.</p>
                         {% endif %}
                     </div>
 
-                    <div style="margin-top: 30px;">
+                    <div class="u-mt-30px">
                         <button class="btn btn-primary" onclick="goToStep2()">다음 단계: 세대별 설정</button>
                     </div>
                 </div>
 
                 <!-- Step 2: 세대별 기타금액 및 메모 -->
-                <div id="step2" class="step-content" style="display:none;">
-                    <h2>Step 2. 세대별 기타금액 및 메모</h2>
-                    <p style="color:#64748b;margin-bottom:20px;">
-                        💡 특정 세대에만 부과되는 기타 항목(미납금, 수리비 등) 또는 환급액과 세대별 특별 안내사항을 입력하세요.
+                <div id="step2" class="step-content" hidden>
+                    <h2>2. 세대별 기타금액 및 메모</h2>
+                    <p class="u-color-text-muted u-mb-20px">
+                         특정 세대에만 부과되는 기타 항목(미납금, 수리비 등) 또는 환급액과 세대별 특별 안내사항을 입력하세요.
                     </p>
 
                     <div id="unitsAdditionalContainer"></div>
 
-                    <div style="margin-top: 30px;display:flex;gap:10px;">
+                    <div class="u-mt-30px u-display-flex u-gap-10px">
                         <button class="btn btn-secondary" onclick="goToStep1()">이전: 항목 선택</button>
                         <button class="btn btn-primary" onclick="goToStep3()">다음: 최종 확인</button>
                         <button class="btn" onclick="skipToFinal()">기타금액 없이 바로 생성</button>
@@ -707,13 +250,13 @@
                 </div>
 
                 <!-- Step 3: 최종 확인 -->
-                <div id="step3" class="step-content" style="display:none;">
-                    <h2>Step 3. 최종 확인</h2>
+                <div id="step3" class="step-content" hidden>
+                    <h2>3. 최종 확인</h2>
                     <div id="finalConfirmation"></div>
 
-                    <div style="margin-top: 30px;display:flex;gap:10px;">
+                    <div class="u-mt-30px u-display-flex u-gap-10px">
                         <button class="btn btn-secondary" onclick="goToStep2()">이전: 세대별 설정</button>
-                        <button class="btn btn-primary" onclick="createInvoiceFinal()">✅ 정산서 생성</button>
+                        <button class="btn btn-primary" onclick="createInvoiceFinal()"> 정산서 생성</button>
                     </div>
                 </div>
             </div>
@@ -744,10 +287,10 @@
                             <td>{{ combo.items|length }}개</td>
                             <td>
                                 <a href="{{ url_for('view_invoice', combination_id=combo.id) }}"
-                                   class="btn btn-secondary" style="padding: 5px 10px;">조회</a>
+                                   class="btn btn-secondary u-p-5px-10px">조회</a>
                                 <a href="{{ url_for('print_invoice', combination_id=combo.id) }}" target="_blank"
-                                   class="btn btn-primary" style="padding: 5px 10px;">인쇄</a>
-                                <button class="btn btn-danger" style="padding: 5px 10px;"
+                                   class="btn btn-primary u-p-5px-10px">인쇄</a>
+                                <button class="btn btn-danger u-p-5px-10px"
                                         onclick="deleteInvoice({{ combo.id }})">삭제
                                 </button>
                             </td>
@@ -756,7 +299,7 @@
                     </tbody>
                 </table>
             {% else %}
-                <p style="color: #94a3b8; text-align: center; padding: 40px;">생성된 정산서가 없습니다.</p>
+                <p class="u-color-text-muted u-align-center u-p-40px">생성된 정산서가 없습니다.</p>
             {% endif %}
         </div>
     </div>
@@ -771,17 +314,7 @@
         let unitAdditionalData = {};
 
         // 탭 전환
-        function showTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.style.display = 'none';
-            });
-            document.querySelectorAll('.tab').forEach(btn => {
-                btn.classList.remove('active');
-            });
-
-            document.getElementById(tabId).style.display = 'block';
-            event.target.classList.add('active');
-        }
+        function showTab(tabId) { selectTab(tabId); }
 
         // Step 관리
         function updateStepIndicators(currentStep) {
@@ -797,7 +330,8 @@
                     indicator.className = 'step';
                 }
 
-                content.style.display = (i === currentStep) ? 'block' : 'none';
+                content.hidden = i !== currentStep;
+                indicator.setAttribute('aria-current', i === currentStep ? 'step' : 'false');
             }
         }
 
@@ -911,13 +445,13 @@
                 </div>
 
                 <div class="units-table-container">
-                    <table class="units-table">
+                    <table class="units-table mobile-cards">
                         <thead>
                             <tr>
-                                <th style="width: 120px;">층/호수</th>
-                                <th style="width: 200px;">미납금 현황</th>
-                                <th style="width: 320px;">기타 항목</th>
-                                <th style="width: 250px;">세대별 메모</th>
+                                <th class="u-width-120px">층/호수</th>
+                                <th class="u-width-200px">미납금 현황</th>
+                                <th class="u-width-320px">기타 항목</th>
+                                <th class="u-width-250px">세대별 메모</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -934,7 +468,7 @@
                 // 층 구분선
                 html += `
                     <tr class="floor-separator">
-                        <td colspan="5">${group.floor_name}</td>
+                        <td colspan="5">${escapeHtml(group.floor_name)}</td>
                     </tr>
                 `;
 
@@ -973,19 +507,19 @@
                     html += `
                         <tr>
                             <td class="unit-name-cell">
-                                ${unit.unit_name}
-                                ${unit.memo ? `<span class="unit-memo-badge">${unit.memo}</span>` : ''}
+                                ${escapeHtml(unit.unit_name)}
+                                ${unit.memo ? `<span class="unit-memo-badge">${escapeHtml(unit.memo)}</span>` : ''}
                             </td>
                             <td class="balance-cell">
                                 ${balanceContent}
                             </td>
                             <td class="charges-cell">
                                 <div id="charges-${unit.id}" class="charge-inline-container"></div>
-                                <div class="charge-inline-container" style="padding-left: 11px;">
+                                <div class="charge-inline-container u-pl-11px">
                                     <button type="button" class="add-charge-btn" onclick="addChargeRow(${unit.id})">
                                         + 항목 추가
                                     </button>
-                                <div>
+                                </div>
                             </td>
                             <td class="memo-cell">
                                 <textarea id="memo-${unit.id}" rows="2"
@@ -1017,12 +551,12 @@
             row.setAttribute('data-is-carryover', 'false');  // 일반 항목 명시
 
             row.innerHTML = `
-                <select class="charge-type">
+                <select class="charge-type" aria-label="추가 항목 부과 또는 환급">
                     <option value="charge">부과</option>
                     <option value="refund">환급</option>
                 </select>
-                <input type="text" placeholder="항목명" class="charge-desc">
-                <input type="number" placeholder="금액" class="charge-amount" min="0">
+                <input type="text" placeholder="항목명" class="charge-desc" aria-label="추가 항목명">
+                <input type="number" placeholder="금액" class="charge-amount" min="0" aria-label="추가 금액 (원)">
                 <button type="button" class="btn btn-danger" onclick="removeChargeRow('${rowId}')">삭제</button>
             `;
 
@@ -1061,7 +595,7 @@
                             // 부모 컨테이너 투명도 원복
                             const balanceContainer = btn.parentElement;
                             if (balanceContainer && balanceContainer.classList.contains('balance-info-container')) {
-                                balanceContainer.style.opacity = '1';
+                                balanceContainer.classList.remove('is-applied');
                                 balanceContainer.removeAttribute('data-applied');
                             }
                         }
@@ -1095,14 +629,14 @@
 
             // 툴팁 아이콘 추가
             row.innerHTML = `
-                <select class="charge-type" data-carryover-type="${type}">
+                <select class="charge-type" data-carryover-type="${type}" aria-label="이월 항목 부과 또는 환급">
                     <option value="charge" ${type === 'charge' ? 'selected' : ''}>부과</option>
                     <option value="refund" ${type === 'refund' ? 'selected' : ''}>환급</option>
                 </select>
-                <input type="text" placeholder="항목명" class="charge-desc" value="${description}" data-carryover-desc="true">
-                <input type="number" placeholder="금액" class="charge-amount" value="${amount}" min="0" data-carryover-amount="${amount}">
+                <input type="text" placeholder="항목명" class="charge-desc" value="${description}" data-carryover-desc="true" aria-label="이월 항목명">
+                <input type="number" placeholder="금액" class="charge-amount" value="${amount}" min="0" data-carryover-amount="${amount}" aria-label="이월 금액 (원)">
                 <button type="button" class="btn btn-danger" onclick="removeChargeRow('${rowId}')">삭제</button>
-                <span class="carryover-tooltip" title="전월 잔액 자동 추가">!</span>
+                <span class="carryover-tooltip">전월 잔액 자동 반영</span>
             `;
 
             container.appendChild(row);
@@ -1121,7 +655,7 @@
             // 부모 컨테이너에 적용 완료 표시
             const balanceContainer = button.parentElement;
             if (balanceContainer && balanceContainer.classList.contains('balance-info-container')) {
-                balanceContainer.style.opacity = '0.7';
+                balanceContainer.classList.add('is-applied');
                 balanceContainer.setAttribute('data-applied', 'true');
             }
         }
@@ -1172,15 +706,15 @@
             const container = document.getElementById('finalConfirmation');
 
             let html = '<div class="confirm-section">';
-            html += '<h3>📋 선택한 항목</h3>';
+            html += '<h3> 선택한 항목</h3>';
 
             selectedItems.forEach(item => {
                 html += `
             <div class="confirm-item">
                 <span class="confirm-item-icon">
-                    ${item.type === 'ELECTRIC' ? '⚡' : item.type === 'WATER' ? '💧' : '🏘️'}
+                    ${item.type === 'ELECTRIC' ? '' : item.type === 'WATER' ? '' : ''}
                 </span>
-                <span class="confirm-item-text">${item.description}</span>
+                <span class="confirm-item-text">${escapeHtml(item.description)}</span>
             </div>
         `;
             });
@@ -1196,18 +730,18 @@
 
             if (unitsToShow.length > 0) {
                 html += '<div class="confirm-section">';
-                html += '<h3>💰 기타금액 및 메모 설정</h3>';
+                html += '<h3> 기타금액 및 메모 설정</h3>';
 
                 unitsToShow.forEach(unit => {
                     const data = unitAdditionalData[unit.id] || {charges: [], memo: ''};
 
                     html += '<div class="unit-summary-card">';
                     html += '<div class="unit-summary-header">';
-                    html += `<span class="unit-summary-name">${unit.unit_name}</span>`;
+                    html += `<span class="unit-summary-name">${escapeHtml(unit.unit_name)}</span>`;
 
                     // 세대 설정 비고 표시 (unit.memo)
                     if (unit.memo) {
-                        html += `<span class="unit-summary-memo">${unit.memo}</span>`;
+                        html += `<span class="unit-summary-memo">${escapeHtml(unit.memo)}</span>`;
                     }
 
                     html += '</div>';
@@ -1216,23 +750,20 @@
 
                     // 기타 항목
                     if (data.charges && data.charges.length > 0) {
-                        html += '<div style="margin-top:8px;">';
-                        html += '<div style="font-size:12px;color:#64748b;margin-bottom:4px;">기타 항목:</div>';
+                        html += '<div class="u-mt-8px">';
+                        html += '<div class="u-text-12px u-color-text-muted u-mb-4px">기타 항목:</div>';
                         data.charges.forEach(c => {
                             const isRefund = c.type === 'refund' || c.amount < 0;
                             const isCarryover = c.is_carryover || c.description.includes('[이월]');
                             const displayAmount = Math.abs(c.amount).toLocaleString();
-                            const color = isRefund ? '#059669' : '#dc2626';
                             const prefix = isRefund ? '환급 -' : '부과 +';
-                            const bgColor = isCarryover ? '#fef3c7' : '#f8fafc';
-                            const borderStyle = isCarryover ? 'border-left:3px solid #fbbf24;' : '';
 
                             html += `
-                        <div style="padding:6px 12px;background:${bgColor};border-radius:6px;margin-bottom:4px;${borderStyle}">
-                            ${isCarryover ? '<span style="background:#fbbf24;color:white;font-size:10px;padding:1px 4px;border-radius:3px;margin-right:6px;">자동</span>' : ''}
-                            <span style="color:#475569;">${c.description}</span>
-                            <span style="color:${color};font-weight:600;margin-left:8px;">${prefix}${displayAmount}원</span>
-                            ${isCarryover ? '<span style="font-size:10px;color:#92400e;margin-left:4px;">(전월 잔액)</span>' : ''}
+                        <div class="charge-summary ${isCarryover ? 'is-carryover' : ''}">
+                            ${isCarryover ? '<span class="u-bg-warning-light u-color-text-primary u-text-10px u-p-1px-4px u-rounded-6px u-mr-6px">자동</span>' : ''}
+                            <span class="u-color-text-secondary">${escapeHtml(c.description)}</span>
+                            <span class="charge-summary-amount ${isRefund ? 'text-success' : 'text-danger'}">${prefix}${displayAmount}원</span>
+                            ${isCarryover ? '<span class="u-text-10px u-color-warning-dark u-ml-4px">(전월 잔액)</span>' : ''}
                         </div>
                     `;
                         });
@@ -1241,15 +772,15 @@
 
                     // 세대 메모
                     if (data.memo) {
-                        html += '<div style="grid-column: 1 / -1;">';
-                        html += '<div style="font-size:12px;color:#64748b;margin-bottom:4px;">세대 메모:</div>';
-                        html += `<div style="padding:8px 12px;background:#fff3cd;border-radius:6px;color:#78350f;font-size:13px;white-space:pre-wrap;">${data.memo}</div>`;
+                        html += '<div class="u-grid-column-1--1">';
+                        html += '<div class="u-text-12px u-color-text-muted u-mb-4px">세대 메모:</div>';
+                        html += `<div class="u-p-8px-12px u-bg-warning-light u-rounded-6px u-color-warning-dark u-text-13px u-white-space-pre-wrap">${escapeHtml(data.memo)}</div>`;
                         html += '</div>';
                     }
 
                     // 기타 항목이나 세대 메모가 없지만 설정 비고만 있는 경우
                     if ((!data.charges || data.charges.length === 0) && !data.memo && unit.memo) {
-                        html += '<div style="grid-column: 1 / -1;color:#64748b;font-size:13px;font-style:italic;">';
+                        html += '<div class="u-grid-column-1--1 u-color-text-muted u-text-13px u-font-style-italic">';
                         html += '(설정에 비고만 등록된 세대입니다)';
                         html += '</div>';
                     }
@@ -1261,7 +792,7 @@
                 html += '</div>';
             } else {
                 html += '<div class="confirm-section">';
-                html += '<p style="color:#64748b;margin:0;">기타금액 및 세대별 메모가 없습니다.</p>';
+                html += '<p class="u-color-text-muted u-m-0">기타금액 및 세대별 메모가 없습니다.</p>';
                 html += '</div>';
             }
 

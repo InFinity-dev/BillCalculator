@@ -170,6 +170,81 @@ def test_import_updates_existing_unit(app, client, csrf, floor, units):
     assert unit.has_tv is False
 
 
+def test_partial_import_preserves_unspecified_unit_and_floor_fields(
+    app, client, csrf, floor, units
+):
+    floor.electric_contract_number = "C-1"
+    unit = units[0]
+    unit.electric_voucher = True
+    unit.has_tv = False
+    unit.is_vacant = True
+    unit.memo = "기존 메모"
+    db.session.commit()
+
+    response = client.post(
+        "/settings/import",
+        json={
+            "_csrf_token": csrf,
+            "floors": [{
+                "floor_number": floor.floor_number,
+                "units": [{"unit_name": unit.unit_name, "residents_count": 9}],
+            }],
+        },
+    )
+    assert response.get_json()["success"] is True
+    db.session.expire_all()
+    assert unit.residents_count == 9
+    assert unit.electric_welfare is True
+    assert unit.electric_voucher is True
+    assert unit.has_tv is False
+    assert unit.is_vacant is True
+    assert unit.memo == "기존 메모"
+    assert floor.electric_contract_number == "C-1"
+
+
+def test_import_rejects_string_boolean(app, client, csrf, floor, units):
+    response = client.post(
+        "/settings/import",
+        json={
+            "_csrf_token": csrf,
+            "floors": [{
+                "floor_number": floor.floor_number,
+                "units": [{"unit_name": units[0].unit_name, "is_vacant": "false"}],
+            }],
+        },
+    )
+    assert response.get_json()["success"] is False
+    assert units[0].is_vacant is False
+
+
+def test_fractional_resident_count_is_rejected(app, client, csrf, floor, units):
+    original_count = units[0].residents_count
+    response = client.post(
+        "/units/{}/update".format(units[0].id),
+        data={
+            "_csrf_token": csrf,
+            "unit_name": units[0].unit_name,
+            "residents_count": "2.5",
+        },
+    )
+    assert response.get_json()["success"] is False
+    db.session.expire_all()
+    assert units[0].residents_count == original_count
+
+    response = client.post(
+        "/settings/import",
+        json={
+            "_csrf_token": csrf,
+            "floors": [{
+                "floor_number": floor.floor_number,
+                "units": [{"unit_name": units[0].unit_name, "residents_count": 2.5}],
+            }],
+        },
+    )
+    assert response.get_json()["success"] is False
+    assert units[0].residents_count == original_count
+
+
 def test_import_adds_new_floor_and_unit(app, client, csrf, floor, units):
     client.post(
         "/settings/import",

@@ -16,6 +16,7 @@ from sqlalchemy import text
 
 from extensions import db
 from models import (
+    CommonBill,
     CommonBillDetail,
     ElectricBill,
     ElectricBillDetail,
@@ -222,6 +223,79 @@ def check_final_invoice_totals():
     )
 
 
+def check_duplicate_invoice_sources():
+    """같은 고지 항목이 여러 번 청구된 과거 기록을 찾는다."""
+    bad = []
+    for item_type, column in (
+        ("ELECTRIC", "electric_bill_id"),
+        ("WATER", "water_bill_id"),
+        ("COMMON", "common_bill_id"),
+    ):
+        rows = db.session.execute(text(
+            "SELECT {0}, COUNT(*) FROM invoice_combination_items "
+            "WHERE {0} IS NOT NULL GROUP BY {0} HAVING COUNT(*) > 1".format(column)
+        )).fetchall()
+        bad.extend(
+            {"type": item_type, "bill_id": bill_id, "use_count": count}
+            for bill_id, count in rows
+        )
+    return Check(
+        "invoice_source_used_once",
+        not bad,
+        "중복 청구된 고지 항목 {}건".format(len(bad)) if bad else "중복 없음",
+        bad,
+    )
+
+
+def check_payment_invoice_pairs():
+    """입금이 실제 해당 세대의 정산서에 연결되어 있는지 확인한다."""
+    rows = db.session.execute(text(
+        "SELECT p.id, p.combination_id, p.unit_id FROM payments p "
+        "LEFT JOIN final_invoices f ON f.combination_id = p.combination_id "
+        "AND f.unit_id = p.unit_id WHERE f.id IS NULL"
+    )).fetchall()
+    bad = [
+        {"payment_id": payment_id, "combination_id": combination_id, "unit_id": unit_id}
+        for payment_id, combination_id, unit_id in rows
+    ]
+    return Check(
+        "payments_have_matching_invoice",
+        not bad,
+        "청구서와 연결되지 않은 입금 {}건".format(len(bad)) if bad else "전부 연결됨",
+        bad,
+    )
+
+
+def check_negative_electric_usage():
+    bad = [
+        {"detail_id": row.id, "electric_bill_id": row.electric_bill_id,
+         "unit_id": row.unit_id, "usage_amount": str(row.usage_amount)}
+        for row in ElectricBillDetail.query.all() if row.usage_amount < 0
+    ]
+    return Check(
+        "electric_usage_non_negative",
+        not bad,
+        "음수 전기 사용량 {}건".format(len(bad)) if bad else "전부 0 이상",
+        bad,
+    )
+
+
+def check_common_bill_allocations():
+    """이전 화면 오류로 생성된 0원 고지와 배분 누락을 찾는다."""
+    bad = [
+        {"common_bill_id": bill.id, "total_amount": bill.total_amount,
+         "detail_count": len(bill.details)}
+        for bill in CommonBill.query.all()
+        if bill.total_amount <= 0 or not bill.details
+    ]
+    return Check(
+        "common_bills_allocated",
+        not bad,
+        "0원 또는 배분 누락 공동 공과금 {}건".format(len(bad)) if bad else "전부 배분됨",
+        bad,
+    )
+
+
 def check_electric_month_count():
     """billing_months_count 가 실제 고지월 행 수와 일치하는지."""
     bad = []
@@ -385,6 +459,10 @@ ALL_CHECKS = (
     check_snapshots,
     check_charged_amount_rounding,
     check_final_invoice_totals,
+    check_duplicate_invoice_sources,
+    check_payment_invoice_pairs,
+    check_negative_electric_usage,
+    check_common_bill_allocations,
     check_electric_month_count,
     check_money_columns_are_integers,
     check_decimal_columns_parse,

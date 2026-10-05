@@ -1,0 +1,26 @@
+.payments-layout { display: grid; grid-template-columns: minmax(260px, .75fr) minmax(0, 1.75fr); gap: 20px; align-items: start; }
+.payments-layout > .content-card { margin: 0; }
+.unit-row { cursor: pointer; }
+.unit-row:hover, .unit-row:focus { background: var(--surface-subtle); outline-offset: -3px; }
+.unit-row.selected { background: var(--primary-light); }
+.unit-row.selected td:first-child { box-shadow: inset 3px 0 var(--primary-color); }
+.unit-row td { padding: 14px 12px; }
+.unit-row .balance-cell { min-width: 130px; font-size: 12px; }
+.history-month { padding: 20px 0; border-bottom: 1px solid var(--border); }
+.history-month:first-child { padding-top: 0; } .history-month:last-child { border-bottom: 0; padding-bottom: 0; }
+.balance-positive, .balance-negative { font-weight: 650; } .balance-zero { color: var(--text-muted); }
+.payment-record { background: var(--surface-subtle); padding: 14px 16px; border: 1px solid var(--border); border-radius: 6px; margin-top: 10px; }
+.summary-card { background: var(--surface-subtle); padding: 18px; border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); }
+.summary-card > div { gap: 16px; } .summary-card [id^=summary] { font-size: 22px; font-weight: 650; }
+#historySection { scroll-margin-top: 78px; } #emptyState { padding: 64px 16px; }
+#validateModal .modal-content { padding: 0; } #validateResults .table-scroll { border-radius: 0; }
+@media (max-width: 1100px) { .payments-layout { grid-template-columns: minmax(240px, .9fr) minmax(0, 1.4fr); } }
+@media (max-width: 768px) {
+    .payments-layout { grid-template-columns: 1fr; }
+    .payments-layout > .content-card:first-child .table-scroll { max-height: 310px; overflow-y: auto; }
+    #unitsTable { min-width: 0; } #unitsTable td:first-child { position: static; background: transparent; }
+    #unitsTable th { position: sticky; top: 0; z-index: 3; }
+    .summary-card > div { grid-template-columns: 1fr; gap: 12px; }
+    .summary-card > div > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .summary-card [id^=summary] { font-size: 20px; } .payment-record { padding: 14px 12px; }
+}

@@ -1,0 +1,17 @@
+.meter-panel { margin-bottom: 20px; } .meter-panel .section-heading h4 { margin-bottom: 6px; }
+.meter-table th:nth-child(n+3), .meter-table td:nth-child(n+3) { text-align: right; }
+.meter-table input { max-width: 160px; text-align: right; } .usage-display { font-weight: 600; }
+.monthly-bills-table input { text-align: right; min-width: 90px; } .monthly-bills-table input[type=month] { min-width: 140px; }
+.unit-profile, .water-unit-card { padding: 14px; background: white; border: 1px solid var(--border); border-radius: 6px; min-height: 100px; display: flex; flex-direction: column; }
+.unit-profile.is-vacant { background: var(--surface-subtle); }
+.water-unit-card { cursor: pointer; border-color: #8da8cc; } .water-unit-card.is-excluded { background: var(--surface-subtle); border-color: var(--border); }
+.water-unit-card:has(input:focus-visible) { outline: 3px solid #7ea4db; outline-offset: 2px; }
+.unit-profile input, .water-unit-card input { accent-color: var(--primary-color); }
+.unit-info-details summary { padding: 4px 0; }
+.meter-panel .section-heading > div { flex: 1; min-width: 220px; }
+.meter-panel .section-heading .btn { flex-shrink: 0; }
+@media (max-width: 768px) {
+    .meter-panel .section-heading { flex-direction: column; }
+    .meter-table input { max-width: none; } .meter-table td { text-align: left; }
+    #unitsInfoCardContainer [class*="u-cols-repeat-auto-fit"], #waterUnitsSelection [class*="u-cols-repeat-auto-fit"], #unitsInfoCardContainer [class*="u-cols-repeat-auto-fill"], #waterUnitsSelection [class*="u-cols-repeat-auto-fill"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

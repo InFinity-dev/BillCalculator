@@ -1,0 +1,7 @@
+.chart-container { position: relative; height: 300px; margin-top: 20px; }
+.chart-info { background: var(--surface-subtle); border: 1px solid var(--border); padding: 12px 14px; border-radius: 6px; margin-bottom: 16px; }
+.chart-info p { margin: 0; color: var(--text-muted); font-size: 12px; }
+.discount-amount { color: var(--success-dark); } .tv-fee-amount { color: var(--text-secondary); }
+.action-buttons { justify-content: flex-end; flex-wrap: nowrap; }
+.month-list-wrapper { display: inline-flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+@media (max-width: 768px) { .chart-container { height: 240px; } }

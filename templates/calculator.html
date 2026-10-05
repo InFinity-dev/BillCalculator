@@ -1,29 +1,30 @@
 {% extends "base.html" %}
 {% block title %}계산 - 공과금 정산 시스템{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{{ url_for('static', filename='css/pages/calculator.css') }}">{% endblock %}
 {% block content %}
-    <h1><span class="emoji">🧮</span> 계산</h1>
+    <div class="page-heading"><div><h1>요금 계산</h1><p class="page-description">고지 내역과 검침값을 입력해 세대별 부담액을 계산하세요.</p></div></div>
 
     <!-- 탭 버튼 -->
     <div class="tabs">
-        <button class="tab active" onclick="showCalcTab('electric-tab', event)">⚡ 전기요금</button>
-        <button class="tab" onclick="showCalcTab('water-tab', event)">💧 수도요금</button>
-        <button class="tab" onclick="showCalcTab('common-tab', event)">🏘️ 공동 공과금</button>
+        <button class="tab active" onclick="showCalcTab('electric-tab', event)"> 전기요금</button>
+        <button class="tab" onclick="showCalcTab('water-tab', event)"> 수도요금</button>
+        <button class="tab" onclick="showCalcTab('common-tab', event)"> 공동 공과금</button>
     </div>
     <div class="tabs-container">
         <!-- 전기요금 탭 -->
         <div id="electric-tab" class="tab-content">
             <!-- 헤더 섹션 -->
-            <div class="content-card" style="margin-bottom:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                    <h2 style="margin:0;color:#1e293b;font-size:22px;font-weight:700;">⚡ 전기요금 계산</h2>
+            <div class="content-card u-mb-20px">
+                <div class="u-display-flex u-justify-content-space-between u-align-items-center u-mb-16px">
+                    <h2 class="u-m-0 u-color-text-primary u-text-22px u-weight-700"> 전기요금 계산</h2>
                     {% if electric_bill_url %}
-                        <button type="button" class="btn btn-secondary"
-                                onclick="window.open('{{ electric_bill_url }}', '_blank')" style="padding:10px 20px;font-size:14px;">
-                            🔍 요금 조회
+                        <button type="button" class="btn btn-secondary u-p-10px-20px u-text-14px"
+                                onclick="window.open('{{ electric_bill_url }}', '_blank')">
+                             요금 조회
                         </button>
                     {% endif %}
                 </div>
-                <p style="margin:0;color:#64748b;font-size:14px;line-height:1.6;">
+                <p class="u-m-0 u-color-text-muted u-text-14px u-leading-1_6">
                     층단위 전기요금을 각 세대의 계량기 사용량에 따라 비례 분배합니다. N개월 묶음 정산이 가능합니다.
                 </p>
             </div>
@@ -33,8 +34,8 @@
                 <input type="hidden" name="month_count" id="month_count" value="0">
 
                 <!-- 기본 정보 입력 -->
-                <div class="content-card" style="margin-bottom:20px;">
-                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">📋 기본 정보</h4>
+                <div class="content-card u-mb-20px">
+                    <h4 class="u-m-0-0-20px-0 u-color-text-primary u-text-16px u-weight-600"> 기본 정보</h4>
                     <div class="grid grid-3">
                         <div class="form-group">
                             <label>정산월</label>
@@ -55,26 +56,26 @@
                 </div>
 
                 <!-- 월별 고지 내역 입력 -->
-                <div class="content-card" style="margin-bottom:20px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
-                        <h4 style="margin:0;color:#334155;font-size:16px;font-weight:600;">📋 월별 고지 내역</h4>
-                        <button type="button" class="btn btn-primary btn-sm" onclick="addMonthBillRow()" style="padding:8px 16px;font-size:13px;">
+                <div class="content-card u-mb-20px">
+                    <div class="u-display-flex u-justify-content-space-between u-align-items-center u-mb-20px">
+                        <h4 class="u-m-0 u-color-text-primary u-text-16px u-weight-600"> 월별 고지 내역</h4>
+                        <button type="button" class="btn btn-primary btn-sm u-p-8px-16px u-text-13px" onclick="addMonthBillRow()">
                             + 월 추가
                         </button>
                     </div>
 
 
-                    <table style="width:100%;border-collapse:collapse;">
+                    <table class="mobile-cards monthly-bills-table">
                         <thead>
-                        <tr style="background:#e2e8f0;">
-                            <th style="padding:12px;text-align:left;border-bottom:2px solid #cbd5e1;width:140px;">
+                        <tr class="u-bg-surface-subtle">
+                            <th class="u-p-12px u-align-left u-border-bottom-1px-solid-border u-width-140px">
                                 고지월
                             </th>
-                            <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">전기요금</th>
-                            <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">복지할인</th>
-                            <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">바우처할인</th>
-                            <th style="padding:12px;text-align:right;border-bottom:2px solid #cbd5e1;">TV수신료 총액</th>
-                            <th style="padding:12px;text-align:center;border-bottom:2px solid #cbd5e1;width:80px;text-align:center;">
+                            <th class="u-p-12px u-align-right u-border-bottom-1px-solid-border">전기요금</th>
+                            <th class="u-p-12px u-align-right u-border-bottom-1px-solid-border">복지할인</th>
+                            <th class="u-p-12px u-align-right u-border-bottom-1px-solid-border">바우처할인</th>
+                            <th class="u-p-12px u-align-right u-border-bottom-1px-solid-border">TV수신료 총액</th>
+                            <th class="u-p-12px u-align-center u-border-bottom-1px-solid-border u-width-80px">
                                 작업
                             </th>
                         </tr>
@@ -83,10 +84,10 @@
                         </tbody>
                     </table>
 
-                    <div style="padding:15px; background:#e0f2fe; border-radius:8px;border-left:4px solid #0284c7;">
-                        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px;">
-                            <div style="color:#0c4a6e;font-weight:600;font-size:15px;">📊 합계</div>
-                            <div style="display:flex;gap:20px;flex-wrap:wrap;font-size:14px;color:#0c4a6e;">
+                    <div class="u-p-15px u-bg-info-light u-rounded-6px u-border-left-1px-solid-border">
+                        <div class="u-display-flex u-justify-content-space-between u-align-items-center u-flex-wrap-wrap u-gap-15px">
+                            <div class="u-color-primary-dark u-weight-600 u-text-15px"> 합계</div>
+                            <div class="u-display-flex u-gap-20px u-flex-wrap-wrap u-text-14px u-color-primary-dark">
                                 <span>총액: <strong id="totalAmount">0</strong>원</span>
                                 <span>복지할인: <strong id="totalWelfare">0</strong>원</span>
                                 <span>바우처할인: <strong id="totalVoucher">0</strong>원</span>
@@ -95,11 +96,11 @@
                         </div>
                     </div>
 
-                    <div style="background:#fef3c7;padding:12px;border-radius:8px;margin-top:15px;font-size:13px;color:#92400e;line-height:1.6;">
-                        <strong>💡 TV 수신료 안내:</strong><br>
+                    <details class="u-bg-warning-light u-p-12px u-rounded-6px u-mt-15px u-text-13px u-color-warning-dark u-leading-1_6">
+                        <summary>TV 수신료 배분 안내</summary>
                         • <strong>개별 부과 모드:</strong> TV 보유 세대만 설정의 TV 단가 × 개월수가 부과됩니다. TV수신료 입력칸은 비활성화됩니다.<br>
                         • <strong>균등 분배 모드:</strong> TV수신료 입력칸에 월별 총 TV 수신료를 입력하면, 공실을 제외한 모든 재실 세대가 균등 분담합니다.
-                    </div>
+                    </details>
                 </div>
 
                 <!-- 검침 입력 (동적으로 생성됨) -->
@@ -107,19 +108,19 @@
                 <div id="readingTableWrap"></div>
 
                 <!-- 저장 영역 -->
-                <div class="content-card" style="margin-bottom:20px;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
-                        <label class="checkbox-wrapper" style="margin:0;cursor:pointer;">
-                            <input type="checkbox" name="overwrite" style="cursor:pointer;">
-                            <span style="font-size:14px;color:#475569;font-weight:500;">기존 정산 데이터 덮어쓰기</span>
+                <div class="content-card u-mb-20px">
+                    <div class="u-display-flex u-align-items-center u-justify-content-space-between u-gap-20px u-flex-wrap-wrap">
+                        <label class="checkbox-wrapper u-m-0 u-cursor-pointer">
+                            <input class="u-cursor-pointer" type="checkbox" name="overwrite">
+                            <span class="u-text-14px u-color-text-secondary u-weight-500">기존 정산 데이터 덮어쓰기</span>
                         </label>
-                        <button type="submit" class="btn btn-primary" style="padding:12px 32px;font-size:15px;font-weight:600;">
+                        <button type="submit" class="btn btn-primary u-p-12px-32px u-text-15px u-weight-600">
                             전기요금 저장
                         </button>
                     </div>
-                    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">
-                        <p style="margin:0;font-size:12px;color:#64748b;line-height:1.6;">
-                            💡 동일한 정산월/층에 대한 데이터가 이미 존재하는 경우, 체크박스를 선택하면 기존 데이터를 삭제하고 새로운 데이터로 교체합니다.
+                    <div class="u-mt-12px u-pt-12px u-border-top-1px-solid-border">
+                        <p class="u-m-0 u-text-12px u-color-text-muted u-leading-1_6">
+                             동일한 정산월/층에 대한 데이터가 이미 존재하는 경우, 체크박스를 선택하면 기존 데이터를 삭제하고 새로운 데이터로 교체합니다.
                         </p>
                     </div>
                 </div>
@@ -129,31 +130,31 @@
         <!-- 수도요금 탭 -->
         <div id="water-tab" class="tab-content">
             <!-- 헤더 섹션 -->
-            <div class="content-card" style="margin-bottom:20px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                    <h2 style="margin:0;color:#1e293b;font-size:22px;font-weight:700;">💧 수도요금 계산</h2>
+            <div class="content-card u-mb-20px">
+                <div class="u-display-flex u-justify-content-space-between u-align-items-center u-mb-16px">
+                    <h2 class="u-m-0 u-color-text-primary u-text-22px u-weight-700"> 수도요금 계산</h2>
                     {% if water_bill_url %}
-                        <button type="button" class="btn btn-secondary"
-                                onclick="window.open('{{ water_bill_url }}', '_blank')" style="padding:10px 20px;font-size:14px;">
-                            🔍 요금 조회
+                        <button type="button" class="btn btn-secondary u-p-10px-20px u-text-14px"
+                                onclick="window.open('{{ water_bill_url }}', '_blank')">
+                             요금 조회
                         </button>
                     {% endif %}
                 </div>
-                <p style="margin:0;color:#64748b;font-size:14px;line-height:1.6;">
+                <p class="u-m-0 u-color-text-muted u-text-14px u-leading-1_6">
                     주택 전체 수도요금을 각 세대의 거주 인원수에 비례하여 분배합니다. 특정 세대를 제외할 수 있습니다.
                 </p>
             </div>
 
             <!-- 세대 선택 섹션 -->
-            <div id="waterUnitsSelection" style="margin-bottom:24px;"></div>
+            <div class="u-mb-24px" id="waterUnitsSelection"></div>
 
             <form id="waterForm">
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                 <input type="hidden" name="excluded_units" id="excluded_units" value="[]">
 
                 <!-- 요금 정보 입력 -->
-                <div class="content-card" style="margin-bottom:20px;">
-                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">💰 요금 정보</h4>
+                <div class="content-card u-mb-20px">
+                    <h4 class="u-m-0-0-20px-0 u-color-text-primary u-text-16px u-weight-600"> 요금 정보</h4>
                     <div class="grid grid-3">
                         <div class="form-group">
                             <label>정산월</label>
@@ -171,19 +172,19 @@
                 </div>
 
                 <!-- 저장 영역 -->
-                <div class="content-card" style="margin-bottom:20px;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;">
-                        <label class="checkbox-wrapper" style="margin:0;cursor:pointer;">
-                            <input type="checkbox" name="overwrite" style="cursor:pointer;">
-                            <span style="font-size:14px;color:#475569;font-weight:500;">기존 정산 데이터 덮어쓰기</span>
+                <div class="content-card u-mb-20px">
+                    <div class="u-display-flex u-align-items-center u-justify-content-space-between u-gap-20px u-flex-wrap-wrap">
+                        <label class="checkbox-wrapper u-m-0 u-cursor-pointer">
+                            <input class="u-cursor-pointer" type="checkbox" name="overwrite">
+                            <span class="u-text-14px u-color-text-secondary u-weight-500">기존 정산 데이터 덮어쓰기</span>
                         </label>
-                        <button type="submit" class="btn btn-primary" style="padding:12px 32px;font-size:15px;font-weight:600;">
+                        <button type="submit" class="btn btn-primary u-p-12px-32px u-text-15px u-weight-600">
                             수도요금 저장
                         </button>
                     </div>
-                    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e2e8f0;">
-                        <p style="margin:0;font-size:12px;color:#64748b;line-height:1.6;">
-                            💡 동일한 정산월에 대한 데이터가 이미 존재하는 경우, 체크박스를 선택하면 기존 데이터를 삭제하고 새로운 데이터로 교체합니다.
+                    <div class="u-mt-12px u-pt-12px u-border-top-1px-solid-border">
+                        <p class="u-m-0 u-text-12px u-color-text-muted u-leading-1_6">
+                             동일한 정산월에 대한 데이터가 이미 존재하는 경우, 체크박스를 선택하면 기존 데이터를 삭제하고 새로운 데이터로 교체합니다.
                         </p>
                     </div>
                 </div>
@@ -192,9 +193,9 @@
 
         <!-- 공동 공과금 탭 -->
         <div id="common-tab" class="tab-content">
-            <div class="content-card" style="margin-bottom:20px;">
-                <h2 style="margin:0 0 16px 0;color:#1e293b;font-size:22px;font-weight:700;">🏘️ 공동 공과금 계산</h2>
-                <p style="margin:0;color:#64748b;font-size:14px;line-height:1.6;">
+            <div class="content-card u-mb-20px">
+                <h2 class="u-m-0-0-16px-0 u-color-text-primary u-text-22px u-weight-700"> 공동 공과금 계산</h2>
+                <p class="u-m-0 u-color-text-muted u-text-14px u-leading-1_6">
                     인터넷, 관리비, 기타 등의 공동 공과금을 입력합니다. 분배 방식(인원 비례 또는 세대 균등)을 선택할 수 있습니다.
                 </p>
             </div>
@@ -203,8 +204,8 @@
                 <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
 
                 <!-- 기본 정보 -->
-                <div class="content-card" style="margin-bottom:20px;">
-                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">📋 기본 정보</h4>
+                <div class="content-card u-mb-20px">
+                    <h4 class="u-m-0-0-20px-0 u-color-text-primary u-text-16px u-weight-600"> 기본 정보</h4>
                     <div class="grid grid-2">
                         <div class="form-group">
                             <label>정산월</label>
@@ -221,8 +222,8 @@
                 </div>
 
                 <!-- 항목별 금액 -->
-                <div class="content-card" style="margin-bottom:20px;">
-                    <h4 style="margin:0 0 20px 0;color:#334155;font-size:16px;font-weight:600;">💰 항목별 금액</h4>
+                <div class="content-card u-mb-20px">
+                    <h4 class="u-m-0-0-20px-0 u-color-text-primary u-text-16px u-weight-600"> 항목별 금액</h4>
                     <div class="grid grid-3">
                         <div class="form-group">
                             <label>인터넷 (원)</label>
@@ -240,18 +241,18 @@
                 </div>
 
                 <!-- 분배 방식 안내 -->
-                <div class="content-card" style="margin-bottom:20px;">
-                    <h4 style="margin:0 0 16px 0;color:#334155;font-size:16px;font-weight:600;">📊 분배 방식 안내</h4>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
-                        <div style="background:#fef3c7;padding:16px;border-radius:8px;border:1px solid #fbbf24;">
-                            <div style="font-weight:600;color:#92400e;margin-bottom:8px;font-size:14px;">👥 인원 비례</div>
-                            <div style="font-size:13px;color:#92400e;line-height:1.6;">
+                <div class="content-card u-mb-20px">
+                    <h4 class="u-m-0-0-16px-0 u-color-text-primary u-text-16px u-weight-600"> 분배 방식 안내</h4>
+                    <div class="u-display-grid u-cols-repeat-auto-fit-minmax-280px-minmax-0-1fr u-gap-16px">
+                        <div class="u-bg-warning-light u-p-16px u-rounded-6px u-border-1px-solid-border">
+                            <div class="u-weight-600 u-color-warning-dark u-mb-8px u-text-14px"> 인원 비례</div>
+                            <div class="u-text-13px u-color-warning-dark u-leading-1_6">
                                 거주 인원수에 비례하여 분배합니다. 인원이 많은 세대가 더 많이 부담합니다.
                             </div>
                         </div>
-                        <div style="background:#e0f2fe;padding:16px;border-radius:8px;border:1px solid #0ea5e9;">
-                            <div style="font-weight:600;color:#0c4a6e;margin-bottom:8px;font-size:14px;">🏠 세대 균등</div>
-                            <div style="font-size:13px;color:#0c4a6e;line-height:1.6;">
+                        <div class="u-bg-info-light u-p-16px u-rounded-6px u-border-1px-solid-border">
+                            <div class="u-weight-600 u-color-primary-dark u-mb-8px u-text-14px"> 세대 균등</div>
+                            <div class="u-text-13px u-color-primary-dark u-leading-1_6">
                                 재실 세대수로 균등하게 분배합니다. 인원수와 관계없이 모든 세대가 동일하게 부담합니다.
                             </div>
                         </div>
@@ -259,8 +260,8 @@
                 </div>
 
                 <!-- 저장 영역 -->
-                <div style="background:#f8fafc;padding:20px;border-radius:12px;border:1px solid #e2e8f0;text-align:right;">
-                    <button type="submit" class="btn btn-primary" style="padding:12px 32px;font-size:15px;font-weight:600;">
+                <div class="u-bg-surface-subtle u-p-20px u-rounded-6px u-border-1px-solid-border u-align-right">
+                    <button type="submit" class="btn btn-primary u-p-12px-32px u-text-15px u-weight-600">
                         공동 공과금 저장
                     </button>
                 </div>
@@ -279,25 +280,14 @@
         let waterExcludedUnits = new Set();
 
         // 탭 전환 함수
-        function showCalcTab(tabId, event) {
-            document.querySelectorAll('#electric-tab, #water-tab, #common-tab').forEach(tab => {
-                tab.style.display = 'none';
-            });
-            document.querySelectorAll('.tab').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.getElementById(tabId).style.display = 'block';
-            if (event && event.target) {
-                event.target.classList.add('active');
-            }
-        }
+        function showCalcTab(tabId) { selectTab(tabId); }
 
         // 층 옵션 렌더링
         function renderFloorOptions() {
             const sel2 = document.getElementById('electric_floor_id');
             const options = '<option value="">선택</option>' + FLOORS.map(f => {
                 const floorLabel = f.floor_number < 0 ? 'B' + (-f.floor_number) + '층' : f.floor_number + '층';
-                let displayLabel = f.name ? `${floorLabel} (${f.name})` : floorLabel;
+                let displayLabel = f.name ? `${floorLabel} (${escapeHtml(f.name)})` : floorLabel;
                 return `<option value="${f.id}">${displayLabel}</option>`;
             }).join('');
             sel2.innerHTML = options;
@@ -311,37 +301,31 @@
             const row = document.createElement('tr');
             row.className = 'month-bill-row';
             row.id = `bill-row-${rowId}`;
-            row.style.borderBottom = '1px solid #e2e8f0';
+
 
             row.innerHTML = `
-                <td style="padding:10px;">
-                    <input type="month" name="bill_month_${rowId}" required
-                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;">
+                <td class="u-p-10px">
+                    <input class="u-width-100 u-p-8px u-border-1px-solid-border u-rounded-6px u-text-13px" type="month" name="bill_month_${rowId}" required>
                 </td>
-                <td style="padding:10px;">
+                <td class="u-p-10px">
                     <input type="number" name="bill_amount_${rowId}" min="0" placeholder="0" required
-                           class="bill-amount"
-                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;text-align:right;font-size:13px;">
+                           class="bill-amount u-width-100 u-p-8px u-border-1px-solid-border u-rounded-6px u-align-right u-text-13px">
                 </td>
-                <td style="padding:10px;">
+                <td class="u-p-10px">
                     <input type="number" name="bill_welfare_${rowId}" min="0" placeholder="0"
-                           class="bill-welfare"
-                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;text-align:right;font-size:13px;">
+                           class="bill-welfare u-width-100 u-p-8px u-border-1px-solid-border u-rounded-6px u-align-right u-text-13px">
                 </td>
-                <td style="padding:10px;">
+                <td class="u-p-10px">
                     <input type="number" name="bill_voucher_${rowId}" min="0" placeholder="0"
-                           class="bill-voucher"
-                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;text-align:right;font-size:13px;">
+                           class="bill-voucher u-width-100 u-p-8px u-border-1px-solid-border u-rounded-6px u-align-right u-text-13px">
                 </td>
-                <td style="padding:10px;">
+                <td class="u-p-10px">
                     <input type="number" name="bill_tv_fee_${rowId}" min="0" placeholder="0"
-                           class="bill-tv-fee"
-                           style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;text-align:right;font-size:13px;">
+                           class="bill-tv-fee u-width-100 u-p-8px u-border-1px-solid-border u-rounded-6px u-align-right u-text-13px">
                 </td>
-                <td style="padding:10px;text-align:center;">
-                    <button type="button" class="btn btn-danger btn-sm"
-                            onclick="removeMonthBillRow(${rowId})"
-                            style="padding:6px 12px;font-size:12px;">삭제</button>
+                <td class="u-p-10px u-align-center">
+                    <button type="button" class="btn btn-danger btn-sm u-p-6px-12px u-text-12px"
+                            onclick="removeMonthBillRow(${rowId})">삭제</button>
                 </td>
             `;
 
@@ -398,10 +382,8 @@
                 if (mode === 'INDIVIDUAL') {
                     input.disabled = true;
                     input.value = '0';
-                    input.style.background = '#f1f5f9';
                 } else {
                     input.disabled = false;
-                    input.style.background = 'white';
                 }
             });
             updateTotals();
@@ -420,7 +402,7 @@
 
             const units = UNITS.filter(u => u.floor_id === floorId);
             if (units.length === 0) {
-                container.innerHTML = '<div style="background:#fee2e2;padding:16px;border-radius:8px;border:1px solid #ef4444;color:#991b1b;text-align:center;">해당 층에 세대가 없습니다.</div>';
+                container.innerHTML = '<div class="u-bg-danger-light u-p-16px u-rounded-6px u-border-1px-solid-border u-color-danger-dark u-align-center">해당 층에 세대가 없습니다.</div>';
                 return;
             }
 
@@ -438,62 +420,64 @@
             const voucherCount = units.filter(u => !u.is_vacant && u.electric_voucher).length;
 
             let html = `
-        <div class="content-card" style="margin-bottom:20px;">
+        <div class="content-card u-mb-20px">
             <!-- 층 정보 헤더 -->
-            <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:2px solid #e2e8f0;">
-                <h4 style="margin:0;color:#334155;font-size:16px;font-weight:600;">
-                    ${floorLabel}${floorName ? ' (' + floorName + ')' : ''} 세대 정보
+            <div class="u-mb-16px u-pb-16px u-border-bottom-1px-solid-border">
+                <h4 class="u-m-0 u-color-text-primary u-text-16px u-weight-600">
+                    ${floorLabel}${floorName ? ' (' + escapeHtml(floorName) + ')' : ''} 세대 정보
                 </h4>
-                ${floorContract ? `<div style="color:#64748b;font-size:14px;font-weight:500;">계약번호: <span style="font-family:monospace;color:#475569;font-weight:600;">${floorContract}</span></div>` : ''}
+                ${floorContract ? `<div class="u-color-text-muted u-text-14px u-weight-500">계약번호: <span class="u-font-family-monospace u-color-text-secondary u-weight-600">${escapeHtml(floorContract)}</span></div>` : ''}
+                <p class="form-help">재실 ${occupiedCount}세대 · 공실 ${vacantCount}세대</p>
             </div>
 
             <!-- 통계 요약 -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;margin-bottom:20px;">
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">재실</div>
-                    <div style="font-size:22px;font-weight:700;color:#059669;">${occupiedCount}</div>
+            <details class="unit-info-details"><summary>할인·TV 상세 확인 · TV ${tvCount} / 복지 ${welfareCount} / 바우처 ${voucherCount}</summary>
+            <div class="u-display-grid u-cols-repeat-auto-fit-minmax-110px-minmax-0-1fr u-gap-12px u-mb-20px">
+                <div class="u-align-center u-p-14px u-bg-surface-subtle u-rounded-6px u-border-1px-solid-border u-min-height-70px u-display-flex u-flex-direction-column u-justify-content-center">
+                    <div class="u-text-11px u-color-text-muted u-mb-6px u-weight-600">재실</div>
+                    <div class="u-text-22px u-weight-700 u-color-success-dark">${occupiedCount}</div>
                 </div>
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">공실</div>
-                    <div style="font-size:22px;font-weight:700;color:#dc2626;">${vacantCount}</div>
+                <div class="u-align-center u-p-14px u-bg-surface-subtle u-rounded-6px u-border-1px-solid-border u-min-height-70px u-display-flex u-flex-direction-column u-justify-content-center">
+                    <div class="u-text-11px u-color-text-muted u-mb-6px u-weight-600">공실</div>
+                    <div class="u-text-22px u-weight-700 u-color-danger-dark">${vacantCount}</div>
                 </div>
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">TV</div>
-                    <div style="font-size:22px;font-weight:700;color:#f59e0b;">${tvCount}</div>
+                <div class="u-align-center u-p-14px u-bg-surface-subtle u-rounded-6px u-border-1px-solid-border u-min-height-70px u-display-flex u-flex-direction-column u-justify-content-center">
+                    <div class="u-text-11px u-color-text-muted u-mb-6px u-weight-600">TV</div>
+                    <div class="u-text-22px u-weight-700 u-color-warning-dark">${tvCount}</div>
                 </div>
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">복지</div>
-                    <div style="font-size:22px;font-weight:700;color:#667eea;">${welfareCount}</div>
+                <div class="u-align-center u-p-14px u-bg-surface-subtle u-rounded-6px u-border-1px-solid-border u-min-height-70px u-display-flex u-flex-direction-column u-justify-content-center">
+                    <div class="u-text-11px u-color-text-muted u-mb-6px u-weight-600">복지</div>
+                    <div class="u-text-22px u-weight-700 u-color-primary-color">${welfareCount}</div>
                 </div>
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">바우처</div>
-                    <div style="font-size:22px;font-weight:700;color:#667eea;">${voucherCount}</div>
+                <div class="u-align-center u-p-14px u-bg-surface-subtle u-rounded-6px u-border-1px-solid-border u-min-height-70px u-display-flex u-flex-direction-column u-justify-content-center">
+                    <div class="u-text-11px u-color-text-muted u-mb-6px u-weight-600">바우처</div>
+                    <div class="u-text-22px u-weight-700 u-color-primary-color">${voucherCount}</div>
                 </div>
             </div>
 
             <!-- 세대 카드 -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">
+            <div class="u-display-grid u-cols-repeat-auto-fill-minmax-180px-minmax-0-1fr u-gap-10px">
     `;
 
             units.forEach(u => {
                 const badges = [];
-                if (u.is_vacant) badges.push('<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">공실</span>');
-                else badges.push('<span style="background:#d1fae5;color:#059669;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">재실</span>');
+                if (u.is_vacant) badges.push('<span class="u-bg-danger-light u-color-danger-dark u-p-2px-8px u-rounded-6px u-text-11px u-weight-500">공실</span>');
+                else badges.push('<span class="u-bg-success-light u-color-success-dark u-p-2px-8px u-rounded-6px u-text-11px u-weight-500">재실</span>');
 
                 if (!u.is_vacant) {
-                    if (u.has_tv) badges.push('<span style="background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">TV</span>');
-                    if (u.electric_welfare) badges.push('<span style="background:#ddd6fe;color:#5b21b6;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">복지</span>');
-                    if (u.electric_voucher) badges.push('<span style="background:#ddd6fe;color:#5b21b6;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500;">바우처</span>');
+                    if (u.has_tv) badges.push('<span class="u-bg-warning-light u-color-warning-dark u-p-2px-8px u-rounded-6px u-text-11px u-weight-500">TV</span>');
+                    if (u.electric_welfare) badges.push('<span class="u-bg-ddd6fe u-color-5b21b6 u-p-2px-8px u-rounded-6px u-text-11px u-weight-500">복지</span>');
+                    if (u.electric_voucher) badges.push('<span class="u-bg-ddd6fe u-color-5b21b6 u-p-2px-8px u-rounded-6px u-text-11px u-weight-500">바우처</span>');
                 }
 
                 html += `
-            <div style="background:white;padding:12px;border-radius:8px;border:1px solid ${u.is_vacant ? '#fecaca' : '#cbd5e1'};min-height:110px;display:flex;flex-direction:column;">
-                <div style="font-weight:600;font-size:14px;color:#1e293b;margin-bottom:8px;">${u.unit_name}</div>
-                <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
+            <div class="unit-profile ${u.is_vacant ? 'is-vacant' : ''}">
+                <div class="u-weight-600 u-text-14px u-color-text-primary u-mb-8px">${escapeHtml(u.unit_name)}</div>
+                <div class="u-display-flex u-flex-wrap-wrap u-gap-4px u-mb-6px">
                     ${badges.join('')}
                 </div>
-                <div style="margin-top:auto;">
-                    ${!u.is_vacant ? `<div style="font-size:12px;color:#64748b;">${u.residents_count}명 거주</div>` : '<div style="font-size:12px;color:#94a3b8;">공실</div>'}
+                <div class="u-mt-auto">
+                    ${!u.is_vacant ? `<div class="u-text-12px u-color-text-muted">${u.residents_count}명 거주</div>` : '<div class="u-text-12px u-color-text-muted">공실</div>'}
                 </div>
             </div>
         `;
@@ -501,6 +485,7 @@
 
             html += `
             </div>
+            </details>
         </div>
     `;
 
@@ -510,179 +495,47 @@
         // 검침 입력 테이블 렌더링
         function renderReadingTable(floorId) {
             const wrap = document.getElementById('readingTableWrap');
-            if (!wrap) {
-                const altWrap = document.getElementById('unitsInfoCardContainer');
-                if (altWrap) {
-                    const existingCard = altWrap.querySelector('[style*="검침 입력"]');
-                    if (existingCard) return;
-                }
-            }
-
-            const container = wrap || document.getElementById('unitsInfoCardContainer');
-            if (!container) return;
-
-            floorId = parseInt(floorId);
-            if (!floorId) {
+            if (!wrap) return;
+            if (!parseInt(floorId)) { wrap.innerHTML = ''; return; }
+            const units = UNITS.filter(u => u.floor_id === parseInt(floorId) && !u.is_vacant);
+            if (!units.length) {
+                wrap.innerHTML = '<div class="content-card empty-state">이 층에는 검침할 재실 세대가 없습니다.</div>';
                 return;
             }
-
-            const units = UNITS.filter(u => u.floor_id === floorId && !u.is_vacant);
-            if (units.length === 0) {
-                return;
-            }
-
-            const selectedFloor = FLOORS.find(f => f.id === floorId);
-            const floorLabel = selectedFloor ?
-                (selectedFloor.floor_number < 0 ? 'B' + (-selectedFloor.floor_number) + '층' : selectedFloor.floor_number + '층') : '';
-            const floorName = selectedFloor && selectedFloor.name ? ` (${selectedFloor.name})` : '';
-            const contractNumber = selectedFloor && selectedFloor.electric_contract_number ? selectedFloor.electric_contract_number : '';
-
-            let html = `
-                <div class="content-card" style="margin-bottom:20px;">
-                    <div style="display:grid;grid-template-columns: 1fr auto;grid-template-rows: auto auto;align-items:center;column-gap:12px;row-gap:8px;margin-bottom:20px;padding-bottom:20px;border-bottom:2px solid #e2e8f0;">
-                        <h4 style="margin:0;color:#334155;font-size:16px;font-weight:600;">
-                          ⚡ 검침 입력 - ${floorLabel}${floorName}
-                        </h4>
-                        <button type="button" class="btn btn-secondary" onclick="loadPreviousReadings()"
-                                style="padding:10px 16px;font-size:14px;justify-self:end;white-space:nowrap;">
-                          📥 이전 정산의 현월 검침 불러오기
-                        </button>
-                        ${contractNumber ? `
-                          <div style="color:#64748b;font-size:14px;font-weight:500;">
-                            계약번호:
-                            <span style="font-family:monospace;color:#475569;font-weight:600;">
-                              ${contractNumber}
-                            </span>
-                          </div>` : '<div></div>'}
-                        <p style="margin:0;font-size:12px;color:#64748b;justify-self:end;text-align:right;">
-                          💡 동일 층의 가장 최근 정산 데이터에서 현월 검침값을 불러와 전월 검침란에 자동으로 입력합니다.
-                        </p>
+            const floor = FLOORS.find(f => f.id === parseInt(floorId));
+            wrap.innerHTML = `
+                <section class="content-card meter-panel">
+                    <div class="section-heading"><div><h4>세대별 검침 입력</h4>
+                        <p class="page-description">${escapeHtml(floor?.name || '')} · 사용량은 현월 검침에서 전월 검침을 뺀 값입니다.</p></div>
+                        <button type="button" class="btn btn-secondary" onclick="loadPreviousReadings()">이전 검침 불러오기</button>
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-                        <!-- 전월 검침 테이블 -->
-                        <div style="background:#fef3c7;padding:15px;border-radius:8px;border:2px solid #fed7aa;">
-                            <h5 style="margin:0 0 15px 0;color:#92400e;font-size:16px;">📉 전월 검침</h5>
-                            <table style="width:100%;border-collapse:collapse;">
-                                <thead>
-                                    <tr style="background:#fed7aa;">
-                                        <th style="padding:10px;text-align:left;border-bottom:2px solid #fed7aa;width:90px;">세대</th>
-                                        <th style="padding:10px;text-align:left;border-bottom:2px solid #fed7aa;font-size:11px;">특성</th>
-                                        <th style="padding:10px;text-align:center;border-bottom:2px solid #fed7aa;">검침값</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-            `;
-
-            units.forEach(u => {
-                const badges = [];
-                if (u.has_tv) badges.push('TV');
-                if (u.electric_welfare) badges.push('복지');
-                if (u.electric_voucher) badges.push('바우처');
-                const badgeStr = badges.length > 0 ? badges.join(', ') : '-';
-
-                html += `
-                    <tr style="border-bottom:1px solid #fed7aa;">
-                        <td style="padding:10px;"><strong>${u.unit_name}</strong></td>
-                        <td style="padding:10px;font-size:12px;color:#9a3412;">${badgeStr}</td>
-                        <td style="padding:10px;text-align:center;">
-                            <input type="number" name="prev_${u.id}" step="0.01" placeholder="0.00"
-                                   class="reading-prev" data-unit="${u.id}"
-                                   style="width:130px;padding:8px;border:1px solid #fed7aa;border-radius:6px;text-align:right;font-size:14px;background:white;">
-                        </td>
-                    </tr>
-                `;
-            });
-
-            html += `
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- 현월 검침 테이블 -->
-                        <div style="background:#ecfccb;padding:15px;border-radius:8px;border:2px solid #bef264;">
-                            <h5 style="margin:0 0 15px 0;color:#365314;font-size:16px;">📈 현월 검침</h5>
-                            <table style="width:100%;border-collapse:collapse;">
-                                <thead>
-                                    <tr style="background:#d9f99d;">
-                                        <th style="padding:10px;text-align:left;border-bottom:2px solid #bef264;width:90px;">세대</th>
-                                        <th style="padding:10px;text-align:center;border-bottom:2px solid #bef264;">검침값</th>
-                                        <th style="padding:10px;text-align:center;border-bottom:2px solid #bef264;width:100px;">사용량</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-            `;
-
-            units.forEach(u => {
-                html += `
-                    <tr style="border-bottom:1px solid #bef264;">
-                        <td style="padding:10px;"><strong>${u.unit_name}</strong></td>
-                        <td style="padding:10px;text-align:center;">
-                            <input type="number" name="curr_${u.id}" step="0.01" placeholder="0.00"
-                                   class="reading-curr" data-unit="${u.id}"
-                                   style="width:130px;padding:8px;border:1px solid #bef264;border-radius:6px;text-align:right;font-size:14px;background:white;">
-                        </td>
-                        <td style="padding:10px;text-align:center;">
-                            <span class="usage-display" data-unit="${u.id}" style="font-weight:600;font-size:14px;color:#365314;">-</span>
-                        </td>
-                    </tr>
-                `;
-            });
-
-            html += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div style="background:#dbeafe;padding:12px;border-radius:8px;margin-top:15px;font-size:13px;color:#1e3a8a;line-height:1.6;">
-                        <strong>💡 사용량 계산:</strong> 사용량 = 현월 검침 - 전월 검침<br>
-                        사용량이 음수로 표시되면 검침값을 확인해주세요. (현월 검침이 전월보다 작은 경우)
-                    </div>
-                </div>
-            `;
-
-            if (wrap) {
-                wrap.innerHTML = html;
-            } else {
-                container.innerHTML += html;
-            }
-
-            document.querySelectorAll('.reading-prev, .reading-curr').forEach(input => {
+                    <table class="mobile-cards meter-table"><thead><tr><th>세대</th><th>할인·TV</th><th>전월 검침</th><th>현월 검침</th><th>사용량 (kWh)</th></tr></thead><tbody>
+                        ${units.map(u => `
+                            <tr><td><strong>${escapeHtml(u.unit_name)}</strong></td>
+                                <td>${[u.has_tv && 'TV', u.electric_welfare && '복지', u.electric_voucher && '바우처'].filter(Boolean).map(label => '<span class="badge badge-secondary">' + label + '</span>').join(' ') || '—'}</td>
+                                <td><input type="number" name="prev_${u.id}" step="0.01" min="0" placeholder="0.00" class="reading-prev" data-unit="${u.id}" aria-label="${escapeHtml(u.unit_name)} 전월 검침"></td>
+                                <td><input type="number" name="curr_${u.id}" step="0.01" min="0" placeholder="0.00" class="reading-curr" data-unit="${u.id}" aria-label="${escapeHtml(u.unit_name)} 현월 검침"></td>
+                                <td><span class="usage-display" data-unit="${u.id}" aria-live="polite">—</span></td>
+                            </tr>`).join('')}
+                    </tbody></table>
+                    <p class="form-help">현월 검침이 전월보다 작으면 입력값을 확인하세요. 이전 검침은 해당 층의 최근 정산에서 불러옵니다.</p>
+                </section>`;
+            wrap.querySelectorAll('.reading-prev, .reading-curr').forEach(input => {
                 input.addEventListener('input', () => {
                     const unitId = input.dataset.unit;
-                    const prevInput = document.querySelector(`.reading-prev[data-unit="${unitId}"]`);
-                    const currInput = document.querySelector(`.reading-curr[data-unit="${unitId}"]`);
-                    const usageSpan = document.querySelector(`.usage-display[data-unit="${unitId}"]`);
-
-                    const prev = parseFloat(prevInput.value) || 0;
-                    const curr = parseFloat(currInput.value) || 0;
-                    const usage = curr - prev;
-
-                    if (currInput.value && prevInput.value) {
-                        usageSpan.textContent = usage.toFixed(2);
-
-                        if (usage < 0) {
-                            usageSpan.style.color = '#dc2626';
-                            usageSpan.style.fontWeight = 'bold';
-                            currInput.style.borderColor = '#dc2626';
-                            currInput.style.borderWidth = '2px';
-                            currInput.style.backgroundColor = '#fee2e2';
-                            currInput.setAttribute('data-invalid', 'true');
-                        } else {
-                            usageSpan.style.color = '#059669';
-                            usageSpan.style.fontWeight = 'bold';
-                            currInput.style.borderColor = '#bef264';
-                            currInput.style.borderWidth = '1px';
-                            currInput.style.backgroundColor = 'white';
-                            currInput.removeAttribute('data-invalid');
-                        }
-                    } else {
-                        usageSpan.textContent = '-';
-                        currInput.style.borderColor = '#bef264';
-                        currInput.style.borderWidth = '1px';
-                        currInput.style.backgroundColor = 'white';
-                        currInput.removeAttribute('data-invalid');
-                    }
+                    const prev = wrap.querySelector(`.reading-prev[data-unit="${unitId}"]`);
+                    const curr = wrap.querySelector(`.reading-curr[data-unit="${unitId}"]`);
+                    const usage = wrap.querySelector(`.usage-display[data-unit="${unitId}"]`);
+                    const hasReadings = prev.value !== '' && curr.value !== '';
+                    const amount = Number(curr.value) - Number(prev.value);
+                    const invalid = hasReadings && amount < 0;
+                    usage.textContent = hasReadings ? amount.toFixed(2) : '—';
+                    usage.classList.toggle('text-danger', invalid);
+                    usage.classList.toggle('text-success', hasReadings && !invalid);
+                    curr.classList.toggle('is-invalid', invalid);
+                    curr.setAttribute('aria-invalid', String(invalid));
+                    if (invalid) curr.dataset.invalid = 'true';
+                    else delete curr.dataset.invalid;
                 });
             });
         }
@@ -693,7 +546,7 @@
             const occupiedUnits = UNITS.filter(u => !u.is_vacant);
 
             if (occupiedUnits.length === 0) {
-                container.innerHTML = '<div style="background:#fee2e2;padding:16px;border-radius:8px;border:1px solid #ef4444;color:#991b1b;text-align:center;">재실 세대가 없습니다.</div>';
+                container.innerHTML = '<div class="u-bg-danger-light u-p-16px u-rounded-6px u-border-1px-solid-border u-color-danger-dark u-align-center">재실 세대가 없습니다.</div>';
                 return;
             }
 
@@ -703,35 +556,35 @@
             const waterCustomerNumber = '{{ water_customer_number }}';
 
             let html = `
-        <div class="content-card" style="margin-bottom:20px;">
+        <div class="content-card u-mb-20px">
             <!-- 헤더 -->
-            <div style="margin-bottom:20px;padding-bottom:20px;border-bottom:2px solid #e2e8f0;">
-                <h4 style="margin:0 0 12px 0;color:#1e293b;font-size:18px;font-weight:700;">
+            <div class="u-mb-20px u-pb-20px u-border-bottom-1px-solid-border">
+                <h4 class="u-m-0-0-12px-0 u-color-text-primary u-text-18px u-weight-700">
                     정산 대상 세대 선택
                 </h4>
-                ${waterCustomerNumber ? `<div style="color:#64748b;font-size:14px;font-weight:500;">주택 수도 고객번호: <span style="font-family:monospace;color:#475569;font-weight:600;">${waterCustomerNumber}</span></div>` : ''}
-                <p style="color:#64748b;font-size:13px;margin:8px 0 0 0;line-height:1.5;">
+                ${waterCustomerNumber ? `<div class="u-color-text-muted u-text-14px u-weight-500">주택 수도 고객번호: <span class="u-font-family-monospace u-color-text-secondary u-weight-600">${escapeHtml(waterCustomerNumber)}</span></div>` : ''}
+                <p class="u-color-text-muted u-text-13px u-m-8px-0-0-0 u-leading-1_5">
                     체크박스를 클릭하여 정산 대상을 선택하세요. 장기 출장 등으로 수도를 사용하지 않은 세대는 선택 해제할 수 있습니다.
                 </p>
             </div>
 
             <!-- 통계 요약 -->
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px;margin-bottom:24px;">
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">전체 세대</div>
-                    <div style="font-size:22px;font-weight:700;color:#0284c7;">${occupiedUnits.length}</div>
+            <div class="u-display-grid u-cols-repeat-auto-fit-minmax-110px-minmax-0-1fr u-gap-12px u-mb-24px">
+                <div class="u-align-center u-p-14px u-bg-surface-subtle u-rounded-6px u-border-1px-solid-border u-min-height-70px u-display-flex u-flex-direction-column u-justify-content-center">
+                    <div class="u-text-11px u-color-text-muted u-mb-6px u-weight-600">전체 세대</div>
+                    <div class="u-text-22px u-weight-700 u-color-primary-color">${occupiedUnits.length}</div>
                 </div>
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">선택됨</div>
-                    <div style="font-size:22px;font-weight:700;color:#059669;" id="selectedCountDisplay">${selectedCount}</div>
+                <div class="u-align-center u-p-14px u-bg-surface-subtle u-rounded-6px u-border-1px-solid-border u-min-height-70px u-display-flex u-flex-direction-column u-justify-content-center">
+                    <div class="u-text-11px u-color-text-muted u-mb-6px u-weight-600">선택됨</div>
+                    <div class="u-text-22px u-weight-700 u-color-success-dark" id="selectedCountDisplay">${selectedCount}</div>
                 </div>
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">총 인원</div>
-                    <div style="font-size:22px;font-weight:700;color:#0284c7;">${totalResidents}</div>
+                <div class="u-align-center u-p-14px u-bg-surface-subtle u-rounded-6px u-border-1px-solid-border u-min-height-70px u-display-flex u-flex-direction-column u-justify-content-center">
+                    <div class="u-text-11px u-color-text-muted u-mb-6px u-weight-600">총 인원</div>
+                    <div class="u-text-22px u-weight-700 u-color-primary-color">${totalResidents}</div>
                 </div>
-                <div style="text-align:center;padding:14px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;min-height:70px;display:flex;flex-direction:column;justify-content:center;">
-                    <div style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:600;">복지 할인</div>
-                    <div style="font-size:22px;font-weight:700;color:#059669;">${waterWelfareUnits.length}</div>
+                <div class="u-align-center u-p-14px u-bg-surface-subtle u-rounded-6px u-border-1px-solid-border u-min-height-70px u-display-flex u-flex-direction-column u-justify-content-center">
+                    <div class="u-text-11px u-color-text-muted u-mb-6px u-weight-600">복지 할인</div>
+                    <div class="u-text-22px u-weight-700 u-color-success-dark">${waterWelfareUnits.length}</div>
                 </div>
             </div>
 
@@ -756,38 +609,37 @@
             }).forEach(floorId => {
                 const group = floorGroups[floorId];
                 const floorLabel = group.floor_number < 0 ? `B${-group.floor_number}층` : `${group.floor_number}층`;
-                const floorDisplayName = group.floor_name ? `${floorLabel} (${group.floor_name})` : floorLabel;
+                const floorDisplayName = group.floor_name ? `${floorLabel} (${escapeHtml(group.floor_name)})` : floorLabel;
 
-                html += `<div style="margin-bottom:16px;">
-                    <h5 style="margin:0 0 12px 0;color:#334155;font-size:15px;font-weight:600;">${floorDisplayName}</h5>
-                    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">`;
+                html += `<div class="u-mb-16px">
+                    <h5 class="u-m-0-0-12px-0 u-color-text-primary u-text-15px u-weight-600">${floorDisplayName}</h5>
+                    <div class="u-display-grid u-cols-repeat-auto-fill-minmax-200px-minmax-0-1fr u-gap-12px">`;
 
                 group.units.forEach(unit => {
                     const isIncluded = !waterExcludedUnits.has(unit.id);
                     const badges = [];
                     if (unit.water_welfare) {
-                        badges.push('<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;">복지</span>');
+                        badges.push('<span class="u-bg-success-light u-color-success-dark u-p-2px-8px u-rounded-6px u-text-11px u-weight-600">복지</span>');
                     }
                     const borderColor = isIncluded ? '#0891b2' : '#cbd5e1';
 
                     html += `
-                <div class="water-unit-card" data-unit-id="${unit.id}"
-                     style="background:${isIncluded ? 'white' : '#f8fafc'};padding:12px;border-radius:8px;border:1px solid ${borderColor};cursor:pointer;transition:all 0.2s;min-height:110px;display:flex;flex-direction:column;"
+                <div class="water-unit-card ${isIncluded ? '' : 'is-excluded'}" data-unit-id="${unit.id}"
                      onclick="toggleWaterUnit(${unit.id})">
-                    <div style="display:flex;align-items:start;gap:8px;margin-bottom:8px;">
-                        <input type="checkbox"
+                    <div class="u-display-flex u-align-items-start u-gap-8px u-mb-8px">
+                        <input class="u-width-16px u-height-16px u-cursor-pointer u-mt-2px u-accent-color-0891b2" type="checkbox"
+                               aria-label="${escapeHtml(unit.unit_name)} 수도 정산 포함"
                                ${isIncluded ? 'checked' : ''}
-                               onclick="event.stopPropagation(); toggleWaterUnit(${unit.id});"
-                               style="width:16px;height:16px;cursor:pointer;margin-top:2px;accent-color:#0891b2;">
-                        <div style="flex:1;">
-                            <div style="font-weight:600;font-size:14px;color:#1e293b;margin-bottom:4px;">${unit.unit_name}</div>
+                               onclick="event.stopPropagation(); toggleWaterUnit(${unit.id});">
+                        <div class="u-flex-1">
+                            <div class="u-weight-600 u-text-14px u-color-text-primary u-mb-4px">${escapeHtml(unit.unit_name)}</div>
                         </div>
                     </div>
-                    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px;">
+                    <div class="u-display-flex u-flex-wrap-wrap u-gap-4px u-mb-6px">
                         ${badges.join('')}
                     </div>
-                    <div style="margin-top:auto;">
-                        <div style="font-size:12px;color:#64748b;">${unit.residents_count}명 거주</div>
+                    <div class="u-mt-auto">
+                        <div class="u-text-12px u-color-text-muted">${unit.residents_count}명 거주</div>
                     </div>
                 </div>
             `;
@@ -825,8 +677,7 @@
             const isIncluded = !waterExcludedUnits.has(unitId);
 
             checkbox.checked = isIncluded;
-            card.style.background = isIncluded ? 'white' : '#f8fafc';
-            card.style.borderColor = isIncluded ? '#0891b2' : '#cbd5e1';
+            card.classList.toggle('is-excluded', !isIncluded);
         }
 
         function loadPreviousReadings() {
@@ -893,7 +744,7 @@
 
             const invalidInputs = document.querySelectorAll('.reading-curr[data-invalid="true"]');
             if (invalidInputs.length > 0) {
-                alert('⚠️ 사용량이 음수인 세대가 있습니다.\n\n현월 검침값이 전월 검침값보다 작습니다.\n검침값을 확인해주세요.');
+                alert(' 사용량이 음수인 세대가 있습니다.\n\n현월 검침값이 전월 검침값보다 작습니다.\n검침값을 확인해주세요.');
                 return;
             }
 

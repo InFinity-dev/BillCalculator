@@ -46,7 +46,7 @@ UNIT_SPECS = [
     (1, "102호", 3, True, False, False, True, False),
     (1, "103호", 1, True, False, False, False, True),
     (2, "201호", 4, True, True, False, False, False),
-    (2, "202호", 2, True, False, False, False, False),
+    (2, "202호", 2, True, False, True, False, False),
     (2, "203호", 1, True, False, False, False, True),
 ]
 
@@ -257,7 +257,8 @@ def _create_payments(client, csrf, combination, units):
         elif kind == "partial":
             amount = invoice.total_amount // 2
         else:
-            amount = invoice.total_amount + 10000
+            # 2차 정산 후에도 초과납부가 남아 잔액 분기를 검증할 수 있게 한다.
+            amount = invoice.total_amount + 250000
         client.post(
             "/payments/add",
             json={

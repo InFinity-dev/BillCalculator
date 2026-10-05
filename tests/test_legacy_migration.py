@@ -605,3 +605,45 @@ def test_existing_target_is_refused(legacy_db, tmp_path):
     )
     assert result.returncode == 2
     assert target.read_bytes() == b"not empty"
+
+
+@pytest.mark.slow
+def test_force_preserves_existing_target_when_load_fails(legacy_db, tmp_path):
+    _mutate(legacy_db, "UPDATE floors SET created_at='invalid-date' WHERE id=1")
+    target = tmp_path / "existing.db"
+    original = b"existing database must survive"
+    target.write_bytes(original)
+    report_path = tmp_path / "report.json"
+    result = _run_script(
+        "--mysql-uri", "sqlite:///{}".format(legacy_db),
+        "--sqlite-path", str(target),
+        "--report", str(report_path),
+        "--force",
+    )
+    assert result.returncode == 1
+    assert target.read_bytes() == original
+    assert any(item["issue"] == "load_failed" for item in json.loads(
+        report_path.read_text(encoding="utf-8")
+    )["blocking"])
+
+
+@pytest.mark.slow
+def test_force_replaces_target_only_after_successful_verification(legacy_db, tmp_path):
+    target = tmp_path / "existing.db"
+    target.write_bytes(b"old database")
+    result = _run_script(
+        "--mysql-uri", "sqlite:///{}".format(legacy_db),
+        "--sqlite-path", str(target),
+        "--report", str(tmp_path / "report.json"),
+        "--force",
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    with sqlite3.connect(str(target)) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM units").fetchone()[0] == 2
+        assert connection.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
+
+
+def test_migration_report_redacts_source_password():
+    report = Report().as_dict("mysql+mysqlconnector://user:secret@host/database", None)
+    assert "secret" not in report["source"]
+    assert "***" in report["source"]

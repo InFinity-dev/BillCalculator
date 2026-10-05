@@ -33,7 +33,9 @@
 import argparse
 import json
 import os
+import sqlite3
 import sys
+import tempfile
 from datetime import date, datetime
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
@@ -41,7 +43,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from sqlalchemy import create_engine, inspect, text  # noqa: E402
+from sqlalchemy import DateTime as SQLDateTime, create_engine, inspect, text  # noqa: E402
+from sqlalchemy.engine import make_url  # noqa: E402
 
 #: 레거시 시스템이 이월 여부를 판정하던 문자열 규칙.
 #: **이 스크립트에서 단 한 번만 사용된다.** 애플리케이션 코드는 더 이상 쓰지 않는다.
@@ -73,6 +76,10 @@ class Report:
         )
 
     def as_dict(self, source, target):
+        try:
+            source = make_url(source).render_as_string(hide_password=True)
+        except Exception:  # noqa: BLE001
+            source = "(접속 URI를 표시할 수 없음)"
         return {
             "generated_at": datetime.now().isoformat(timespec="seconds"),
             "source": source,
@@ -172,6 +179,18 @@ def normalize_date(value):
         return datetime.fromisoformat(str(value).strip()).date()
     except ValueError:
         return None
+
+
+def normalize_datetime(value):
+    """드라이버가 문자열로 반환한 레거시 DATETIME 을 모델 입력으로 변환한다."""
+    if value is None or isinstance(value, datetime):
+        return value
+    if isinstance(value, date):
+        return datetime.combine(value, datetime.min.time())
+    try:
+        return datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+    except ValueError:
+        raise ValueError("올바르지 않은 레거시 날짜/시간: {}".format(value))
 
 
 def parse_json_column(value):
@@ -932,8 +951,16 @@ def load_into_sqlite(migrator, sqlite_path, report):
 
         try:
             for table, model in model_by_table.items():
+                datetime_columns = {
+                    column.name for column in model.__table__.columns
+                    if isinstance(column.type, SQLDateTime)
+                }
                 for row in migrator.extracted.get(table, []):
-                    db.session.add(model(**row))
+                    converted = {
+                        key: normalize_datetime(value) if key in datetime_columns else value
+                        for key, value in row.items()
+                    }
+                    db.session.add(model(**converted))
                 db.session.flush()
             db.session.commit()
         except Exception:
@@ -941,6 +968,8 @@ def load_into_sqlite(migrator, sqlite_path, report):
             raise
 
         _verify(migrator, report, db, model_by_table)
+        db.session.remove()
+        db.engine.dispose()
 
 
 def _verify(migrator, report, db, model_by_table):
@@ -1014,6 +1043,12 @@ def _verify(migrator, report, db, model_by_table):
     }
 
 
+def _remove_stage_files(path):
+    for candidate in (path, Path(str(path) + "-wal"), Path(str(path) + "-shm")):
+        if candidate.exists():
+            candidate.unlink()
+
+
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
@@ -1070,19 +1105,26 @@ def main(argv=None):
         print("확인 후 그래도 진행하려면 --skip-invalid 를 지정하세요.")
         return 1
 
-    if sqlite_path.exists():
-        sqlite_path.unlink()
-    for suffix in ("-wal", "-shm"):
-        sidecar = Path(str(sqlite_path) + suffix)
-        if sidecar.exists():
-            sidecar.unlink()
+    if any(Path(str(sqlite_path) + suffix).exists() for suffix in ("-wal", "-shm")):
+        print("대상 DB의 WAL 파일이 남아 있습니다. 앱을 종료하고 체크포인트 후 다시 실행하세요.")
+        return 2
+
+    sqlite_path.parent.mkdir(parents=True, exist_ok=True)
+    stage_fd, stage_name = tempfile.mkstemp(
+        prefix=".billcalc-migration-", suffix=".db", dir=str(sqlite_path.parent)
+    )
+    os.close(stage_fd)
+    staged_path = Path(stage_name)
 
     try:
-        load_into_sqlite(migrator, sqlite_path, report)
+        load_into_sqlite(migrator, staged_path, report)
+        # 임시 DB의 WAL 을 본 파일에 반영한 뒤 단일 파일로 교체한다.
+        with sqlite3.connect(str(staged_path)) as connection:
+            connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            connection.execute("PRAGMA journal_mode=DELETE")
     except Exception as exc:  # noqa: BLE001
         report.block("__load__", None, "load_failed", exc)
-        if sqlite_path.exists():
-            sqlite_path.rename(str(sqlite_path) + ".failed")
+        _remove_stage_files(staged_path)
         report_path.write_text(
             json.dumps(report.as_dict(args.mysql_uri, sqlite_path), ensure_ascii=False,
                        indent=2, default=str),
@@ -1105,9 +1147,15 @@ def main(argv=None):
         report.balance_check and not report.balance_check["ok"]
     )
     if verification_failed:
-        failed_path = Path(str(sqlite_path) + ".failed")
-        sqlite_path.rename(failed_path)
-        print("검증에 실패해 결과를 {} 로 옮겼습니다. MySQL 원본은 그대로입니다.".format(failed_path))
+        _remove_stage_files(staged_path)
+        print("검증에 실패했습니다. 기존 대상 DB와 MySQL 원본은 그대로입니다.")
+        return 1
+
+    try:
+        os.replace(str(staged_path), str(sqlite_path))
+    except OSError as exc:
+        _remove_stage_files(staged_path)
+        print("검증된 DB 교체에 실패했습니다. 기존 대상 DB는 그대로입니다: {}".format(exc))
         return 1
 
     print("이전 완료: {}".format(sqlite_path))

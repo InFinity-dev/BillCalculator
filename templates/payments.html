@@ -1,90 +1,30 @@
 {% extends "base.html" %}
 {% block title %}납부 내역 관리 - 공과금 정산 시스템{% endblock %}
 {% block extra_css %}
-    <style>
-        .unit-row {
-            cursor: pointer;
-            transition: var(--transition-fast);
-        }
-
-        .unit-row:hover {
-            background: var(--gray-50) !important;
-            transform: translateX(4px);
-        }
-
-        .unit-row.selected {
-            background: #e0e7ff !important;
-            border-left: 4px solid var(--primary-color);
-        }
-
-        .history-month {
-            background: white;
-            border-radius: var(--radius-lg);
-            padding: var(--space-xl);
-            margin-bottom: var(--space-lg);
-            border: 2px solid var(--gray-200);
-            transition: var(--transition-fast);
-        }
-
-        .history-month:hover {
-            border-color: var(--primary-color);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
-        }
-
-        .balance-positive {
-            color: var(--danger-dark);
-            font-weight: 700;
-        }
-
-        .balance-negative {
-            color: var(--success-dark);
-            font-weight: 700;
-        }
-
-        .balance-zero {
-            color: var(--gray-500);
-        }
-
-        .payment-record {
-            background: var(--gray-50);
-            padding: var(--space-md) var(--space-lg);
-            border-radius: var(--radius-md);
-            margin-top: var(--space-sm);
-            border-left: 3px solid var(--primary-color);
-        }
-
-        .summary-card {
-            background: var(--primary-gradient);
-            color: white;
-            padding: var(--space-2xl);
-            border-radius: var(--radius-xl);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/payments.css') }}">
 {% endblock %}
 
 {% block content %}
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-        <h1 style="margin: 0;"><span class="emoji">💳</span> 납부 내역 관리</h1>
-        <button class="btn btn-secondary" onclick="validateBalances()" style="padding: 10px 20px;">
-            🔍 잔액 정합성 검증
+    <div class="page-heading">
+        <div><h1>납부 관리</h1><p class="page-description">세대별 입금 내역과 누적 잔액을 확인하세요.</p></div>
+        <button class="btn btn-secondary u-p-10px-20px" onclick="validateBalances()">
+             잔액 정합성 검증
         </button>
     </div>
 
-    <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 16px; margin-bottom: 20px; border-radius: 8px;">
-        <p style="margin: 0; font-size: 14px; color: #1e40af; line-height: 1.6;">
-            💡 <strong>안내:</strong> 정산서에 [이월] 미납금/초과납부 항목이 포함되어도 누적 잔액에는 중복 계산되지 않습니다.
+    <div class="u-bg-info-light u-border-left-1px-solid-border u-p-16px u-mb-20px u-rounded-6px">
+        <p class="u-m-0 u-text-14px u-color-primary-dark u-leading-1_6">
+             <strong>안내:</strong> 정산서에 [이월] 미납금/초과납부 항목이 포함되어도 누적 잔액에는 중복 계산되지 않습니다.
             잔액 정합성 검증 기능으로 전체 세대의 납부 현황을 한눈에 확인할 수 있습니다.
         </p>
     </div>
 
-    <div class="grid grid-2" style="gap: 20px;">
+    <div class="payments-layout">
         <!-- 좌측: 세대 목록 -->
         <div class="content-card">
-            <h2 style="margin-bottom: 20px;">세대 목록</h2>
-            <div style="margin-bottom: 15px;">
-                <input type="text" id="unitSearch" placeholder="🔍 세대 검색..."
-                       style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 class="u-mb-20px">세대 목록</h2>
+            <div class="u-mb-15px">
+                <input type="search" id="unitSearch" placeholder="세대 이름으로 검색" aria-label="세대 검색">
             </div>
 
             <table id="unitsTable">
@@ -96,17 +36,19 @@
                 </thead>
                 <tbody>
                 {% for unit in units %}
-                    <tr class="unit-row"
-                        onclick="loadUnitHistory({{ unit.id }}, '{{ unit.unit_name }}', '{{ unit.floor.name if unit.floor else '' }}', this)"
-                        data-unit-name="{{ unit.unit_name }}">
+                    <tr class="unit-row" tabindex="0" role="button" aria-label="{{ unit.floor.name if unit.floor else '' }} {{ unit.unit_name }} 납부 내역 확인"
+                        onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }"
+                        onclick="loadUnitHistory({{ unit.id }}, this.dataset.unitName, this.dataset.floorName, this)"
+                        data-unit-name="{{ unit.unit_name }}"
+                        data-floor-name="{{ unit.floor.name if unit.floor else '' }}">
                         <td>
                             <strong>{{ unit.floor.name if unit.floor else '' }} {{ unit.unit_name }}</strong>
                             {% if unit.memo %}
-                                <div style="font-size: 12px; color: #64748b; margin-top: 4px;">{{ unit.memo }}</div>
+                                <div class="u-text-12px u-color-text-muted u-mt-4px">{{ unit.memo }}</div>
                             {% endif %}
                         </td>
                         <td class="text-right balance-cell" id="balance-{{ unit.id }}">
-                            <span style="color: #94a3b8;">로딩중...</span>
+                            <span class="u-color-text-muted">로딩중...</span>
                         </td>
                     </tr>
                 {% endfor %}
@@ -116,25 +58,25 @@
 
         <!-- 우측: 선택 세대의 정산 이력 -->
         <div class="content-card">
-            <div id="historySection" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2 style="margin: 0;" id="historyTitle"></h2>
+            <div id="historySection" hidden>
+                <div class="u-display-flex u-justify-content-space-between u-align-items-center u-mb-20px">
+                    <h2 class="u-m-0" id="historyTitle"></h2>
                 </div>
 
                 <!-- 요약 카드 -->
-                <div class="summary-card" style="margin-bottom: 30px;">
-                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+                <div class="summary-card u-mb-30px">
+                    <div class="u-display-grid u-cols-repeat-3-minmax-0-1fr u-gap-20px">
                         <div>
-                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">총 고지액</div>
-                            <div style="font-size: 24px; font-weight: bold;" id="summaryBilled">0원</div>
+                            <div class="u-text-14px u-opacity-0_9 u-mb-8px">총 고지액</div>
+                            <div class="u-text-24px u-weight-bold" id="summaryBilled">0원</div>
                         </div>
                         <div>
-                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">총 입금액</div>
-                            <div style="font-size: 24px; font-weight: bold;" id="summaryPaid">0원</div>
+                            <div class="u-text-14px u-opacity-0_9 u-mb-8px">총 입금액</div>
+                            <div class="u-text-24px u-weight-bold" id="summaryPaid">0원</div>
                         </div>
                         <div>
-                            <div style="font-size: 14px; opacity: 0.9; margin-bottom: 8px;">잔액</div>
-                            <div style="font-size: 28px; font-weight: bold;" id="summaryBalance">0원</div>
+                            <div class="u-text-14px u-opacity-0_9 u-mb-8px">잔액</div>
+                            <div class="u-text-28px u-weight-bold" id="summaryBalance">0원</div>
                         </div>
                     </div>
                 </div>
@@ -143,9 +85,9 @@
                 <div id="historyList"></div>
             </div>
 
-            <div id="emptyState" style="text-align: center; padding: 80px 20px; color: #94a3b8;">
-                <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
-                <p style="font-size: 16px;">세대를 선택하면 정산 이력이 표시됩니다</p>
+            <div class="u-align-center u-p-80px-20px u-color-text-muted" id="emptyState">
+
+                <p class="u-text-16px">세대를 선택하면 정산 이력이 표시됩니다</p>
             </div>
         </div>
     </div>
@@ -154,29 +96,26 @@
 {% block modals %}
     <!-- 입금 등록 모달 -->
     <div id="paymentModal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-content u-max-width-500px">
             <h2 id="modalTitle">입금 등록</h2>
             <form id="paymentForm">
                 <input type="hidden" id="paymentId">
                 <input type="hidden" id="modalCombinationId">
                 <input type="hidden" id="modalUnitId">
 
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">입금일</label>
-                    <input type="date" id="paymentDate" required
-                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                <div class="u-mb-20px">
+                    <label for="paymentDate" class="u-display-block u-mb-8px u-weight-600">입금일</label>
+                    <input class="u-width-100 u-p-10px u-border-1px-solid-border u-rounded-6px u-text-14px" type="date" id="paymentDate" required>
                 </div>
 
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">입금액 (원)</label>
-                    <input type="number" id="paymentAmount" required min="0"
-                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                <div class="u-mb-20px">
+                    <label for="paymentAmount" class="u-display-block u-mb-8px u-weight-600">입금액 (원)</label>
+                    <input class="u-width-100 u-p-10px u-border-1px-solid-border u-rounded-6px u-text-14px" type="number" id="paymentAmount" required min="0">
                 </div>
 
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">입금 방법</label>
-                    <select id="paymentMethod" required
-                            style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px;">
+                <div class="u-mb-20px">
+                    <label for="paymentMethod" class="u-display-block u-mb-8px u-weight-600">입금 방법</label>
+                    <select class="u-width-100 u-p-10px u-border-1px-solid-border u-rounded-6px u-text-14px" id="paymentMethod" required>
                         <option value="현금">현금</option>
                         <option value="계좌이체">계좌이체</option>
                         <option value="카드">카드</option>
@@ -184,13 +123,12 @@
                     </select>
                 </div>
 
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">메모 (선택)</label>
-                    <textarea id="paymentMemo" rows="3"
-                              style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; resize: vertical;"></textarea>
+                <div class="u-mb-20px">
+                    <label for="paymentMemo" class="u-display-block u-mb-8px u-weight-600">메모 (선택)</label>
+                    <textarea class="u-width-100 u-p-10px u-border-1px-solid-border u-rounded-6px u-text-14px u-resize-vertical" id="paymentMemo" rows="3"></textarea>
                 </div>
 
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <div class="u-display-flex u-gap-10px u-justify-content-flex-end">
                     <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">취소</button>
                     <button type="submit" class="btn btn-primary">저장</button>
                 </div>
@@ -200,29 +138,27 @@
 
     <!-- 잔액 검증 결과 모달 -->
     <div id="validateModal" class="modal">
-        <div class="modal-content"
-             style="max-width: 1000px; width: 90%; max-height: 90vh; padding: 0; display: flex; flex-direction: column; overflow: hidden;">
+        <div class="modal-content u-max-width-1000px u-width-90 u-max-height-90vh u-p-0 u-display-flex u-flex-direction-column u-overflow-hidden">
             <!-- 헤더 (고정) -->
-            <div style="padding: 24px; border-bottom: 2px solid #e2e8f0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border-radius: 16px 16px 0 0; flex-shrink: 0;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h2 style="margin: 0; font-size: 24px; color: white;">🔍 잔액 정합성 검증 결과</h2>
-                    <button onclick="closeValidateModal()"
-                            style="background: rgba(255,255,255,0.2); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; font-size: 20px; transition: all 0.2s; line-height: 1;">
+            <div class="u-p-24px u-border-bottom-1px-solid-border u-bg-surface-subtle u-color-text-primary u-rounded-6px u-flex-shrink-0">
+                <div class="u-display-flex u-justify-content-space-between u-align-items-center">
+                    <h2 class="u-m-0 u-text-24px u-color-text-primary"> 잔액 정합성 검증 결과</h2>
+                    <button class="icon-button u-text-20px" aria-label="검증 결과 닫기" onclick="closeValidateModal()">
                         ×
                     </button>
                 </div>
-                <div id="validateSummary" style="margin-top: 12px; font-size: 14px; opacity: 0.9;"></div>
+                <div class="u-mt-12px u-text-14px u-opacity-0_9" id="validateSummary"></div>
             </div>
 
             <!-- 본문 (스크롤 가능) -->
-            <div style="flex: 1; overflow-y: auto; padding: 24px;">
+            <div class="u-flex-1 u-overflow-y-auto u-p-24px">
                 <div id="validateResults"></div>
             </div>
 
             <!-- 푸터 (고정) -->
-            <div style="padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc; border-radius: 0 0 16px 16px; text-align: center; flex-shrink: 0;">
-                <div style="font-size: 13px; color: #64748b;">
-                    💡 콘솔(F12)에서 상세 데이터를 확인할 수 있습니다.
+            <div class="u-p-16px-24px u-border-top-1px-solid-border u-bg-surface-subtle u-rounded-6px u-align-center u-flex-shrink-0">
+                <div class="u-text-13px u-color-text-muted">
+                    정산서의 이월 항목은 누적 잔액에 중복 반영되지 않습니다.
                 </div>
             </div>
         </div>
@@ -234,10 +170,6 @@
     <script>
         let currentUnitId = null;
         let currentHistory = [];
-
-        function getCsrfToken() {
-            return '{{ csrf_token() }}';
-        }
 
         // 페이지 로드 시 모든 세대의 잔액 로드
         window.addEventListener('DOMContentLoaded', async () => {
@@ -255,18 +187,18 @@
                         let className = '';
 
                         if (balance > 0) {
-                            html = `<span style="color: #dc2626; font-weight: 600;">미납 ${balance.toLocaleString()}원</span>`;
+                            html = `<span class="u-color-danger-dark u-weight-600">미납 ${balance.toLocaleString()}원</span>`;
                         } else if (balance < 0) {
-                            html = `<span style="color: #059669; font-weight: 600;">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
+                            html = `<span class="u-color-success-dark u-weight-600">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
                         } else {
-                            html = `<span style="color: #64748b;">완납</span>`;
+                            html = `<span class="u-color-text-muted">완납</span>`;
                         }
 
                         cell.innerHTML = html;
                     }
                 } catch (error) {
                     console.error(`Error loading balance for unit ${unitId}:`, error);
-                    cell.innerHTML = `<span style="color: #dc2626;">오류</span>`;
+                    cell.innerHTML = `<span class="u-color-danger-dark">오류</span>`;
                 }
             }
         });
@@ -278,7 +210,7 @@
 
             rows.forEach(row => {
                 const unitName = row.dataset.unitName.toLowerCase();
-                row.style.display = unitName.includes(keyword) ? '' : 'none';
+                row.hidden = !unitName.includes(keyword);
             });
         });
 
@@ -317,20 +249,21 @@
                 const balanceEl = document.getElementById('summaryBalance');
                 balanceEl.textContent = Math.abs(totalBalance).toLocaleString() + '원';
                 if (totalBalance > 0) {
-                    balanceEl.style.color = '#fca5a5';
+                    balanceEl.className = 'balance-positive';
                     balanceEl.textContent = '미납 ' + balanceEl.textContent;
                 } else if (totalBalance < 0) {
-                    balanceEl.style.color = '#86efac';
+                    balanceEl.className = 'balance-negative';
                     balanceEl.textContent = '초과 ' + balanceEl.textContent;
                 } else {
-                    balanceEl.style.color = 'white';
+                    balanceEl.className = 'balance-zero';
                 }
 
                 // 이력 렌더링
                 renderHistory();
 
-                document.getElementById('emptyState').style.display = 'none';
-                document.getElementById('historySection').style.display = 'block';
+                document.getElementById('emptyState').hidden = true;
+                document.getElementById('historySection').hidden = false;
+                if (window.matchMedia('(max-width: 768px)').matches) document.getElementById('historySection').scrollIntoView({behavior: 'smooth', block: 'start'});
 
             } catch (error) {
                 console.error('Error:', error);
@@ -343,7 +276,7 @@
             const container = document.getElementById('historyList');
 
             if (currentHistory.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #94a3b8; padding: 40px 0;">정산 내역이 없습니다.</p>';
+                container.innerHTML = '<p class="u-align-center u-color-text-muted u-p-40px-0">정산 내역이 없습니다.</p>';
                 return;
             }
 
@@ -366,49 +299,49 @@
                 const paymentsHtml = history.payments.length > 0
                     ? history.payments.map(p => `
           <div class="payment-record">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-              <div style="flex: 1;">
-                <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">
+            <div class="u-display-flex u-justify-content-space-between u-align-items-start">
+              <div class="u-flex-1">
+                <div class="u-weight-600 u-color-text-primary u-mb-4px">
                   ${p.payment_amount.toLocaleString()}원
                 </div>
-                <div style="font-size: 13px; color: #64748b;">
-                  📅 ${p.payment_date} | 💳 ${p.payment_method}
+                <div class="u-text-13px u-color-text-muted">
+                   ${p.payment_date} |  ${escapeHtml(p.payment_method)}
                 </div>
-                ${p.memo ? `<div style="font-size: 13px; color: #475569; margin-top: 4px;">${p.memo}</div>` : ''}
+                ${p.memo ? `<div class="u-text-13px u-color-text-secondary u-mt-4px">${escapeHtml(p.memo)}</div>` : ''}
               </div>
-              <div style="display: flex; gap: 5px;">
-                <button class="btn btn-secondary btn-sm" onclick='editPayment(${JSON.stringify(p)}, ${history.combination_id})'>수정</button>
+              <div class="u-display-flex u-gap-5px">
+                <button class="btn btn-secondary btn-sm edit-payment" data-payment-id="${p.id}" data-combination-id="${history.combination_id}">수정</button>
                 <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})">삭제</button>
               </div>
             </div>
           </div>
         `).join('')
-                    : '<p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">입금 내역 없음</p>';
+                    : '<p class="u-color-text-muted u-text-14px u-mt-8px">입금 내역 없음</p>';
 
                 return `
       <div class="history-month">
-        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 16px;">
+        <div class="u-display-flex u-justify-content-space-between u-align-items-start u-mb-16px">
           <div>
-            <h3 style="margin: 0 0 8px 0; color: #1e293b;">${history.invoice_name}</h3>
-            <div style="font-size: 14px; color: #64748b;">${history.created_at}</div>
+            <h3 class="u-m-0-0-8px-0 u-color-text-primary">${escapeHtml(history.invoice_name)}</h3>
+            <div class="u-text-14px u-color-text-muted">${history.created_at}</div>
           </div>
           <button class="btn btn-primary btn-sm" onclick="showAddPaymentModal(${history.combination_id})">
             + 입금 등록
           </button>
         </div>
 
-        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 16px; background: #f8fafc; border-radius: 8px; margin-bottom: 12px;">
+        <div class="u-display-grid u-cols-repeat-3-minmax-0-1fr u-gap-16px u-p-16px u-bg-surface-subtle u-rounded-6px u-mb-12px">
           <div>
-            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">고지액</div>
-            <div style="font-size: 18px; font-weight: 600; color: #1e293b;">${history.billed_amount.toLocaleString()}원</div>
+            <div class="u-text-12px u-color-text-muted u-mb-4px">고지액</div>
+            <div class="u-text-18px u-weight-600 u-color-text-primary">${history.billed_amount.toLocaleString()}원</div>
           </div>
           <div>
-            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">입금액</div>
-            <div style="font-size: 18px; font-weight: 600; color: #667eea;">${history.paid_amount.toLocaleString()}원</div>
+            <div class="u-text-12px u-color-text-muted u-mb-4px">입금액</div>
+            <div class="u-text-18px u-weight-600 u-color-primary-color">${history.paid_amount.toLocaleString()}원</div>
           </div>
           <div>
-            <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">잔액</div>
-            <div style="font-size: 18px; font-weight: 600;" class="${balanceClass}">${balanceHtml}</div>
+            <div class="u-text-12px u-color-text-muted u-mb-4px">잔액</div>
+            <div class="${balanceClass} u-text-18px u-weight-600">${balanceHtml}</div>
           </div>
         </div>
 
@@ -416,6 +349,15 @@
       </div>
     `;
             }).join('');
+            container.querySelectorAll('.edit-payment').forEach(button => {
+                button.addEventListener('click', () => {
+                    const combinationId = Number(button.dataset.combinationId);
+                    const paymentId = Number(button.dataset.paymentId);
+                    const history = currentHistory.find(h => h.combination_id === combinationId);
+                    const payment = history && history.payments.find(p => p.id === paymentId);
+                    if (payment) editPayment(payment, combinationId);
+                });
+            });
         }
 
         // 입금 등록 모달 열기
@@ -428,7 +370,7 @@
             document.getElementById('paymentAmount').value = '';
             document.getElementById('paymentMethod').value = '계좌이체';
             document.getElementById('paymentMemo').value = '';
-            document.getElementById('paymentModal').style.display = 'flex';
+            openModal('paymentModal');
         }
 
         // 입금 수정
@@ -441,7 +383,7 @@
             document.getElementById('paymentAmount').value = payment.payment_amount;
             document.getElementById('paymentMethod').value = payment.payment_method;
             document.getElementById('paymentMemo').value = payment.memo;
-            document.getElementById('paymentModal').style.display = 'flex';
+            openModal('paymentModal');
         }
 
         // 입금 삭제
@@ -472,11 +414,11 @@
                         const cell = document.getElementById(`balance-${currentUnitId}`);
                         const balance = balanceData.balance;
                         if (balance > 0) {
-                            cell.innerHTML = `<span style="color: #dc2626; font-weight: 600;">미납 ${balance.toLocaleString()}원</span>`;
+                            cell.innerHTML = `<span class="u-color-danger-dark u-weight-600">미납 ${balance.toLocaleString()}원</span>`;
                         } else if (balance < 0) {
-                            cell.innerHTML = `<span style="color: #059669; font-weight: 600;">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
+                            cell.innerHTML = `<span class="u-color-success-dark u-weight-600">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
                         } else {
-                            cell.innerHTML = `<span style="color: #64748b;">완납</span>`;
+                            cell.innerHTML = `<span class="u-color-text-muted">완납</span>`;
                         }
                     }
                 }
@@ -488,7 +430,7 @@
 
         // 모달 닫기
         function closePaymentModal() {
-            document.getElementById('paymentModal').style.display = 'none';
+            closeModal('paymentModal');
         }
 
         // 폼 제출
@@ -534,11 +476,11 @@
                         const cell = document.getElementById(`balance-${currentUnitId}`);
                         const balance = balanceData.balance;
                         if (balance > 0) {
-                            cell.innerHTML = `<span style="color: #dc2626; font-weight: 600;">미납 ${balance.toLocaleString()}원</span>`;
+                            cell.innerHTML = `<span class="u-color-danger-dark u-weight-600">미납 ${balance.toLocaleString()}원</span>`;
                         } else if (balance < 0) {
-                            cell.innerHTML = `<span style="color: #059669; font-weight: 600;">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
+                            cell.innerHTML = `<span class="u-color-success-dark u-weight-600">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
                         } else {
-                            cell.innerHTML = `<span style="color: #64748b;">완납</span>`;
+                            cell.innerHTML = `<span class="u-color-text-muted">완납</span>`;
                         }
                     }
                 }
@@ -561,15 +503,15 @@
                 const resultsDiv = document.getElementById('validateResults');
                 const summaryDiv = document.getElementById('validateSummary');
 
-                resultsDiv.innerHTML = '<div style="text-align:center; padding:40px; color:#94a3b8;"><div style="font-size:48px; margin-bottom:16px;">⏳</div><div>잔액을 검증하는 중입니다...</div></div>';
+                resultsDiv.innerHTML = '<div class="u-align-center u-p-40px u-color-text-muted"><div>잔액을 검증하는 중입니다...</div></div>';
                 summaryDiv.innerHTML = '';
-                modal.style.display = 'flex';
+                openModal('validateModal');
 
                 const res = await fetch('/admin/validate_balances');
                 const data = await res.json();
 
                 if (!data.success) {
-                    resultsDiv.innerHTML = `<div style="text-align:center; padding:40px; color:#dc2626;"><div style="font-size:48px; margin-bottom:16px;">❌</div><div>검증 실패: ${data.message}</div></div>`;
+                    resultsDiv.innerHTML = `<div class="u-align-center u-p-40px u-color-danger-dark"><div>검증 실패: ${data.message}</div></div>`;
                     return;
                 }
 
@@ -597,22 +539,22 @@
                 // 요약 정보 표시
                 summaryDiv.innerHTML = `
       총 ${report.length}세대 |
-      ✅ 완납 ${completedCount}세대 |
-      ⚠️ 미납 ${unpaidCount}세대 (${totalUnpaid.toLocaleString()}원) |
-      💰 초과납부 ${overpaidCount}세대 (${totalOverpaid.toLocaleString()}원)
+       완납 ${completedCount}세대 |
+       미납 ${unpaidCount}세대 (${totalUnpaid.toLocaleString()}원) |
+       초과납부 ${overpaidCount}세대 (${totalOverpaid.toLocaleString()}원)
     `;
 
                 // 결과 테이블 생성
-                let html = '<table style="width:100%; border-collapse:collapse;">';
+                let html = '<table class="u-width-100 u-border-collapse-collapse">';
                 html += `
       <thead>
-        <tr style="background:#f1f5f9; border-bottom:2px solid #cbd5e1;">
-          <th style="padding:12px; text-align:left;">세대</th>
-          <th style="padding:12px; text-align:right;">고지액</th>
-          <th style="padding:12px; text-align:right;">납부액</th>
-          <th style="padding:12px; text-align:right;">잔액</th>
-          <th style="padding:12px; text-align:center;">정산건수</th>
-          <th style="padding:12px; text-align:center;">이월참고</th>
+        <tr class="u-bg-surface-subtle u-border-bottom-1px-solid-border">
+          <th class="u-p-12px u-align-left">세대</th>
+          <th class="u-p-12px u-align-right">고지액</th>
+          <th class="u-p-12px u-align-right">납부액</th>
+          <th class="u-p-12px u-align-right">잔액</th>
+          <th class="u-p-12px u-align-center">정산건수</th>
+          <th class="u-p-12px u-align-center">이월참고</th>
         </tr>
       </thead>
       <tbody>
@@ -628,45 +570,34 @@
                 });
 
                 sortedReport.forEach((item, index) => {
-                    let statusIcon = '';
                     let statusText = '';
-                    let statusColor = '';
-                    let rowBg = index % 2 === 0 ? '#ffffff' : '#f8fafc';
 
                     if (item.balance > 0) {
-                        statusIcon = '⚠️';
                         statusText = `미납 ${item.balance.toLocaleString()}원`;
-                        statusColor = '#dc2626';
-                        rowBg = '#fef2f2';
                     } else if (item.balance < 0) {
-                        statusIcon = '💰';
                         statusText = `초과 ${Math.abs(item.balance).toLocaleString()}원`;
-                        statusColor = '#059669';
-                        rowBg = '#f0fdf4';
                     } else {
-                        statusIcon = '✅';
                         statusText = '완납';
-                        statusColor = '#64748b';
                     }
 
                     html += `
-        <tr style="background:${rowBg}; border-bottom:1px solid #e2e8f0;">
-          <td style="padding:12px;">
-            <strong>${item.floor_name} ${item.unit_name}</strong>
+        <tr class="balance-report-row">
+          <td class="u-p-12px">
+            <strong>${escapeHtml(item.floor_name)} ${escapeHtml(item.unit_name)}</strong>
           </td>
-          <td style="padding:12px; text-align:right; font-family:'Courier New', monospace;">
+          <td class="u-p-12px u-align-right u-font-family-Courier-New-monospace">
             ${item.total_billed.toLocaleString()}원
           </td>
-          <td style="padding:12px; text-align:right; font-family:'Courier New', monospace; color:#667eea;">
+          <td class="u-p-12px u-align-right u-font-family-Courier-New-monospace u-color-primary-color">
             ${item.total_paid.toLocaleString()}원
           </td>
-          <td style="padding:12px; text-align:right; font-weight:600; color:${statusColor};">
-            ${statusIcon} ${statusText}
+          <td class="text-right ${item.balance > 0 ? 'balance-positive' : item.balance < 0 ? 'balance-negative' : 'balance-zero'}">
+            ${statusText}
           </td>
-          <td style="padding:12px; text-align:center; color:#64748b;">
+          <td class="u-p-12px u-align-center u-color-text-muted">
             ${item.invoice_count}건
           </td>
-          <td style="padding:12px; text-align:center; font-size:12px; color:#92400e;">
+          <td class="u-p-12px u-align-center u-text-12px u-color-warning-dark">
             ${item.carryover_total !== 0 ? item.carryover_total.toLocaleString() + '원' : '-'}
           </td>
         </tr>
@@ -678,9 +609,9 @@
                 // 문제 세대만 강조 표시 옵션
                 if (unpaidCount > 0 || overpaidCount > 0) {
                     html += `
-        <div style="margin-top:20px; padding:16px; background:#fef3c7; border-left:4px solid #f59e0b; border-radius:8px;">
-          <strong style="color:#78350f;">💡 조치 필요</strong>
-          <div style="font-size:14px; color:#92400e; margin-top:8px;">
+        <div class="u-mt-20px u-p-16px u-bg-warning-light u-border-left-1px-solid-border u-rounded-6px">
+          <strong class="u-color-warning-dark"> 조치 필요</strong>
+          <div class="u-text-14px u-color-warning-dark u-mt-8px">
             ${unpaidCount > 0 ? `• ${unpaidCount}개 세대에 총 ${totalUnpaid.toLocaleString()}원의 미납금이 있습니다.<br>` : ''}
             ${overpaidCount > 0 ? `• ${overpaidCount}개 세대에 총 ${totalOverpaid.toLocaleString()}원의 초과납부가 있습니다.` : ''}
           </div>
@@ -688,9 +619,9 @@
       `;
                 } else {
                     html += `
-        <div style="margin-top:20px; padding:16px; background:#dcfce7; border-left:4px solid #22c55e; border-radius:8px; text-align:center;">
-          <div style="font-size:48px; margin-bottom:8px;">🎉</div>
-          <strong style="color:#166534; font-size:18px;">모든 세대가 완납 상태입니다!</strong>
+        <div class="u-mt-20px u-p-16px u-bg-success-light u-border-left-1px-solid-border u-rounded-6px u-align-center">
+
+          <strong class="u-color-success-dark u-text-18px">모든 세대가 완납 상태입니다!</strong>
         </div>
       `;
                 }
@@ -704,17 +635,17 @@
             } catch (error) {
                 console.error('Error:', error);
                 document.getElementById('validateResults').innerHTML = `
-      <div style="text-align:center; padding:40px; color:#dc2626;">
-        <div style="font-size:48px; margin-bottom:16px;">⚠️</div>
+      <div class="u-align-center u-p-40px u-color-danger-dark">
+
         <div>검증 중 오류가 발생했습니다.</div>
-        <div style="font-size:14px; color:#64748b; margin-top:8px;">${error.message}</div>
+        <div class="u-text-14px u-color-text-muted u-mt-8px">${error.message}</div>
       </div>
     `;
             }
         }
 
         function closeValidateModal() {
-            document.getElementById('validateModal').style.display = 'none';
+            closeModal('validateModal');
         }
 
         // 모달 외부 클릭 시 닫기
