@@ -290,6 +290,7 @@
                                    class="btn btn-secondary u-p-5px-10px">조회</a>
                                 <a href="{{ url_for('print_invoice', combination_id=combo.id) }}" target="_blank"
                                    class="btn btn-primary u-p-5px-10px">인쇄</a>
+                                <a href="{{ url_for('payments', combination_id=combo.id) }}" class="btn btn-secondary u-p-5px-10px">납부 내역</a>
                                 <button class="btn btn-danger u-p-5px-10px"
                                         onclick="deleteInvoice({{ combo.id }})">삭제
                                 </button>
@@ -315,6 +316,9 @@
 
         // 탭 전환
         function showTab(tabId) { selectTab(tabId); }
+        window.addEventListener('DOMContentLoaded', () => {
+            if (new URLSearchParams(window.location.search).get('tab') === 'history') showTab('history-tab');
+        });
 
         // Step 관리
         function updateStepIndicators(currentStep) {
@@ -849,6 +853,7 @@
             const j = await res.json();
             alert(j.message || (j.success ? '삭제되었습니다.' : '삭제 실패'));
             if (j.success) location.reload();
+            else if (j.payments_url) window.location.href = j.payments_url;
         }
     </script>
 {% endblock %}

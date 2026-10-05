@@ -1707,7 +1707,9 @@ def delete_invoice(combination_id):
         if payment_count:
             return json_error(
                 "이 정산서에는 납부 내역 {}건이 등록되어 있어 삭제할 수 없습니다. "
-                "납부 내역을 먼저 삭제하세요.".format(payment_count)
+                "정산서별 납부 내역에서 전체 세대의 입금을 확인하고 먼저 삭제하세요.".format(payment_count),
+                payment_count=payment_count,
+                payments_url=url_for("payments", combination_id=combination_id),
             )
 
         db.session.delete(combination)
@@ -1756,7 +1758,21 @@ def payments():
     combinations = InvoiceCombination.query.order_by(
         InvoiceCombination.created_at.desc()
     ).all()
-    return render_template("payments.html", units=units, combinations=combinations)
+    selected_id = request.args.get("combination_id", type=int)
+    selected_combination = None
+    combination_payments = []
+    unlinked_payment_ids = set()
+    if selected_id is not None:
+        selected_combination = InvoiceCombination.query.filter_by(id=selected_id).first_or_404()
+        combination_payments = Payment.query.options(
+            joinedload(Payment.unit).joinedload(Unit.floor)
+        ).filter_by(combination_id=selected_id).order_by(Payment.payment_date, Payment.id).all()
+        invoice_units = {identifier for (identifier,) in db.session.query(FinalInvoice.unit_id)
+                         .filter_by(combination_id=selected_id).all()}
+        unlinked_payment_ids = {payment.id for payment in combination_payments if payment.unit_id not in invoice_units}
+    return render_template("payments.html", units=units, combinations=combinations,
+                           selected_combination=selected_combination, combination_payments=combination_payments,
+                           unlinked_payment_ids=unlinked_payment_ids)
 
 
 @app.route("/payments/unit_history/<int:unit_id>")
@@ -1766,6 +1782,12 @@ def payment_unit_history(unit_id):
         unit = db.session.get(Unit, unit_id)
         if unit is None:
             return json_error("세대를 찾을 수 없습니다.", status=404)
+        history = balance_service.unit_history(unit_id)
+        summary = balance_service.unit_balance(unit_id)
+        summary["status"] = balance_service.payment_status(
+            summary["total_billed"], summary["total_paid"],
+            has_invoice=all(item["has_invoice"] for item in history),
+        )
         return jsonify(
             {
                 "success": True,
@@ -1774,7 +1796,8 @@ def payment_unit_history(unit_id):
                     "name": unit.unit_name,
                     "floor": unit.floor.name if unit.floor else "",
                 },
-                "history": balance_service.unit_history(unit_id),
+                "history": history,
+                "summary": summary,
             }
         )
     except Exception as e:  # noqa: BLE001
@@ -1786,6 +1809,10 @@ def payment_balance(unit_id):
     """세대의 누적 미납/초과 금액 (이월 항목 제외)."""
     try:
         result = balance_service.unit_balance(unit_id)
+        result["status"] = balance_service.payment_status(
+            result["total_billed"], result["total_paid"],
+            has_invoice=not balance_service.unlinked_payment_unit_ids(unit_id),
+        )
         result["success"] = True
         return jsonify(result)
     except Exception as e:  # noqa: BLE001
@@ -1883,6 +1910,7 @@ def validate_balances():
             .all()
         )
         balances = balance_service.all_unit_balances(units)
+        unlinked_units = balance_service.unlinked_payment_unit_ids()
         report = [
             {
                 "unit_id": unit.id,
@@ -1893,6 +1921,10 @@ def validate_balances():
                 "balance": balances[unit.id]["balance"],
                 "carryover_total": balances[unit.id]["carryover_total"],
                 "invoice_count": balances[unit.id]["invoice_count"],
+                "status": balance_service.payment_status(
+                    balances[unit.id]["total_billed"], balances[unit.id]["total_paid"],
+                    has_invoice=unit.id not in unlinked_units,
+                ),
             }
             for unit in units
         ]

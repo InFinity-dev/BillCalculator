@@ -39,6 +39,29 @@ def _billed_for_invoice(invoice):
     )
 
 
+def payment_status(billed, paid, *, has_invoice=True):
+    """잔액 0과 실제 완납을 구분한다. 청구 연결이 없는 입금은 먼저 확인한다."""
+    if not has_invoice:
+        return "unlinked"
+    remaining = billed - paid
+    if remaining > 0:
+        return "unpaid"
+    if remaining < 0:
+        return "credit" if paid > 0 else "refund"
+    return "paid" if paid > 0 else "no_charge"
+
+
+def unlinked_payment_unit_ids(unit_id=None):
+    query = db.session.query(Payment.unit_id).outerjoin(
+        FinalInvoice,
+        (FinalInvoice.combination_id == Payment.combination_id)
+        & (FinalInvoice.unit_id == Payment.unit_id),
+    ).filter(FinalInvoice.id.is_(None))
+    if unit_id is not None:
+        query = query.filter(Payment.unit_id == unit_id)
+    return {identifier for (identifier,) in query.distinct().all()}
+
+
 def _paid_totals_by_unit(unit_ids=None):
     """{unit_id: 납부 합계}. 세대별 개별 쿼리를 피하기 위한 일괄 집계."""
     query = db.session.query(
@@ -131,24 +154,26 @@ def unit_history(unit_id):
     -------
     list[dict] — 정산 생성 순.
     """
-    rows = (
-        db.session.query(FinalInvoice, InvoiceCombination)
-        .join(InvoiceCombination, FinalInvoice.combination_id == InvoiceCombination.id)
+    invoices = (
+        FinalInvoice.query
         .options(selectinload(FinalInvoice.charges))
         .filter(FinalInvoice.unit_id == unit_id)
-        .order_by(InvoiceCombination.created_at)
         .all()
     )
-
+    invoices_by_combination = {invoice.combination_id: invoice for invoice in invoices}
+    payments_by_combination = {}
+    for payment in Payment.query.filter_by(unit_id=unit_id).order_by(Payment.payment_date, Payment.id).all():
+        payments_by_combination.setdefault(payment.combination_id, []).append(payment)
+    identifiers = set(invoices_by_combination) | set(payments_by_combination)
+    combinations = InvoiceCombination.query.filter(InvoiceCombination.id.in_(identifiers)).order_by(
+        InvoiceCombination.created_at, InvoiceCombination.id
+    ).all()
     history = []
-    for invoice, combination in rows:
-        payments = (
-            Payment.query.filter_by(combination_id=combination.id, unit_id=unit_id)
-            .order_by(Payment.payment_date)
-            .all()
-        )
+    for combination in combinations:
+        invoice = invoices_by_combination.get(combination.id)
+        payments = payments_by_combination.get(combination.id, [])
         total_paid = sum(p.payment_amount for p in payments)
-        billed = int(_billed_for_invoice(invoice))
+        billed = int(_billed_for_invoice(invoice)) if invoice else 0
 
         history.append(
             {
@@ -158,6 +183,8 @@ def unit_history(unit_id):
                 "billed_amount": billed,
                 "paid_amount": int(total_paid),
                 "balance": billed - int(total_paid),
+                "has_invoice": invoice is not None,
+                "status": payment_status(billed, total_paid, has_invoice=invoice is not None),
                 "payments": [
                     {
                         "id": p.id,

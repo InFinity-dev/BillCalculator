@@ -10,6 +10,7 @@
     <div class="page-heading">
         <h1>{{ combination.invoice_name }}</h1>
         <div class="btn-group">
+            <a href="{{ url_for('payments', combination_id=combination.id) }}" class="btn btn-secondary">납부 내역</a>
             <a href="{{ url_for('print_invoice', combination_id=combination.id) }}" target="_blank"
                class="btn btn-primary"> 인쇄용 보기</a>
             <a href="{{ url_for('invoice_combination') }}" class="btn btn-secondary">목록으로</a>

@@ -10,12 +10,17 @@
 .history-month:first-child { padding-top: 0; } .history-month:last-child { border-bottom: 0; padding-bottom: 0; }
 .balance-positive, .balance-negative { font-weight: 650; } .balance-zero { color: var(--text-muted); }
 .payment-record { background: var(--surface-subtle); padding: 14px 16px; border: 1px solid var(--border); border-radius: 6px; margin-top: 10px; }
+.combination-payment-heading, .combination-payment-record { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.combination-payment-heading h3 { margin: 0; overflow-wrap: anywhere; }
+.combination-payment-record > div { min-width: 0; overflow-wrap: anywhere; }
+.combination-payment-record > button { flex-shrink: 0; }
 .summary-card { background: var(--surface-subtle); padding: 18px; border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); }
 .summary-card > div { gap: 16px; } .summary-card [id^=summary] { font-size: 22px; font-weight: 650; }
 #historySection { scroll-margin-top: 78px; } #emptyState { padding: 64px 16px; }
 #validateModal .modal-content { padding: 0; } #validateResults .table-scroll { border-radius: 0; }
 @media (max-width: 1100px) { .payments-layout { grid-template-columns: minmax(240px, .9fr) minmax(0, 1.4fr); } }
 @media (max-width: 768px) {
+    .combination-payment-heading { flex-direction: column; }
     .payments-layout { grid-template-columns: 1fr; }
     .payments-layout > .content-card:first-child .table-scroll { max-height: 310px; overflow-y: auto; }
     #unitsTable { min-width: 0; } #unitsTable td:first-child { position: static; background: transparent; }

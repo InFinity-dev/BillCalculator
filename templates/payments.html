@@ -19,6 +19,43 @@
         </p>
     </div>
 
+    <section class="content-card u-mb-20px" aria-labelledby="combinationPaymentsTitle">
+        <h2 id="combinationPaymentsTitle">정산서별 납부 내역</h2>
+        <p class="form-help">정산서를 선택하면 전체 세대의 입금을 확인하고 삭제할 수 있습니다.</p>
+        <form method="get" class="form-group">
+            <label for="combinationFilter">정산서 선택</label>
+            <select id="combinationFilter" name="combination_id" onchange="this.form.submit()">
+                <option value="">정산서를 선택하세요</option>
+                {% for combo in combinations %}
+                    <option value="{{ combo.id }}" {% if selected_combination and selected_combination.id == combo.id %}selected{% endif %}>{{ combo.invoice_name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        {% if selected_combination %}
+            <div class="combination-payment-heading">
+                <div><h3>{{ selected_combination.invoice_name }}</h3><p class="form-help">입금 내역 {{ combination_payments|length }}건 · 전체 세대 기준</p></div>
+                <div class="btn-group">
+                    <a class="btn btn-secondary btn-sm" href="{{ url_for('view_invoice', combination_id=selected_combination.id) }}">정산서 조회</a>
+                    <button class="btn btn-danger btn-sm" id="deleteSelectedInvoice" type="button" {% if combination_payments %}disabled{% endif %}>정산서 삭제</button>
+                </div>
+            </div>
+            <p class="form-help">등록된 입금을 모두 삭제하면 정산서 삭제가 가능합니다. 0원 입금도 실제 등록 내역에 포함됩니다.</p>
+            {% for payment in combination_payments %}
+                <div class="payment-record combination-payment-record" data-payment-id="{{ payment.id }}">
+                    <div>
+                        <strong>{{ payment.unit.floor.name if payment.unit and payment.unit.floor else '' }} {{ payment.unit.unit_name if payment.unit else '세대 정보 없음' }}</strong>
+                        <div>{{ "{:,}".format(payment.payment_amount) }}원 · {{ payment.payment_date.strftime('%Y-%m-%d') }} · {{ payment.payment_method }}</div>
+                        {% if payment.memo %}<p class="form-help">{{ payment.memo }}</p>{% endif %}
+                        {% if payment.id in unlinked_payment_ids %}<p class="text-danger">이 입금과 연결된 세대별 청구서가 없습니다. 내역을 확인하세요.</p>{% endif %}
+                    </div>
+                    <button class="btn btn-danger btn-sm" type="button" onclick="deletePayment({{ payment.id }}, this)">입금 삭제</button>
+                </div>
+            {% else %}
+                <p class="form-help">입금 내역이 없습니다. 정산서 삭제 버튼을 사용할 수 있습니다.</p>
+            {% endfor %}
+        {% endif %}
+    </section>
+
     <div class="payments-layout">
         <!-- 좌측: 세대 목록 -->
         <div class="content-card">
@@ -169,7 +206,51 @@
 {% block scripts %}
     <script>
         let currentUnitId = null;
+        let currentUnitName = '';
+        let currentFloorName = '';
         let currentHistory = [];
+        const selectedCombinationId = {{ selected_combination.id if selected_combination else 'null' }};
+
+        function balancePresentation(data) {
+            const balance = data.balance;
+            const paid = data.total_paid ?? data.paid_amount ?? 0;
+            if (data.status === 'unlinked' || data.has_invoice === false) return {text: '청구서 연결 확인', className: 'balance-positive'};
+            if (balance > 0) return {text: `미납 ${balance.toLocaleString()}원`, className: 'balance-positive'};
+            if (balance < 0) return {text: `${paid > 0 ? '초과납부' : '환급 대상'} ${Math.abs(balance).toLocaleString()}원`, className: 'balance-negative'};
+            return {text: paid > 0 ? '완납' : '청구 없음', className: 'balance-zero'};
+        }
+
+        function renderBalanceCell(cell, data) {
+            if (!cell) return;
+            const status = balancePresentation(data);
+            cell.textContent = status.text;
+            cell.classList.remove('balance-positive', 'balance-negative', 'balance-zero');
+            cell.classList.add(status.className);
+        }
+
+        async function refreshCurrentUnit() {
+            if (currentUnitId === null) return;
+            await loadUnitHistory(currentUnitId, currentUnitName, currentFloorName, null);
+            const response = await fetch(`/payments/balance/${currentUnitId}`);
+            const data = await response.json();
+            if (data.success) renderBalanceCell(document.getElementById(`balance-${currentUnitId}`), data);
+        }
+
+        document.getElementById('deleteSelectedInvoice')?.addEventListener('click', async event => {
+            if (!confirm('이 정산서와 연결된 세대별 청구 내역을 삭제하시겠습니까?')) return;
+            const button = event.currentTarget;
+            button.disabled = true;
+            try {
+                const result = await fetchAPI(`/invoice/delete/${selectedCombinationId}`, 'POST', {});
+                alert(result.message);
+                if (result.success) window.location.href = '/invoice?tab=history';
+                else if (result.payments_url) window.location.href = result.payments_url;
+            } catch (error) {
+                alert('정산서 삭제에 실패했습니다.');
+            } finally {
+                button.disabled = false;
+            }
+        });
 
         // 페이지 로드 시 모든 세대의 잔액 로드
         window.addEventListener('DOMContentLoaded', async () => {
@@ -182,19 +263,7 @@
                     const data = await res.json();
 
                     if (data.success) {
-                        const balance = data.balance;
-                        let html = '';
-                        let className = '';
-
-                        if (balance > 0) {
-                            html = `<span class="u-color-danger-dark u-weight-600">미납 ${balance.toLocaleString()}원</span>`;
-                        } else if (balance < 0) {
-                            html = `<span class="u-color-success-dark u-weight-600">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
-                        } else {
-                            html = `<span class="u-color-text-muted">완납</span>`;
-                        }
-
-                        cell.innerHTML = html;
+                        renderBalanceCell(cell, data);
                     }
                 } catch (error) {
                     console.error(`Error loading balance for unit ${unitId}:`, error);
@@ -217,6 +286,8 @@
         // 세대 정산 이력 로드
         async function loadUnitHistory(unitId, unitName, floorName, eventTarget) {
             currentUnitId = unitId;
+            currentUnitName = unitName;
+            currentFloorName = floorName;
 
             // 선택된 행 표시
             document.querySelectorAll('.unit-row').forEach(row => row.classList.remove('selected'));
@@ -239,24 +310,16 @@
                 document.getElementById('historyTitle').textContent = `${floorName} ${unitName} 정산 이력`;
 
                 // 요약 정보 업데이트 (백엔드에서 이월 항목 제외된 금액 전달)
-                const totalBilled = currentHistory.reduce((sum, h) => sum + h.billed_amount, 0);
-                const totalPaid = currentHistory.reduce((sum, h) => sum + h.paid_amount, 0);
-                const totalBalance = totalBilled - totalPaid;
+                const totalBilled = data.summary.total_billed;
+                const totalPaid = data.summary.total_paid;
 
                 document.getElementById('summaryBilled').textContent = totalBilled.toLocaleString() + '원';
                 document.getElementById('summaryPaid').textContent = totalPaid.toLocaleString() + '원';
 
                 const balanceEl = document.getElementById('summaryBalance');
-                balanceEl.textContent = Math.abs(totalBalance).toLocaleString() + '원';
-                if (totalBalance > 0) {
-                    balanceEl.className = 'balance-positive';
-                    balanceEl.textContent = '미납 ' + balanceEl.textContent;
-                } else if (totalBalance < 0) {
-                    balanceEl.className = 'balance-negative';
-                    balanceEl.textContent = '초과 ' + balanceEl.textContent;
-                } else {
-                    balanceEl.className = 'balance-zero';
-                }
+                const status = balancePresentation(data.summary);
+                balanceEl.textContent = status.text;
+                balanceEl.className = status.className;
 
                 // 이력 렌더링
                 renderHistory();
@@ -281,20 +344,9 @@
             }
 
             container.innerHTML = currentHistory.map(history => {
-                const balance = history.balance;
-                let balanceHtml = '';
-                let balanceClass = '';
-
-                if (balance > 0) {
-                    balanceHtml = `미납 ${balance.toLocaleString()}원`;
-                    balanceClass = 'balance-positive';
-                } else if (balance < 0) {
-                    balanceHtml = `초과납부 ${Math.abs(balance).toLocaleString()}원`;
-                    balanceClass = 'balance-negative';
-                } else {
-                    balanceHtml = '완납';
-                    balanceClass = 'balance-zero';
-                }
+                const status = balancePresentation(history);
+                const balanceHtml = status.text;
+                const balanceClass = status.className;
 
                 const paymentsHtml = history.payments.length > 0
                     ? history.payments.map(p => `
@@ -310,8 +362,8 @@
                 ${p.memo ? `<div class="u-text-13px u-color-text-secondary u-mt-4px">${escapeHtml(p.memo)}</div>` : ''}
               </div>
               <div class="u-display-flex u-gap-5px">
-                <button class="btn btn-secondary btn-sm edit-payment" data-payment-id="${p.id}" data-combination-id="${history.combination_id}">수정</button>
-                <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})">삭제</button>
+                <button class="btn btn-secondary btn-sm edit-payment" data-payment-id="${p.id}" data-combination-id="${history.combination_id}" ${history.has_invoice ? '' : 'disabled'}>수정</button>
+                <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id}, this)">삭제</button>
               </div>
             </div>
           </div>
@@ -325,7 +377,7 @@
             <h3 class="u-m-0-0-8px-0 u-color-text-primary">${escapeHtml(history.invoice_name)}</h3>
             <div class="u-text-14px u-color-text-muted">${history.created_at}</div>
           </div>
-          <button class="btn btn-primary btn-sm" onclick="showAddPaymentModal(${history.combination_id})">
+          <button class="btn btn-primary btn-sm" onclick="showAddPaymentModal(${history.combination_id})" ${history.has_invoice ? '' : 'disabled'}>
             + 입금 등록
           </button>
         </div>
@@ -345,6 +397,7 @@
           </div>
         </div>
 
+        ${history.has_invoice ? '' : '<p class="text-danger">연결된 청구서가 없는 입금도 아래에서 확인하고 삭제할 수 있습니다.</p>'}
         ${paymentsHtml}
       </div>
     `;
@@ -387,8 +440,9 @@
         }
 
         // 입금 삭제
-        async function deletePayment(id) {
+        async function deletePayment(id, trigger) {
             if (!confirm('이 입금 내역을 삭제하시겠습니까?')) return;
+            if (trigger) trigger.disabled = true;
 
             try {
                 const res = await fetch(`/payments/delete/${id}`, {
@@ -401,30 +455,14 @@
                 alert(data.message);
 
                 if (data.success) {
-                    const titleText = document.getElementById('historyTitle').textContent;
-                    const parts = titleText.split(' ');
-                    const floorName = parts[0] || '';
-                    const name = parts[1] || '';
-                    await loadUnitHistory(currentUnitId, name, floorName, null);
-
-                    // 잔액 업데이트
-                    const balanceRes = await fetch(`/payments/balance/${currentUnitId}`);
-                    const balanceData = await balanceRes.json();
-                    if (balanceData.success) {
-                        const cell = document.getElementById(`balance-${currentUnitId}`);
-                        const balance = balanceData.balance;
-                        if (balance > 0) {
-                            cell.innerHTML = `<span class="u-color-danger-dark u-weight-600">미납 ${balance.toLocaleString()}원</span>`;
-                        } else if (balance < 0) {
-                            cell.innerHTML = `<span class="u-color-success-dark u-weight-600">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
-                        } else {
-                            cell.innerHTML = `<span class="u-color-text-muted">완납</span>`;
-                        }
-                    }
+                    if (selectedCombinationId !== null) window.location.reload();
+                    else await refreshCurrentUnit();
                 }
             } catch (error) {
                 console.error('Error:', error);
                 alert('삭제에 실패했습니다.');
+            } finally {
+                if (trigger) trigger.disabled = false;
             }
         }
 
@@ -463,26 +501,8 @@
                 if (result.success) {
                     closePaymentModal();
 
-                    const titleText = document.getElementById('historyTitle').textContent;
-                    const parts = titleText.split(' ');
-                    const floorName = parts[0] || '';
-                    const name = parts[1] || '';
-                    await loadUnitHistory(currentUnitId, name, floorName, null);
-
-                    // 잔액 업데이트
-                    const balanceRes = await fetch(`/payments/balance/${currentUnitId}`);
-                    const balanceData = await balanceRes.json();
-                    if (balanceData.success) {
-                        const cell = document.getElementById(`balance-${currentUnitId}`);
-                        const balance = balanceData.balance;
-                        if (balance > 0) {
-                            cell.innerHTML = `<span class="u-color-danger-dark u-weight-600">미납 ${balance.toLocaleString()}원</span>`;
-                        } else if (balance < 0) {
-                            cell.innerHTML = `<span class="u-color-success-dark u-weight-600">초과 ${Math.abs(balance).toLocaleString()}원</span>`;
-                        } else {
-                            cell.innerHTML = `<span class="u-color-text-muted">완납</span>`;
-                        }
-                    }
+                    if (selectedCombinationId !== null) window.location.reload();
+                    else await refreshCurrentUnit();
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -523,16 +543,22 @@
                 let unpaidCount = 0;
                 let overpaidCount = 0;
                 let completedCount = 0;
+                let noChargeCount = 0;
+                let unlinkedCount = 0;
 
                 report.forEach(item => {
-                    if (item.balance > 0) {
+                    if (item.status === 'unlinked') {
+                        unlinkedCount++;
+                    } else if (item.balance > 0) {
                         totalUnpaid += item.balance;
                         unpaidCount++;
                     } else if (item.balance < 0) {
                         totalOverpaid += Math.abs(item.balance);
                         overpaidCount++;
-                    } else {
+                    } else if (item.total_paid > 0) {
                         completedCount++;
+                    } else {
+                        noChargeCount++;
                     }
                 });
 
@@ -540,8 +566,10 @@
                 summaryDiv.innerHTML = `
       총 ${report.length}세대 |
        완납 ${completedCount}세대 |
+       청구 없음 ${noChargeCount}세대 |
        미납 ${unpaidCount}세대 (${totalUnpaid.toLocaleString()}원) |
-       초과납부 ${overpaidCount}세대 (${totalOverpaid.toLocaleString()}원)
+       환급·초과납부 ${overpaidCount}세대 (${totalOverpaid.toLocaleString()}원) |
+       청구서 연결 확인 ${unlinkedCount}세대
     `;
 
                 // 결과 테이블 생성
@@ -570,15 +598,7 @@
                 });
 
                 sortedReport.forEach((item, index) => {
-                    let statusText = '';
-
-                    if (item.balance > 0) {
-                        statusText = `미납 ${item.balance.toLocaleString()}원`;
-                    } else if (item.balance < 0) {
-                        statusText = `초과 ${Math.abs(item.balance).toLocaleString()}원`;
-                    } else {
-                        statusText = '완납';
-                    }
+                    const status = balancePresentation(item);
 
                     html += `
         <tr class="balance-report-row">
@@ -591,8 +611,8 @@
           <td class="u-p-12px u-align-right u-font-family-Courier-New-monospace u-color-primary-color">
             ${item.total_paid.toLocaleString()}원
           </td>
-          <td class="text-right ${item.balance > 0 ? 'balance-positive' : item.balance < 0 ? 'balance-negative' : 'balance-zero'}">
-            ${statusText}
+          <td class="text-right ${status.className}">
+            ${status.text}
           </td>
           <td class="u-p-12px u-align-center u-color-text-muted">
             ${item.invoice_count}건
@@ -607,13 +627,14 @@
                 html += '</tbody></table>';
 
                 // 문제 세대만 강조 표시 옵션
-                if (unpaidCount > 0 || overpaidCount > 0) {
+                if (unpaidCount > 0 || overpaidCount > 0 || unlinkedCount > 0) {
                     html += `
         <div class="u-mt-20px u-p-16px u-bg-warning-light u-border-left-1px-solid-border u-rounded-6px">
           <strong class="u-color-warning-dark"> 조치 필요</strong>
           <div class="u-text-14px u-color-warning-dark u-mt-8px">
             ${unpaidCount > 0 ? `• ${unpaidCount}개 세대에 총 ${totalUnpaid.toLocaleString()}원의 미납금이 있습니다.<br>` : ''}
-            ${overpaidCount > 0 ? `• ${overpaidCount}개 세대에 총 ${totalOverpaid.toLocaleString()}원의 초과납부가 있습니다.` : ''}
+            ${overpaidCount > 0 ? `• ${overpaidCount}개 세대에 총 ${totalOverpaid.toLocaleString()}원의 환급·초과납부 잔액이 있습니다.<br>` : ''}
+            ${unlinkedCount > 0 ? `• ${unlinkedCount}개 세대의 입금에 연결된 청구서를 확인하세요.` : ''}
           </div>
         </div>
       `;
@@ -621,7 +642,7 @@
                     html += `
         <div class="u-mt-20px u-p-16px u-bg-success-light u-border-left-1px-solid-border u-rounded-6px u-align-center">
 
-          <strong class="u-color-success-dark u-text-18px">모든 세대가 완납 상태입니다!</strong>
+          <strong class="u-color-success-dark u-text-18px">미납 잔액이 없습니다.</strong>
         </div>
       `;
                 }

@@ -22,6 +22,7 @@ sys.path.insert(0, str(REPO_ROOT))
 # app 을 import 하기 전에 DB 경로를 확정해야 한다.
 # config.Config 가 클래스 정의 시점에 URI 를 계산하기 때문이다.
 _TMP_DIR = tempfile.mkdtemp(prefix="billcalc-test-")
+os.environ.pop("BILLCALC_DATABASE_URI", None)
 os.environ["BILLCALC_DB_PATH"] = str(Path(_TMP_DIR) / "test.db")
 os.environ["BILLCALC_SECRET_KEY"] = "test-secret-key"
 

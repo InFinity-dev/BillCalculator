@@ -41,6 +41,9 @@
         <a class="header-settings icon-button" href="{{ url_for('settings') }}" aria-label="설정">{{ icon('settings') }}</a>
     </header>
     <main class="page-content" id="main-content" tabindex="-1">
+        {% if config.get('DEMO_MODE') %}
+            <div class="alert alert-info" role="status">테스트 데이터 사용 중 · 변경 사항은 테스트 데이터에만 저장됩니다.</div>
+        {% endif %}
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% for category, message in messages %}<div class="alert alert-{{ category }}" role="status">{{ message }}</div>{% endfor %}
         {% endwith %}
