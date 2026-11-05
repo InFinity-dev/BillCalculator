@@ -39,6 +39,11 @@ def _billed_for_invoice(invoice):
     )
 
 
+def invoice_billed_amount(invoice):
+    """정산서 한 건의 잔액 반영 고지액(이월 제외)을 공개 API로 반환한다."""
+    return int(_billed_for_invoice(invoice))
+
+
 def payment_status(billed, paid, *, has_invoice=True):
     """잔액 0과 실제 완납을 구분한다. 청구 연결이 없는 입금은 먼저 확인한다."""
     if not has_invoice:

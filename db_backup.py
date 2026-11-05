@@ -5,9 +5,10 @@
 따라서 SQLite 공식 온라인 백업 API(``sqlite3.Connection.backup``)를 사용한다.
 이 API 는 백업 도중의 쓰기까지 일관되게 처리한다.
 
-향후 UI 기능으로 확장할 수 있도록 경계만 함수로 노출한다.
+설정 UI는 이 함수들로 위험 작업 직전 백업과 최근 복원 지점을 제공한다.
 """
 
+import re
 import shutil
 import sqlite3
 from datetime import datetime
@@ -20,6 +21,11 @@ BACKUP_DIR = DATA_DIR / "backups"
 
 class BackupError(RuntimeError):
     pass
+
+
+_AUTOMATIC_BACKUP_PATTERN = re.compile(
+    r"^(?P<reason>[a-z0-9_]+)_(?P<stamp>\d{8}_\d{6}_\d{6})\.db$"
+)
 
 
 def _require_sqlite_path():
@@ -76,6 +82,49 @@ def verify_backup(path):
     finally:
         conn.close()
     return True
+
+
+def automatic_backup_dir():
+    """현재 DB와 같은 위치의 자동 백업 폴더를 반환한다."""
+    return _require_sqlite_path().parent / "backups"
+
+
+def list_automatic_backups(limit=20):
+    """앱이 생성한 최근 자동 백업만 최신 순으로 나열한다."""
+    directory = automatic_backup_dir()
+    if not directory.exists():
+        return []
+    backups = []
+    for path in directory.iterdir():
+        match = _AUTOMATIC_BACKUP_PATTERN.fullmatch(path.name)
+        if not match or path.is_symlink() or not path.is_file():
+            continue
+        stat = path.stat()
+        backups.append({
+            "path": path,
+            "filename": path.name,
+            "reason": match.group("reason"),
+            "created_at": datetime.fromtimestamp(stat.st_mtime),
+            "size": stat.st_size,
+        })
+    backups.sort(key=lambda item: item["created_at"], reverse=True)
+    return backups[:limit]
+
+
+def resolve_automatic_backup(filename):
+    """사용자가 선택한 이름을 자동 백업 폴더 안의 실제 파일로만 해석한다."""
+    if not isinstance(filename, str) or Path(filename).name != filename:
+        raise BackupError("올바른 자동 백업 파일명이 아닙니다.")
+    if not _AUTOMATIC_BACKUP_PATTERN.fullmatch(filename):
+        raise BackupError("앱이 생성한 자동 백업 파일이 아닙니다.")
+    directory = automatic_backup_dir().resolve()
+    candidate = directory / filename
+    if candidate.is_symlink():
+        raise BackupError("연결된 파일은 자동 백업으로 사용할 수 없습니다.")
+    path = candidate.resolve()
+    if path.parent != directory or not path.is_file():
+        raise BackupError("선택한 자동 백업 파일을 찾을 수 없습니다.")
+    return path
 
 
 def restore_database(backup_path, keep_previous=True):

@@ -760,6 +760,8 @@ class Migrator:
         self.extracted["invoice_combination_items"] = items
 
         combo_memos = {c["id"]: c["memo"] for c in combos}
+        units_by_id = {unit["id"]: unit for unit in self.extracted.get("units", [])}
+        floors_by_id = {floor["id"]: floor for floor in self.extracted.get("floors", [])}
         invoices = []
         charges = []
         seen_invoice_key = {}
@@ -783,6 +785,15 @@ class Migrator:
                     "조합 메모와 내용이 달라 확인이 필요합니다.",
                 )
 
+            unit_snapshot_source = units_by_id.get(row.get("unit_id"))
+            floor_snapshot_source = floors_by_id.get(unit_snapshot_source.get("floor_id")) if unit_snapshot_source else None
+            if unit_snapshot_source is None or floor_snapshot_source is None:
+                self.report.block(
+                    "final_invoices", row_id, "snapshot_source_missing",
+                    "발행 세대 또는 층 참조를 찾을 수 없습니다.",
+                )
+                continue
+
             invoices.append(
                 {
                     "id": row_id,
@@ -798,6 +809,11 @@ class Migrator:
                     "total_amount": to_money(row.get("total_amount"), self.report,
                                              "final_invoices", row_id, "total_amount"),
                     "unit_memo": row.get("unit_memo"),
+                    "unit_name_snapshot": unit_snapshot_source.get("unit_name") or "",
+                    "floor_number_snapshot": floor_snapshot_source.get("floor_number"),
+                    "floor_name_snapshot": floor_snapshot_source.get("name") or "",
+                    "unit_profile_memo_snapshot": unit_snapshot_source.get("memo") or "",
+                    "snapshot_source": "legacy_migration",
                     "created_at": row.get("created_at") or datetime.utcnow(),
                 }
             )

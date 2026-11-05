@@ -488,6 +488,12 @@ class CommonBill(BillingMonthMixin, TimestampMixin, db.Model):
         ),
         CheckConstraint("total_amount >= 0", name="total_amount_non_negative"),
         Index("ix_common_bills_billing_month", "billing_month"),
+        Index(
+            "uq_common_bills_request_token",
+            "request_token",
+            unique=True,
+            sqlite_where=text("request_token IS NOT NULL"),
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -500,6 +506,8 @@ class CommonBill(BillingMonthMixin, TimestampMixin, db.Model):
         default="BY_RESIDENTS",
         server_default="BY_RESIDENTS",
     )
+    # 화면의 같은 저장 요청이 중복 전송돼도 한 번만 처리하기 위한 키.
+    request_token = db.Column(db.String(120))
 
     details = db.relationship(
         "CommonBillDetail",
@@ -594,9 +602,24 @@ class InvoiceCombinationItem(BillingMonthMixin, db.Model):
         CheckConstraint(_ITEM_POLYMORPHIC_CHECK, name="exactly_one_bill_reference"),
         CheckConstraint(_day_is_first("billing_month"), name="billing_month_first_day"),
         Index("ix_invoice_combination_items_combination_id", "combination_id"),
-        Index("ix_invoice_combination_items_electric_bill_id", "electric_bill_id"),
-        Index("ix_invoice_combination_items_water_bill_id", "water_bill_id"),
-        Index("ix_invoice_combination_items_common_bill_id", "common_bill_id"),
+        Index(
+            "uq_invoice_items_electric_bill_once",
+            "electric_bill_id",
+            unique=True,
+            sqlite_where=text("electric_bill_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_invoice_items_water_bill_once",
+            "water_bill_id",
+            unique=True,
+            sqlite_where=text("water_bill_id IS NOT NULL"),
+        ),
+        Index(
+            "uq_invoice_items_common_bill_once",
+            "common_bill_id",
+            unique=True,
+            sqlite_where=text("common_bill_id IS NOT NULL"),
+        ),
     )
 
     id = db.Column(db.Integer, primary_key=True)
@@ -676,6 +699,12 @@ class FinalInvoice(db.Model):
     common_details = db.Column(db.JSON)
     total_amount = db.Column(Money, nullable=False)
     unit_memo = db.Column(db.Text)
+    # 발행 뒤 세대 마스터가 바뀌어도 과거 청구서의 수신자를 고정한다.
+    unit_name_snapshot = db.Column(db.String(50), nullable=False)
+    floor_number_snapshot = db.Column(db.Integer, nullable=False)
+    floor_name_snapshot = db.Column(db.String(50), nullable=False, default="")
+    unit_profile_memo_snapshot = db.Column(db.Text, nullable=False, default="")
+    snapshot_source = db.Column(db.String(30), nullable=False, default="invoice_issue")
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     combination = db.relationship("InvoiceCombination", back_populates="invoices")
@@ -710,6 +739,15 @@ class FinalInvoice(db.Model):
         정산서 조회·인쇄 템플릿을 그대로 쓸 수 있고, 추가로 ``is_carryover`` 를 노출한다.
         """
         return self.charges
+
+    @property
+    def floor_label_snapshot(self):
+        base = (
+            "B{}층".format(-self.floor_number_snapshot)
+            if self.floor_number_snapshot < 0
+            else "{}층".format(self.floor_number_snapshot)
+        )
+        return "{} ({})".format(base, self.floor_name_snapshot) if self.floor_name_snapshot else base
 
 
 class FinalInvoiceCharge(db.Model):

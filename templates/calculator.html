@@ -271,6 +271,34 @@
 
 {% endblock %}
 
+{% block modals %}
+    <div id="calculationPreviewModal" class="modal">
+        <div class="modal-content calculation-preview-modal">
+            <div class="modal-header">
+                <div><h2 id="calculationPreviewTitle">저장 전 계산 확인</h2><p class="form-help">아래 금액이 실제 저장될 결과입니다.</p></div>
+                <button class="icon-button" type="button" data-close-modal="calculationPreviewModal" aria-label="닫기">×</button>
+            </div>
+            <div id="calculationPreviewWarnings"></div>
+            <div class="table-scroll" tabindex="0">
+                <table>
+                    <thead><tr><th>세대</th><th class="text-right">기본 배분</th><th class="text-right">할인</th><th class="text-right">추가</th><th class="text-right">최종 청구</th></tr></thead>
+                    <tbody id="calculationPreviewRows"></tbody>
+                    <tfoot><tr><td>합계</td><td colspan="3" id="calculationPreviewRounding"></td><td class="text-right" id="calculationPreviewTotal"></td></tr></tfoot>
+                </table>
+            </div>
+            <label class="checkbox-wrapper u-mb-16px" id="calculationRiskConfirmWrap" hidden>
+                <input type="checkbox" id="calculationRiskConfirm">
+                <span id="calculationRiskConfirmText"></span>
+            </label>
+            <div id="calculationPreviewStatus" class="form-help" aria-live="assertive"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-close-modal="calculationPreviewModal">입력 수정</button>
+                <button class="btn btn-primary" type="button" id="calculationSaveConfirmed">검증 결과대로 저장</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
 {% block scripts %}
     <script>
         const FLOORS = {{ (floors_json|default([]))|tojson }};
@@ -726,100 +754,95 @@
 
         document.getElementById('tv_mode').addEventListener('change', updateTvFeeInputs);
 
-        // 전기요금 폼 제출
-        document.getElementById('electricForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        let pendingCalculation = null;
+        const money = value => `${Math.round(Number(value || 0)).toLocaleString()}원`;
 
-            const rows = document.querySelectorAll('#monthlyBillsContainer .month-bill-row');
-            if (rows.length === 0) {
-                alert('월별 고지 내역을 최소 1개 이상 추가해주세요.');
-                return;
-            }
+        function showCalculationPreview(title, response, formData, url) {
+            const items = response.items || [{description: '', preview: response.preview}];
+            const rows = items.flatMap(item => item.preview.details.map(row => ({...row, item: item.description})));
+            const warnings = items.flatMap(item => item.preview.warnings || []);
+            (response.duplicates || []).forEach(item => warnings.push(`같은 월의 '${item.description}' 항목이 이미 ${item.count}건 있습니다.`));
+            document.getElementById('calculationPreviewTitle').textContent = title;
+            document.getElementById('calculationPreviewWarnings').innerHTML = warnings.length
+                ? warnings.map(text => `<div class="alert alert-warning">${escapeHtml(text)}</div>`).join('')
+                : '<div class="alert alert-success">입력값과 배분 결과를 검증했습니다.</div>';
+            document.getElementById('calculationPreviewRows').innerHTML = rows.map(row => {
+                const discount = Number(row.welfare_discount || 0) + Number(row.voucher_discount || 0);
+                const extra = Number(row.tv_fee || 0);
+                return `<tr><td>${row.item ? `<span class="badge badge-secondary">${escapeHtml(row.item)}</span> ` : ''}${escapeHtml(row.floor_name || '')} ${escapeHtml(row.unit_name)}${row.is_excluded ? ' (제외)' : ''}</td>
+                    <td class="text-right">${money(row.base_amount)}</td><td class="text-right">${discount ? '-' + money(discount) : '-'}</td>
+                    <td class="text-right">${extra ? '+' + money(extra) : '-'}</td><td class="text-right"><strong>${money(row.charged_amount)}</strong></td></tr>`;
+            }).join('');
+            const chargedTotal = items.reduce((sum, item) => sum + Number(item.preview.charged_total || 0), 0);
+            const rounding = items.reduce((sum, item) => sum + Number(item.preview.rounding_difference || 0), 0);
+            document.getElementById('calculationPreviewTotal').textContent = money(chargedTotal);
+            document.getElementById('calculationPreviewRounding').textContent = `10원 올림 차이 ${money(rounding)}`;
+            const risky = Boolean(response.existing || (response.duplicates || []).length);
+            const wrap = document.getElementById('calculationRiskConfirmWrap');
+            const checkbox = document.getElementById('calculationRiskConfirm');
+            wrap.hidden = !risky;
+            checkbox.checked = false;
+            document.getElementById('calculationRiskConfirmText').textContent = response.existing
+                ? '기존 계산을 자동 백업 후 이 결과로 교체합니다.'
+                : '기존 같은 이름 항목을 유지하고 새 항목으로 추가합니다.';
+            document.getElementById('calculationSaveConfirmed').disabled = risky;
+            checkbox.onchange = () => { document.getElementById('calculationSaveConfirmed').disabled = !checkbox.checked; };
+            document.getElementById('calculationPreviewStatus').textContent = '';
+            pendingCalculation = {url, formData, existing: response.existing, hasDuplicates: (response.duplicates || []).length > 0};
+            openModal('calculationPreviewModal');
+        }
 
-            const floorId = document.getElementById('electric_floor_id').value;
-            if (!floorId) {
-                alert('층을 선택해주세요.');
-                return;
-            }
+        async function requestCalculationPreview(title, url, formData) {
+            formData.set('preview', 'true');
+            const response = await fetch(url, {method: 'POST', body: formData});
+            const result = await response.json();
+            formData.delete('preview');
+            if (!result.success) throw new Error(result.message || '계산값을 확인할 수 없습니다.');
+            showCalculationPreview(title, result, formData, url);
+        }
 
-            const invalidInputs = document.querySelectorAll('.reading-curr[data-invalid="true"]');
-            if (invalidInputs.length > 0) {
-                alert(' 사용량이 음수인 세대가 있습니다.\n\n현월 검침값이 전월 검침값보다 작습니다.\n검침값을 확인해주세요.');
-                return;
-            }
-
-            const fd = new FormData(e.target);
-
+        document.getElementById('calculationSaveConfirmed').addEventListener('click', async event => {
+            if (!pendingCalculation) return;
+            const button = event.currentTarget;
+            button.disabled = true;
+            if (pendingCalculation.existing) pendingCalculation.formData.set('overwrite', 'true');
+            if (pendingCalculation.hasDuplicates) pendingCalculation.formData.set('duplicate_action', 'add');
+            document.getElementById('calculationPreviewStatus').textContent = '검증한 결과를 저장하고 있습니다…';
             try {
-                const res = await fetch('/calculate/electric', {method: 'POST', body: fd});
-                const j = await res.json();
-
-                if (j.already_exists) {
-                    if (confirm('이미 해당 정산월/층에 대한 데이터가 존재합니다.\n기존 데이터를 삭제하고 덮어쓸까요?')) {
-                        fd.set('overwrite', 'true');
-                        const res2 = await fetch('/calculate/electric', {method: 'POST', body: fd});
-                        const j2 = await res2.json();
-                        alert(j2.message || (j2.success ? '저장되었습니다.' : '실패했습니다.'));
-                        if (j2.success) location.reload();
-                    }
-                } else {
-                    alert(j.message || (j.success ? '저장되었습니다.' : '실패했습니다.'));
-                    if (j.success) location.reload();
-                }
+                const response = await fetch(pendingCalculation.url, {method: 'POST', body: pendingCalculation.formData});
+                const result = await response.json();
+                document.getElementById('calculationPreviewStatus').textContent = result.message || (result.success ? '저장되었습니다.' : '저장하지 못했습니다.');
+                if (result.success) window.setTimeout(() => window.location.reload(), 600);
+                else button.disabled = false;
             } catch (error) {
-                alert('오류가 발생했습니다: ' + error.message);
+                document.getElementById('calculationPreviewStatus').textContent = `저장 중 오류가 발생했습니다: ${error.message}`;
+                button.disabled = false;
             }
         });
 
-        // 수도요금 폼 제출
-        document.getElementById('waterForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const fd = new FormData(e.target);
-            const overwriteCheckbox = e.target.querySelector('input[name="overwrite"]');
-            fd.set('overwrite', overwriteCheckbox && overwriteCheckbox.checked ? 'true' : 'false');
-
-            try {
-                const res = await fetch('/calculate/water', {method: 'POST', body: fd});
-                const j = await res.json();
-
-                if (j.already_exists) {
-                    if (confirm('이미 해당 정산월에 대한 데이터가 존재합니다.\n기존 데이터를 삭제하고 덮어쓸까요?')) {
-                        fd.set('overwrite', 'true');
-                        const res2 = await fetch('/calculate/water', {method: 'POST', body: fd});
-                        const j2 = await res2.json();
-                        alert(j2.message || (j2.success ? '저장되었습니다.' : '실패했습니다.'));
-                        if (j2.success) location.reload();
-                    }
-                } else {
-                    alert(j.message || (j.success ? '저장되었습니다.' : '실패했습니다.'));
-                    if (j.success) location.reload();
-                }
-            } catch (error) {
-                alert('오류가 발생했습니다: ' + error.message);
-            }
+        document.getElementById('electricForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            if (!document.querySelectorAll('#monthlyBillsContainer .month-bill-row').length) return alert('월별 고지 내역을 최소 1개 이상 추가해주세요.');
+            if (!document.getElementById('electric_floor_id').value) return alert('층을 선택해주세요.');
+            const invalid = document.querySelector('.reading-curr[data-invalid="true"]');
+            if (invalid) { invalid.focus(); return; }
+            try { await requestCalculationPreview('전기요금 저장 전 확인', '/calculate/electric', new FormData(event.target)); }
+            catch (error) { alert(error.message); }
         });
 
-        // 공동 공과금 폼 제출
-        document.getElementById('commonForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        document.getElementById('waterForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            try { await requestCalculationPreview('수도요금 저장 전 확인', '/calculate/water', new FormData(event.target)); }
+            catch (error) { alert(error.message); }
+        });
 
-            e.target.querySelectorAll('input[type="number"]').forEach(input => {
-                if (!input.value || input.value.trim() === '') {
-                    input.value = '0';
-                }
-            });
-
-            const fd = new FormData(e.target);
-
-            try {
-                const res = await fetch('/calculate/common', {method: 'POST', body: fd});
-                const j = await res.json();
-                alert(j.message || (j.success ? '저장되었습니다.' : '실패했습니다.'));
-                if (j.success) location.reload();
-            } catch (error) {
-                alert('오류가 발생했습니다: ' + error.message);
-            }
+        document.getElementById('commonForm').addEventListener('submit', async event => {
+            event.preventDefault();
+            event.target.querySelectorAll('input[type="number"]').forEach(input => { if (!input.value.trim()) input.value = '0'; });
+            const formData = new FormData(event.target);
+            formData.set('request_token', globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random()}`);
+            try { await requestCalculationPreview('공동 공과금 저장 전 확인', '/calculate/common', formData); }
+            catch (error) { alert(error.message); }
         });
 
         // 초기화

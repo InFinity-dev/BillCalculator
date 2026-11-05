@@ -18,6 +18,7 @@ import pytest
 import balance as balance_service
 from extensions import db
 from models import FinalInvoice, FinalInvoiceCharge, Payment
+from tests.invoice_helper import post_invoice
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 LEGACY_KEYWORDS = ("미납", "초과납부", "환급", "이월")
@@ -39,9 +40,9 @@ def _add_charge(invoice, description, amount, is_carryover):
 def test_carryover_included_in_invoice_total(app, client, csrf, units, floor, electric_bill):
     """이월 항목은 청구서 총액에 포함된다."""
     unit = next(u for u in units if not u.is_vacant)
-    response = client.post(
-        "/invoice/create",
-        json={
+    response = post_invoice(
+        client,
+        {
             "_csrf_token": csrf,
             "name": "이월 포함",
             "memo": "",
@@ -127,9 +128,9 @@ def test_refund_carryover(app, units, combination):
 def test_carryover_flag_survives_round_trip(app, client, csrf, units, floor, electric_bill):
     """프론트엔드가 보낸 is_carryover 가 DB 까지 보존되어야 한다."""
     unit = next(u for u in units if not u.is_vacant)
-    client.post(
-        "/invoice/create",
-        json={
+    post_invoice(
+        client,
+        {
             "_csrf_token": csrf,
             "name": "플래그 보존",
             "memo": "",

@@ -203,6 +203,11 @@ def combination(app, units):
                 water_amount=5000,
                 common_amount=2000,
                 total_amount=17000,
+                unit_name_snapshot=unit.unit_name,
+                floor_number_snapshot=unit.floor.floor_number,
+                floor_name_snapshot=unit.floor.name or "",
+                unit_profile_memo_snapshot=unit.memo or "",
+                snapshot_source="test_fixture",
             )
         )
     db.session.commit()

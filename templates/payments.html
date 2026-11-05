@@ -43,7 +43,8 @@
             {% for payment in combination_payments %}
                 <div class="payment-record combination-payment-record" data-payment-id="{{ payment.id }}">
                     <div>
-                        <strong>{{ payment.unit.floor.name if payment.unit and payment.unit.floor else '' }} {{ payment.unit.unit_name if payment.unit else '세대 정보 없음' }}</strong>
+                        {% set snapshot = payment_invoice_snapshots.get(payment.unit_id) %}
+                        <strong>{% if snapshot %}{{ snapshot.floor_name }} {{ snapshot.unit_name }}{% else %}세대별 청구서 연결 없음{% endif %}</strong>
                         <div>{{ "{:,}".format(payment.payment_amount) }}원 · {{ payment.payment_date.strftime('%Y-%m-%d') }} · {{ payment.payment_method }}</div>
                         {% if payment.memo %}<p class="form-help">{{ payment.memo }}</p>{% endif %}
                         {% if payment.id in unlinked_payment_ids %}<p class="text-danger">이 입금과 연결된 세대별 청구서가 없습니다. 내역을 확인하세요.</p>{% endif %}
@@ -140,6 +141,13 @@
                 <input type="hidden" id="modalCombinationId">
                 <input type="hidden" id="modalUnitId">
 
+                <div class="payment-context" aria-label="입금 대상 확인">
+                    <div class="payment-context-title" id="paymentContextTitle">대상 정산서</div>
+                    <div><span>고지액</span><strong id="paymentContextBilled">0원</strong></div>
+                    <div><span>기입금액</span><strong id="paymentContextPaid">0원</strong></div>
+                    <div><span>현재 미납액</span><strong id="paymentContextBalance">0원</strong></div>
+                </div>
+
                 <div class="u-mb-20px">
                     <label for="paymentDate" class="u-display-block u-mb-8px u-weight-600">입금일</label>
                     <input class="u-width-100 u-p-10px u-border-1px-solid-border u-rounded-6px u-text-14px" type="date" id="paymentDate" required>
@@ -147,7 +155,10 @@
 
                 <div class="u-mb-20px">
                     <label for="paymentAmount" class="u-display-block u-mb-8px u-weight-600">입금액 (원)</label>
-                    <input class="u-width-100 u-p-10px u-border-1px-solid-border u-rounded-6px u-text-14px" type="number" id="paymentAmount" required min="0">
+                    <div class="payment-amount-row">
+                        <input class="u-width-100 u-p-10px u-border-1px-solid-border u-rounded-6px u-text-14px" type="number" id="paymentAmount" required min="0">
+                        <button class="btn btn-secondary" type="button" id="fillOutstanding">미납액 전액 입력</button>
+                    </div>
                 </div>
 
                 <div class="u-mb-20px">
@@ -160,6 +171,8 @@
                     </select>
                 </div>
 
+                <div id="paymentWarning" class="alert alert-warning" hidden aria-live="assertive"></div>
+
                 <div class="u-mb-20px">
                     <label for="paymentMemo" class="u-display-block u-mb-8px u-weight-600">메모 (선택)</label>
                     <textarea class="u-width-100 u-p-10px u-border-1px-solid-border u-rounded-6px u-text-14px u-resize-vertical" id="paymentMemo" rows="3"></textarea>
@@ -167,7 +180,7 @@
 
                 <div class="u-display-flex u-gap-10px u-justify-content-flex-end">
                     <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">취소</button>
-                    <button type="submit" class="btn btn-primary">저장</button>
+                    <button type="submit" class="btn btn-primary" id="paymentSubmit">저장</button>
                 </div>
             </form>
         </div>
@@ -209,6 +222,8 @@
         let currentUnitName = '';
         let currentFloorName = '';
         let currentHistory = [];
+        let modalOutstanding = 0;
+        let paymentWarningsAcknowledged = false;
         const selectedCombinationId = {{ selected_combination.id if selected_combination else 'null' }};
 
         function balancePresentation(data) {
@@ -414,7 +429,23 @@
         }
 
         // 입금 등록 모달 열기
+        function setPaymentContext(history, editingAmount = 0) {
+            const otherPaid = Math.max(0, Number(history.paid_amount || 0) - Number(editingAmount || 0));
+            modalOutstanding = Number(history.billed_amount || 0) - otherPaid;
+            document.getElementById('paymentContextTitle').textContent = `${currentFloorName} ${currentUnitName} · ${history.invoice_name}`;
+            document.getElementById('paymentContextBilled').textContent = `${Number(history.billed_amount || 0).toLocaleString()}원`;
+            document.getElementById('paymentContextPaid').textContent = `${otherPaid.toLocaleString()}원`;
+            document.getElementById('paymentContextBalance').textContent = `${modalOutstanding.toLocaleString()}원`;
+            document.getElementById('fillOutstanding').disabled = modalOutstanding <= 0;
+            document.getElementById('paymentWarning').hidden = true;
+            document.getElementById('paymentWarning').textContent = '';
+            document.getElementById('paymentSubmit').textContent = '저장';
+            paymentWarningsAcknowledged = false;
+        }
+
         function showAddPaymentModal(combinationId) {
+            const history = currentHistory.find(item => item.combination_id === combinationId);
+            if (!history) return;
             document.getElementById('modalTitle').textContent = '입금 등록';
             document.getElementById('paymentId').value = '';
             document.getElementById('modalCombinationId').value = combinationId;
@@ -423,11 +454,14 @@
             document.getElementById('paymentAmount').value = '';
             document.getElementById('paymentMethod').value = '계좌이체';
             document.getElementById('paymentMemo').value = '';
+            setPaymentContext(history);
             openModal('paymentModal');
         }
 
         // 입금 수정
         function editPayment(payment, combinationId) {
+            const history = currentHistory.find(item => item.combination_id === combinationId);
+            if (!history) return;
             document.getElementById('modalTitle').textContent = '입금 수정';
             document.getElementById('paymentId').value = payment.id;
             document.getElementById('modalCombinationId').value = combinationId;
@@ -436,8 +470,22 @@
             document.getElementById('paymentAmount').value = payment.payment_amount;
             document.getElementById('paymentMethod').value = payment.payment_method;
             document.getElementById('paymentMemo').value = payment.memo;
+            setPaymentContext(history, payment.payment_amount);
             openModal('paymentModal');
         }
+
+        document.getElementById('fillOutstanding').addEventListener('click', () => {
+            document.getElementById('paymentAmount').value = Math.max(0, modalOutstanding);
+            paymentWarningsAcknowledged = false;
+            document.getElementById('paymentWarning').hidden = true;
+        });
+        ['paymentDate', 'paymentAmount'].forEach(identifier => {
+            document.getElementById(identifier).addEventListener('input', () => {
+                paymentWarningsAcknowledged = false;
+                document.getElementById('paymentSubmit').textContent = '저장';
+                document.getElementById('paymentWarning').hidden = true;
+            });
+        });
 
         // 입금 삭제
         async function deletePayment(id, trigger) {
@@ -483,6 +531,7 @@
                 payment_amount: parseFloat(document.getElementById('paymentAmount').value),
                 payment_method: document.getElementById('paymentMethod').value,
                 memo: document.getElementById('paymentMemo').value,
+                acknowledge_warnings: paymentWarningsAcknowledged,
                 _csrf_token: getCsrfToken()
             };
 
@@ -496,13 +545,23 @@
                 });
 
                 const result = await res.json();
-                alert(result.message);
-
+                if (result.requires_confirmation) {
+                    const warning = document.getElementById('paymentWarning');
+                    warning.innerHTML = `<strong>다시 확인해주세요.</strong><br>${(result.warnings || []).map(escapeHtml).join('<br>')}`;
+                    warning.hidden = false;
+                    paymentWarningsAcknowledged = true;
+                    document.getElementById('paymentSubmit').textContent = '경고 확인 후 저장';
+                    return;
+                }
                 if (result.success) {
                     closePaymentModal();
 
                     if (selectedCombinationId !== null) window.location.reload();
                     else await refreshCurrentUnit();
+                } else {
+                    const warning = document.getElementById('paymentWarning');
+                    warning.textContent = result.message || '저장하지 못했습니다.';
+                    warning.hidden = false;
                 }
             } catch (error) {
                 console.error('Error:', error);

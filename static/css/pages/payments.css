@@ -18,6 +18,12 @@
 .summary-card > div { gap: 16px; } .summary-card [id^=summary] { font-size: 22px; font-weight: 650; }
 #historySection { scroll-margin-top: 78px; } #emptyState { padding: 64px 16px; }
 #validateModal .modal-content { padding: 0; } #validateResults .table-scroll { border-radius: 0; }
+.payment-context { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 16px; margin-bottom: 20px; background: var(--surface-subtle); border: 1px solid var(--border); border-radius: 6px; }
+.payment-context-title { grid-column: 1 / -1; font-weight: 650; color: var(--text-primary); }
+.payment-context div:not(.payment-context-title) { display: grid; gap: 4px; }
+.payment-context span { color: var(--text-muted); font-size: 13px; }
+.payment-context strong { font-size: 17px; }
+.payment-amount-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
 @media (max-width: 1100px) { .payments-layout { grid-template-columns: minmax(240px, .9fr) minmax(0, 1.4fr); } }
 @media (max-width: 768px) {
     .combination-payment-heading { flex-direction: column; }
@@ -28,4 +34,8 @@
     .summary-card > div { grid-template-columns: 1fr; gap: 12px; }
     .summary-card > div > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     .summary-card [id^=summary] { font-size: 20px; } .payment-record { padding: 14px 12px; }
+    .payment-context { grid-template-columns: 1fr; }
+    .payment-context-title { grid-column: auto; }
+    .payment-context div:not(.payment-context-title) { display: flex; justify-content: space-between; }
+    .payment-amount-row { grid-template-columns: 1fr; }
 }

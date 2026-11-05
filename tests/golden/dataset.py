@@ -31,6 +31,7 @@ from models import (
     Payment,
     Unit,
 )
+from tests.invoice_helper import post_invoice
 
 FLOOR_SPECS = [
     {"floor_number": -1, "name": "B1층", "contract": "C-B1"},
@@ -218,9 +219,9 @@ def _calc_common(client, csrf):
 
 
 def _create_invoice_one(client, csrf, electric_single, water_bill, common_residents):
-    client.post(
-        "/invoice/create",
-        json={
+    post_invoice(
+        client,
+        {
             "_csrf_token": csrf,
             "name": "2025년 3월 정산 (1차)",
             "memo": "3월 정산입니다.",
@@ -269,6 +270,7 @@ def _create_payments(client, csrf, combination, units):
                 "payment_amount": amount,
                 "payment_method": "계좌이체",
                 "memo": kind,
+                "acknowledge_warnings": True,
             },
         )
 
@@ -309,9 +311,9 @@ def _create_invoice_two(client, csrf, electric_bundle, common_units, units):
         "memo": "",
     }
 
-    client.post(
-        "/invoice/create",
-        json={
+    post_invoice(
+        client,
+        {
             "_csrf_token": csrf,
             "name": "2025년 3월 정산 (2차)",
             "memo": "",

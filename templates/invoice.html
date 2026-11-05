@@ -256,7 +256,8 @@
 
                     <div class="u-mt-30px u-display-flex u-gap-10px">
                         <button class="btn btn-secondary" onclick="goToStep2()">이전: 세대별 설정</button>
-                        <button class="btn btn-primary" onclick="createInvoiceFinal()"> 정산서 생성</button>
+                        <button class="btn btn-primary" id="createFinalInvoiceBtn"
+                                onclick="createInvoiceFinal()" disabled>정산서 생성</button>
                     </div>
                 </div>
             </div>
@@ -313,6 +314,7 @@
         const FLOORS = {{ (floors|default([]))|tojson }};
         let selectedItems = [];
         let unitAdditionalData = {};
+        let invoicePreviewToken = null;
 
         // 탭 전환
         function showTab(tabId) { selectTab(tabId); }
@@ -664,7 +666,7 @@
             }
         }
 
-        function goToStep3() {
+        async function goToStep3() {
             // 세대별 추가 데이터 수집
             unitAdditionalData = {};
             const occupiedUnits = UNITS.filter(u => !u.is_vacant);
@@ -702,11 +704,11 @@
                 }
             });
 
-            renderStep3();
             updateStepIndicators(3);
+            await renderStep3();
         }
 
-        function renderStep3() {
+        function renderStep3Legacy() {
             const container = document.getElementById('finalConfirmation');
 
             let html = '<div class="confirm-section">';
@@ -803,21 +805,69 @@
             container.innerHTML = html;
         }
 
-        function skipToFinal() {
+        async function renderStep3() {
+            const container = document.getElementById('finalConfirmation');
+            const createButton = document.getElementById('createFinalInvoiceBtn');
+            invoicePreviewToken = null;
+            createButton.disabled = true;
+            container.innerHTML = '<div class="alert alert-info">세대별 최종 청구액을 계산하고 있습니다…</div>';
+            const payload = {
+                name: document.getElementById('invoiceName').value,
+                memo: document.getElementById('invoiceMemo').value,
+                items: selectedItems,
+                unit_additional_data: unitAdditionalData,
+                _csrf_token: getCsrfToken()
+            };
+            try {
+                const response = await fetch('/invoice/preview', {
+                    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!result.success) throw new Error(result.message || '최종 금액을 계산할 수 없습니다.');
+                invoicePreviewToken = result.preview_token;
+                createButton.disabled = false;
+                const itemRows = result.items.map(item => `
+                    <tr><td>${item.type === 'ELECTRIC' ? '전기' : item.type === 'WATER' ? '수도' : '공동'}</td>
+                    <td>${escapeHtml(item.description || '-')}</td><td><strong>${escapeHtml(item.month)}</strong></td></tr>`).join('');
+                const unitRows = result.units.map(unit => `
+                    <tr><td><strong>${escapeHtml(unit.floor_name)} ${escapeHtml(unit.unit_name)}</strong></td>
+                    <td class="text-right">${Number(unit.electric_amount).toLocaleString()}원</td>
+                    <td class="text-right">${Number(unit.water_amount).toLocaleString()}원</td>
+                    <td class="text-right">${Number(unit.common_amount).toLocaleString()}원</td>
+                    <td class="text-right">${Number(unit.additional_amount).toLocaleString()}원</td>
+                    <td class="text-right u-weight-bold">${Number(unit.total_amount).toLocaleString()}원</td></tr>`).join('');
+                container.innerHTML = `
+                    <div class="alert alert-info"><strong>서로 다른 정산월을 함께 청구할 수 있습니다.</strong> 아래 항목별 정산월과 세대별 최종 금액을 확인하세요.</div>
+                    <div class="confirm-section"><h3>포함 항목과 정산월</h3><div class="table-scroll" tabindex="0"><table>
+                        <thead><tr><th>구분</th><th>항목</th><th>정산월</th></tr></thead><tbody>${itemRows}</tbody></table></div></div>
+                    <div class="confirm-section"><h3>세대별 최종 청구액</h3><div class="table-scroll" tabindex="0"><table>
+                        <thead><tr><th>세대</th><th class="text-right">전기</th><th class="text-right">수도</th><th class="text-right">공동</th><th class="text-right">기타</th><th class="text-right">최종</th></tr></thead>
+                        <tbody>${unitRows}</tbody><tfoot><tr><td colspan="5">전체 합계</td><td class="text-right">${Number(result.grand_total).toLocaleString()}원</td></tr></tfoot>
+                    </table></div></div>`;
+            } catch (error) {
+                container.innerHTML = `<div class="alert alert-error">${escapeHtml(error.message)}</div>`;
+            }
+        }
+
+        async function skipToFinal() {
             unitAdditionalData = {};
-            renderStep3();
             updateStepIndicators(3);
+            await renderStep3();
         }
 
         // 정산서 최종 생성
         async function createInvoiceFinal() {
             const name = document.getElementById('invoiceName').value;
+            const createButton = document.getElementById('createFinalInvoiceBtn');
+            if (!invoicePreviewToken || createButton.disabled) return;
+            createButton.disabled = true;
 
             const data = {
                 name: name,
                 memo: document.getElementById('invoiceMemo').value,
                 items: selectedItems,
                 unit_additional_data: unitAdditionalData,
+                preview_token: invoicePreviewToken,
                 _csrf_token: getCsrfToken()
             };
 
@@ -835,6 +885,7 @@
                 window.location.href = `/invoice/view/${result.id}`;
             } else {
                 alert(result.message);
+                createButton.disabled = false;
             }
         }
 

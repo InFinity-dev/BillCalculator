@@ -121,10 +121,10 @@
         <tbody>
         {% for invoice in invoices %}
             <tr>
-                <td><strong>{{ invoice.unit.unit_name }}</strong></td>
+                <td><strong>{{ invoice.floor_label_snapshot }} {{ invoice.unit_name_snapshot }}</strong></td>
                 <td>
-                    {% if invoice.unit.memo %}
-                        {{ invoice.unit.memo }}
+                    {% if invoice.unit_profile_memo_snapshot %}
+                        {{ invoice.unit_profile_memo_snapshot }}
                     {% else %}
                         <span class="u-color-text-muted">-</span>
                     {% endif %}

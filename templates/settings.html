@@ -299,34 +299,88 @@
 
         <!-- 가져오기/내보내기 탭 -->
         <div id="import-export-tab" class="tab-content">
-            <h2 class="u-mb-8px"> 데이터 가져오기/내보내기</h2>
+            <h2 class="u-mb-8px"> 전체 백업 및 복원</h2>
             <p class="u-color-text-muted u-mb-30px">
-                층/세대 설정 데이터를 백업하거나 복원할 수 있습니다.
+                설정부터 계산·정산서·입금 내역까지 전체 데이터를 백업하거나 한 시점으로 복원합니다.
             </p>
 
             <div class="grid grid-2 u-gap-20px">
                 <!-- 내보내기 카드 -->
                 <div class="content-card u-mb-20px">
-                    <h3 class="u-color-primary-color u-mb-15px u-text-18px"> 내보내기</h3>
+                    <h3 class="u-color-primary-color u-mb-15px u-text-18px"> 전체 백업 내보내기</h3>
                     <p class="u-color-text-muted u-mb-20px u-leading-1_6">
-                        현재 층/세대 설정을 JSON 파일로 내보냅니다.
-                        백업 또는 다른 시스템으로의 이전에 활용할 수 있습니다.
+                        현재 설정, 층·세대, 모든 계산 결과, 정산서와 입금 기록을 하나의 JSON 파일로 저장합니다.
                     </p>
                     <button class="btn btn-primary" id="exportBtn">
-                        설정 내보내기
+                        전체 백업 내려받기
                     </button>
                 </div>
 
                 <!-- 가져오기 카드 -->
                 <div class="content-card u-mb-20px">
-                    <h3 class="u-color-success-color u-mb-15px u-text-18px"> 가져오기</h3>
+                    <h3 class="u-color-success-color u-mb-15px u-text-18px"> 전체 백업 복원</h3>
                     <p class="u-color-text-muted u-mb-20px u-leading-1_6">
-                        JSON 파일에서 층/세대 설정을 가져옵니다.
-                        파일에 포함된 설정을 적용합니다. 포함되지 않은 설정은 현재 값을 유지합니다.
+                        현재 데이터를 모두 교체하고 선택한 전체 백업 파일의 상태로 복원합니다. 병합하지 않습니다.
                     </p>
                     <input class="u-mb-15px u-p-10px u-border-1px-dashed-border u-rounded-6px u-width-100" type="file" id="importFile" accept=".json">
                     <button class="btn btn-success" id="importBtn">
-                        설정 가져오기
+                        백업 파일 검사
+                    </button>
+                </div>
+            </div>
+
+            <div id="importPreview" class="content-card u-mt-20px" hidden aria-live="polite">
+                <h3>복원 전 확인</h3>
+                <p id="importPreviewMeta" class="form-help"></p>
+                <div class="table-scroll" tabindex="0">
+                    <table>
+                        <thead><tr><th>데이터</th><th class="text-right">현재</th><th class="text-right">복원 후</th></tr></thead>
+                        <tbody id="importPreviewRows"></tbody>
+                    </table>
+                </div>
+                <div class="alert alert-warning">
+                    백업 파일에 없는 현재 데이터는 유지되지 않습니다. 적용 직전에 현재 DB를 자동 백업하며, 복원은 전체 성공 또는 전체 취소로 처리됩니다.
+                </div>
+                <label class="checkbox-wrapper u-mb-16px">
+                    <input type="checkbox" id="confirmFullRestore">
+                    <span>현재 데이터 전체가 선택한 백업 내용으로 교체됨을 확인했습니다.</span>
+                </label>
+                <div id="importStatus" class="form-help" aria-live="assertive"></div>
+                <button class="btn btn-danger" id="restoreBtn" type="button" disabled>자동 백업 후 전체 복원</button>
+            </div>
+
+            <div class="content-card u-mt-20px" aria-live="polite">
+                <h3 class="u-mb-8px">최근 자동 복원 지점</h3>
+                <p class="u-color-text-muted u-mb-16px">
+                    삭제·덮어쓰기·전체 복원 직전의 상태를 선택해 되돌립니다. 이 작업도 병합이 아닌 전체 교체입니다.
+                </p>
+                <div class="form-group">
+                    <label for="automaticBackupSelect">되돌릴 시점</label>
+                    <select id="automaticBackupSelect" disabled>
+                        <option value="">자동 백업을 불러오는 중입니다…</option>
+                    </select>
+                    <small id="automaticBackupStatus" class="form-help">최근 20개까지 표시합니다.</small>
+                </div>
+                <button class="btn btn-secondary" id="previewAutomaticBackupBtn" type="button" disabled>
+                    선택한 시점 내용 확인
+                </button>
+
+                <div id="automaticBackupPreview" class="u-mt-20px" hidden>
+                    <div class="table-scroll" tabindex="0">
+                        <table>
+                            <thead><tr><th>데이터</th><th class="text-right">현재</th><th class="text-right">되돌린 후</th></tr></thead>
+                            <tbody id="automaticBackupPreviewRows"></tbody>
+                        </table>
+                    </div>
+                    <div class="alert alert-warning">
+                        현재 데이터는 선택한 시점의 전체 데이터로 교체됩니다. 되돌리기 직전 상태도 다시 자동 백업합니다.
+                    </div>
+                    <label class="checkbox-wrapper u-mb-16px">
+                        <input type="checkbox" id="confirmAutomaticRestore">
+                        <span>현재 데이터 전체가 선택한 시점으로 교체됨을 확인했습니다.</span>
+                    </label>
+                    <button class="btn btn-danger" id="restoreAutomaticBackupBtn" type="button" disabled>
+                        현재 상태 백업 후 되돌리기
                     </button>
                 </div>
             </div>
@@ -335,9 +389,9 @@
             <div class="u-bg-warning-light u-p-20px u-rounded-6px u-mt-30px u-border-1px-solid-border">
                 <h4 class="u-m-0-0-12px-0 u-color-warning-dark u-text-15px"> 주의사항</h4>
                 <ul class="u-color-warning-dark u-text-14px u-leading-1_8 u-m-0 u-pl-20px">
-                    <li><strong>가져오기 작업은 되돌릴 수 없습니다.</strong> 기존 설정이 모두 삭제됩니다.</li>
-                    <li>가져오기 전에 반드시 현재 설정을 내보내기로 백업하세요.</li>
-                    <li>JSON 파일 형식이 올바르지 않으면 가져오기가 실패할 수 있습니다.</li>
+                    <li><strong>복원은 병합이 아닌 전체 교체입니다.</strong></li>
+                    <li>파일 구조·버전·참조 관계를 검사한 뒤에만 복원할 수 있습니다.</li>
+                    <li>복원 직전 현재 상태가 자동 백업되므로 필요하면 되돌릴 수 있습니다.</li>
                 </ul>
             </div>
         </div>
@@ -640,7 +694,7 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `settings_${new Date().toISOString().split('T')[0]}.json`;
+                a.download = `billcalculator_full_backup_${new Date().toISOString().split('T')[0]}.json`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
@@ -649,34 +703,185 @@
         }
 
         const importBtn = document.getElementById('importBtn');
+        const restoreBtn = document.getElementById('restoreBtn');
+        const restoreConfirm = document.getElementById('confirmFullRestore');
+        let validatedBackup = null;
+        const backupLabels = {
+            settings: '설정', floors: '층', units: '세대', electric_bills: '전기 계산',
+            water_bills: '수도 계산', common_bills: '공동 공과금',
+            invoice_combinations: '정산서', final_invoices: '세대별 청구서', payments: '입금'
+        };
+        restoreConfirm?.addEventListener('change', () => {
+            restoreBtn.disabled = !restoreConfirm.checked || !validatedBackup;
+        });
         if (importBtn) {
             importBtn.addEventListener('click', async () => {
                 const f = document.getElementById('importFile').files[0];
                 if (!f) {
-                    alert('파일을 선택해주세요.');
+                    document.getElementById('importPreview').hidden = false;
+                    document.getElementById('importStatus').textContent = '전체 백업 파일을 먼저 선택해주세요.';
                     return;
                 }
                 const text = await f.text();
                 try {
                     const data = JSON.parse(text);
-                    if (!confirm('기존 설정을 모두 삭제하고 새로운 설정을 가져오시겠습니까?')) return;
                     data._csrf_token = getCsrfToken();
-                    const res = await fetch('/settings/import', {
+                    const res = await fetch('/settings/import/preview', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify(data)
                     });
                     const j = await res.json();
                     if (j.success) {
-                        alert('설정을 성공적으로 가져왔습니다.');
-                        location.reload();
+                        validatedBackup = data;
+                        const keys = Object.keys(backupLabels);
+                        document.getElementById('importPreviewRows').innerHTML = keys.map(key => `
+                            <tr><td>${backupLabels[key]}</td><td class="text-right">${(j.current_counts[key] || 0).toLocaleString()}건</td>
+                            <td class="text-right"><strong>${(j.backup_counts[key] || 0).toLocaleString()}건</strong></td></tr>
+                        `).join('');
+                        document.getElementById('importPreviewMeta').textContent = `백업 생성 시각: ${j.backup_created_at || '기록 없음'} · 파일: ${f.name}`;
+                        document.getElementById('importPreview').hidden = false;
+                        document.getElementById('importStatus').textContent = '파일 검사가 완료되었습니다. 교체 범위를 확인해주세요.';
+                        restoreConfirm.checked = false;
+                        restoreBtn.disabled = true;
                     } else {
-                        alert(j.message || '가져오기 실패');
+                        validatedBackup = null;
+                        document.getElementById('importPreview').hidden = false;
+                        document.getElementById('importStatus').textContent = j.message || '백업 파일 검사에 실패했습니다.';
                     }
                 } catch (e) {
-                    alert('파일 형식이 올바르지 않습니다.');
+                    validatedBackup = null;
+                    document.getElementById('importPreview').hidden = false;
+                    document.getElementById('importStatus').textContent = 'JSON 파일 형식이 올바르지 않습니다.';
                 }
             });
         }
+        restoreBtn?.addEventListener('click', async () => {
+            if (!validatedBackup || !restoreConfirm.checked) return;
+            restoreBtn.disabled = true;
+            document.getElementById('importStatus').textContent = '현재 상태를 자동 백업하고 전체 복원 중입니다…';
+            validatedBackup.confirm_full_replace = true;
+            const res = await fetch('/settings/import', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(validatedBackup)
+            });
+            const result = await res.json();
+            if (result.success) {
+                document.getElementById('importStatus').textContent = '전체 복원이 완료되었습니다. 화면을 새로 불러옵니다.';
+                window.location.reload();
+            } else {
+                document.getElementById('importStatus').textContent = result.message || '전체 복원에 실패했습니다.';
+                restoreBtn.disabled = false;
+            }
+        });
+
+        const automaticBackupSelect = document.getElementById('automaticBackupSelect');
+        const previewAutomaticBackupBtn = document.getElementById('previewAutomaticBackupBtn');
+        const automaticBackupPreview = document.getElementById('automaticBackupPreview');
+        const confirmAutomaticRestore = document.getElementById('confirmAutomaticRestore');
+        const restoreAutomaticBackupBtn = document.getElementById('restoreAutomaticBackupBtn');
+        let validatedAutomaticBackup = null;
+
+        async function loadAutomaticBackups() {
+            const status = document.getElementById('automaticBackupStatus');
+            try {
+                const response = await fetch('/settings/automatic-backups');
+                const result = await response.json();
+                if (!result.success) throw new Error(result.message || '목록을 불러오지 못했습니다.');
+                automaticBackupSelect.innerHTML = '';
+                if (!result.backups.length) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = '아직 생성된 자동 백업이 없습니다.';
+                    automaticBackupSelect.appendChild(option);
+                    status.textContent = '위험 작업을 실행하면 직전 상태가 여기에 저장됩니다.';
+                    return;
+                }
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = '되돌릴 시점을 선택하세요.';
+                automaticBackupSelect.appendChild(placeholder);
+                result.backups.forEach(backup => {
+                    const option = document.createElement('option');
+                    option.value = backup.filename;
+                    const created = new Date(backup.created_at).toLocaleString('ko-KR');
+                    option.textContent = `${created} · ${backup.reason_label}`;
+                    automaticBackupSelect.appendChild(option);
+                });
+                automaticBackupSelect.disabled = false;
+                status.textContent = `${result.backups.length}개의 최근 자동 복원 지점을 찾았습니다.`;
+            } catch (error) {
+                automaticBackupSelect.innerHTML = '<option value="">자동 백업 목록 오류</option>';
+                status.textContent = error.message;
+            }
+        }
+
+        automaticBackupSelect?.addEventListener('change', () => {
+            validatedAutomaticBackup = null;
+            automaticBackupPreview.hidden = true;
+            confirmAutomaticRestore.checked = false;
+            restoreAutomaticBackupBtn.disabled = true;
+            previewAutomaticBackupBtn.disabled = !automaticBackupSelect.value;
+        });
+
+        previewAutomaticBackupBtn?.addEventListener('click', async () => {
+            const filename = automaticBackupSelect.value;
+            if (!filename) return;
+            previewAutomaticBackupBtn.disabled = true;
+            document.getElementById('automaticBackupStatus').textContent = '선택한 시점의 데이터를 검사하는 중입니다…';
+            try {
+                const response = await fetch('/settings/automatic-backups/preview', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({filename, _csrf_token: getCsrfToken()})
+                });
+                const result = await response.json();
+                if (!result.success) throw new Error(result.message || '자동 백업 검사에 실패했습니다.');
+                validatedAutomaticBackup = filename;
+                document.getElementById('automaticBackupPreviewRows').innerHTML = Object.keys(backupLabels).map(key => `
+                    <tr><td>${backupLabels[key]}</td><td class="text-right">${(result.current_counts[key] || 0).toLocaleString()}건</td>
+                    <td class="text-right"><strong>${(result.backup_counts[key] || 0).toLocaleString()}건</strong></td></tr>
+                `).join('');
+                automaticBackupPreview.hidden = false;
+                confirmAutomaticRestore.checked = false;
+                restoreAutomaticBackupBtn.disabled = true;
+                document.getElementById('automaticBackupStatus').textContent = '데이터 검사가 완료되었습니다. 건수를 확인해주세요.';
+            } catch (error) {
+                validatedAutomaticBackup = null;
+                automaticBackupPreview.hidden = true;
+                document.getElementById('automaticBackupStatus').textContent = error.message;
+            } finally {
+                previewAutomaticBackupBtn.disabled = !automaticBackupSelect.value;
+            }
+        });
+
+        confirmAutomaticRestore?.addEventListener('change', () => {
+            restoreAutomaticBackupBtn.disabled = !confirmAutomaticRestore.checked || !validatedAutomaticBackup;
+        });
+
+        restoreAutomaticBackupBtn?.addEventListener('click', async () => {
+            if (!validatedAutomaticBackup || !confirmAutomaticRestore.checked) return;
+            restoreAutomaticBackupBtn.disabled = true;
+            document.getElementById('automaticBackupStatus').textContent = '현재 상태를 백업하고 선택한 시점으로 되돌리는 중입니다…';
+            const response = await fetch('/settings/automatic-backups/restore', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    filename: validatedAutomaticBackup,
+                    confirm_full_replace: true,
+                    _csrf_token: getCsrfToken()
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                document.getElementById('automaticBackupStatus').textContent = '되돌리기가 완료되었습니다. 화면을 새로 불러옵니다.';
+                window.location.reload();
+            } else {
+                document.getElementById('automaticBackupStatus').textContent = result.message || '되돌리기에 실패했습니다.';
+                restoreAutomaticBackupBtn.disabled = false;
+            }
+        });
+
+        if (automaticBackupSelect) loadAutomaticBackups();
     </script>
 {% endblock %}

@@ -25,6 +25,7 @@ from models import (
     FinalInvoiceCharge,
     InvoiceCombinationItem,
     Payment,
+    WaterBill,
     WaterBillDetail,
 )
 
@@ -169,6 +170,91 @@ def check_snapshots():
         not bad,
         "스냅샷 문제 {}건".format(len(bad)) if bad else "전부 정상",
         bad,
+    )
+
+
+def check_final_invoice_snapshots():
+    """발행 정산서가 현재 세대 마스터와 독립된 수신자 정보를 갖는지."""
+    bad = []
+    for row in FinalInvoice.query.all():
+        missing = []
+        if not row.unit_name_snapshot:
+            missing.append("unit_name_snapshot")
+        if row.floor_number_snapshot is None:
+            missing.append("floor_number_snapshot")
+        if row.floor_name_snapshot is None:
+            missing.append("floor_name_snapshot")
+        if row.unit_profile_memo_snapshot is None:
+            missing.append("unit_profile_memo_snapshot")
+        if not row.snapshot_source:
+            missing.append("snapshot_source")
+        if missing:
+            bad.append({"final_invoice_id": row.id, "missing": missing})
+    return Check(
+        "final_invoice_snapshot_complete",
+        not bad,
+        "정산서 스냅샷 문제 {}건".format(len(bad)) if bad else "전부 정상",
+        bad,
+    )
+
+
+def check_allocation_reconciliation():
+    """입력 총액·할인과 세대별 배분 중간값의 합이 일치하는지."""
+    bad = []
+    tolerance = Decimal("0.05")
+    for bill in ElectricBill.query.all():
+        base_total = sum((row.base_amount for row in bill.details), Decimal(0))
+        welfare_total = sum((row.welfare_discount for row in bill.details), Decimal(0))
+        voucher_total = sum((row.voucher_discount for row in bill.details), Decimal(0))
+        expected_base = Decimal(bill.total_amount + bill.welfare_discount + bill.voucher_discount)
+        if abs(base_total - expected_base) > tolerance or welfare_total != Decimal(bill.welfare_discount) or voucher_total != Decimal(bill.voucher_discount):
+            bad.append({
+                "table": "electric_bills", "id": bill.id,
+                "base_total": str(base_total), "expected_base": str(expected_base),
+                "welfare_total": str(welfare_total), "voucher_total": str(voucher_total),
+            })
+    for bill in WaterBillDetail.query.with_entities(WaterBillDetail.water_bill_id).distinct():
+        identifier = bill[0]
+        parent = db.session.get(WaterBill, identifier)
+        rows = WaterBillDetail.query.filter_by(water_bill_id=identifier, is_excluded=False).all()
+        base_total = sum((row.base_amount for row in rows), Decimal(0))
+        discount_total = sum((row.welfare_discount for row in rows), Decimal(0))
+        expected_base = Decimal(parent.total_amount + parent.welfare_discount_total)
+        if abs(base_total - expected_base) > tolerance or discount_total != Decimal(parent.welfare_discount_total):
+            bad.append({
+                "table": "water_bills", "id": identifier,
+                "base_total": str(base_total), "expected_base": str(expected_base),
+                "discount_total": str(discount_total),
+            })
+    for bill in CommonBill.query.all():
+        amount_total = sum((row.amount for row in bill.details), Decimal(0))
+        if abs(amount_total - Decimal(bill.total_amount)) > tolerance:
+            bad.append({
+                "table": "common_bills", "id": bill.id,
+                "amount_total": str(amount_total), "expected": str(bill.total_amount),
+            })
+    return Check(
+        "allocation_totals_reconciled",
+        not bad,
+        "배분 합계 불일치 {}건".format(len(bad)) if bad else "전부 일치",
+        bad,
+    )
+
+
+def check_source_unique_indexes():
+    expected = {
+        "uq_invoice_items_electric_bill_once",
+        "uq_invoice_items_water_bill_once",
+        "uq_invoice_items_common_bill_once",
+    }
+    rows = db.session.execute(text("PRAGMA index_list('invoice_combination_items')")).fetchall()
+    found = {row[1] for row in rows if row[2] == 1}
+    missing = sorted(expected - found)
+    return Check(
+        "invoice_source_unique_indexes",
+        not missing,
+        "누락된 고유 인덱스: {}".format(", ".join(missing)) if missing else "전부 존재",
+        [{"index": name} for name in missing],
     )
 
 
@@ -457,6 +543,9 @@ ALL_CHECKS = (
     check_billing_month_normalized,
     check_polymorphic_items,
     check_snapshots,
+    check_final_invoice_snapshots,
+    check_source_unique_indexes,
+    check_allocation_reconciliation,
     check_charged_amount_rounding,
     check_final_invoice_totals,
     check_duplicate_invoice_sources,

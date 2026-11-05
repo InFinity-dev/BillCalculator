@@ -41,6 +41,17 @@ def _post(client, csrf, route, *, data=None, payload=None):
         raise RuntimeError("더미 데이터 생성 실패 ({}): {}".format(route, message))
 
 
+def _post_invoice(client, csrf, payload):
+    preview_response = client.post(
+        "/invoice/preview", json=dict(payload, _csrf_token=csrf)
+    )
+    preview = preview_response.get_json(silent=True) or {}
+    if not preview.get("success"):
+        raise RuntimeError("더미 데이터 정산 미리보기 실패: {}".format(preview.get("message")))
+    confirmed = dict(payload, _csrf_token=csrf, preview_token=preview["preview_token"])
+    _post(client, csrf, "/invoice/create", payload=confirmed)
+
+
 def _set_vacancy(client, csrf, unit, vacant):
     data = {key: str(bool(getattr(unit, key))).lower() for key in (
         "has_tv", "electric_welfare", "electric_voucher", "water_welfare"
@@ -103,12 +114,14 @@ def build_demo(application, start, months):
     with application.test_client() as client:
         with client.session_transaction() as session:
             session["_csrf_token"] = csrf
-        _post(client, csrf, "/settings/import", payload={"settings": {
+        for key, value in {
             "water_welfare_amount": "1500",
             "water_customer_number": "DEMO-WATER-001",
             "invoice_default_memo": "테스트용 청구서입니다.",
             "invoice_footer": "이 고지서는 더미 데이터이며 실제 납부 대상이 아닙니다.",
-        }})
+        }.items():
+            Setting.query.filter_by(setting_key=key).one().setting_value = value
+        db.session.commit()
         for number, label in ((-1, "지하 1층"), (1, "1층"), (2, "2층")):
             _post(client, csrf, "/floors/add", data={"floor_number": str(number), "name": label,
                                                      "electric_contract_number": "DEMO-{}".format(number)})
@@ -147,7 +160,7 @@ def build_demo(application, start, months):
                 })
                 common = CommonBill.query.filter_by(billing_month=current, description=label).one()
                 items.append({"type": "COMMON", "id": common.id, "month": month, "description": label})
-            _post(client, csrf, "/invoice/create", payload={
+            _post_invoice(client, csrf, {
                 "name": "[테스트] {} 월 정산".format(month), "memo": "월별 흐름 검증용 더미 데이터",
                 "items": items, "unit_additional_data": _additional(units, index),
             })
@@ -168,6 +181,7 @@ def build_demo(application, start, months):
                         "combination_id": combination.id, "unit_id": invoice.unit_id,
                         "payment_date": payment_date, "payment_amount": amount,
                         "payment_method": "계좌이체", "memo": "[테스트] " + memo,
+                        "acknowledge_warnings": True,
                     })
     metadata = {"version": DEMO_VERSION, "start_month": start.strftime("%Y-%m"), "months": months}
     db.session.add(Setting(setting_key=METADATA_KEY, setting_value=json.dumps(metadata)))

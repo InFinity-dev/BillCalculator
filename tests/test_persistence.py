@@ -27,6 +27,7 @@ from models import (
     WaterBill,
     WaterBillDetail,
 )
+from tests.invoice_helper import post_invoice
 
 
 def _electric_form(csrf, floor_id, rows, readings, **extra):
@@ -163,12 +164,12 @@ def test_electric_zero_usage_falls_back_to_equal_split(app, client, csrf, floor,
         assert detail.base_amount == Decimal("10000.00")
 
 
-def test_electric_final_amount_clamped_to_zero(app, client, csrf, floor, units):
-    """할인이 배분액을 초과하면 0으로 clamp 된다."""
+def test_electric_discount_exceeding_allocated_charge_is_rejected(app, client, csrf, floor, units):
+    """할인을 조용히 버리지 않고 배분 가능한 요금 초과를 저장 전에 거절한다."""
     occupied = [u for u in units if not u.is_vacant]
     readings = {occupied[0].id: (0, 1), occupied[1].id: (0, 1000), occupied[2].id: (0, 1000)}
 
-    client.post(
+    response = client.post(
         "/calculate/electric",
         data=_electric_form(
             csrf,
@@ -178,10 +179,9 @@ def test_electric_final_amount_clamped_to_zero(app, client, csrf, floor, units):
             tv_distribution_mode="INDIVIDUAL",
         ),
     )
-    bill = ElectricBill.query.one()
-    details = _by_unit(bill.id)
-    assert details[occupied[0].id].final_amount == Decimal("0.00")
-    assert details[occupied[0].id].charged_amount == 0
+    assert response.get_json()["success"] is False
+    assert "초과" in response.get_json()["message"]
+    assert ElectricBill.query.count() == 0
 
 
 def test_electric_tv_equal_mode(app, client, csrf, floor, units):
@@ -534,9 +534,9 @@ def test_common_by_units(app, client, csrf, floor, units):
 # 정산서
 # ---------------------------------------------------------------------------
 def _create_invoice(client, csrf, name, items, unit_additional_data=None):
-    return client.post(
-        "/invoice/create",
-        json={
+    return post_invoice(
+        client,
+        {
             "_csrf_token": csrf,
             "name": name,
             "memo": "",

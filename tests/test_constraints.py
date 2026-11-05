@@ -338,7 +338,14 @@ def test_final_invoice_total_can_be_negative(app, units, combination):
     db.session.add(other)
     db.session.flush()
     db.session.add(
-        FinalInvoice(combination_id=other.id, unit_id=unit.id, total_amount=-10000)
+        FinalInvoice(
+            combination_id=other.id, unit_id=unit.id, total_amount=-10000,
+            unit_name_snapshot=unit.unit_name,
+            floor_number_snapshot=unit.floor.floor_number,
+            floor_name_snapshot=unit.floor.name or "",
+            unit_profile_memo_snapshot=unit.memo or "",
+            snapshot_source="test_fixture",
+        )
     )
     db.session.commit()
     assert FinalInvoice.query.filter_by(combination_id=other.id).one().total_amount == -10000

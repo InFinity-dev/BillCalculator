@@ -16,7 +16,8 @@
         <div class="invoice {% if not loop.last %}page-break{% endif %}">
             <div class="header">
                 <p>{{ combination.invoice_name }}</p>
-                <h1>공과금 청구서 · {{ invoice.unit.unit_name }}</h1>
+                <h1>공과금 청구서 · {{ invoice.unit_name_snapshot }}</h1>
+                <p>{{ invoice.floor_label_snapshot }}</p>
                 <p>발행일: {{ combination.created_at.strftime('%Y년 %m월 %d일') }}</p>
             </div>
             <!-- 포함된 항목 요약 -->
@@ -25,14 +26,12 @@
                 <ul>
                     {% for item in combination.items %}
                         {# 해당 세대의 층 ID 가져오기 #}
-                        {% set current_floor_id = invoice.unit.floor_id %}
-
                         {# 전기요금: 해당 층의 전기요금만 표시 #}
                         {% if item.item_type == 'ELECTRIC' %}
                             {% if item.electric_bill_ref %}
                                 {% set ebill = item.electric_bill_ref %}
                                 {# 전기요금이 현재 세대의 층과 일치하는 경우만 표시 #}
-                                {% if ebill.floor_id == current_floor_id %}
+                                {% if ebill.floor_ref and ebill.floor_ref.floor_number == invoice.floor_number_snapshot %}
                                     {% set floor_name = ebill.floor_ref.name if ebill.floor_ref else '' %}
                                     <li>
 
@@ -72,11 +71,11 @@
 
                             {# 수도요금: 모든 세대에 공통 표시 #}
                         {% elif item.item_type == 'WATER' %}
-                            <li> {{ item.billing_month.strftime('%Y년 %m월') }} 수도요금</li>
+                            <li>정산월 {{ item.billing_month.strftime('%Y년 %m월') }} · 수도요금</li>
 
                             {# 공동 공과금: 모든 세대에 공통 표시 #}
                         {% elif item.item_type == 'COMMON' %}
-                            <li> {{ item.billing_month.strftime('%Y년 %m월') }}
+                            <li>정산월 {{ item.billing_month.strftime('%Y년 %m월') }}
                                 - {{ item.item_description|default('공동 공과금') }}</li>
                         {% endif %}
                     {% endfor %}

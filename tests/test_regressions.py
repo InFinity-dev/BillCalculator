@@ -2,6 +2,9 @@
 
 from datetime import date
 
+import pytest
+from sqlalchemy.exc import IntegrityError
+
 from db_validate import (
     check_common_bill_allocations,
     check_duplicate_invoice_sources,
@@ -12,6 +15,7 @@ from extensions import db
 from models import (
     CommonBill, FinalInvoice, InvoiceCombination, InvoiceCombinationItem, Payment,
 )
+from tests.invoice_helper import post_invoice
 
 
 def test_common_form_saves_each_nonzero_item_with_selected_distribution(
@@ -86,9 +90,8 @@ def test_invoice_rejects_duplicate_reused_and_wrong_month_items(
     item = {"type": "COMMON", "id": bill.id, "month": "2025-03", "description": "인터넷"}
 
     def create(name, items):
-        return client.post(
-            "/invoice/create",
-            json={"_csrf_token": csrf, "name": name, "items": items},
+        return post_invoice(
+            client, {"_csrf_token": csrf, "name": name, "items": items}
         ).get_json()
 
     assert create("중복", [item, item])["success"] is False
@@ -108,9 +111,9 @@ def test_vacancy_does_not_drop_prior_bill_or_hide_unpaid_balance(
     unit.is_vacant = True
     db.session.commit()
 
-    response = client.post(
-        "/invoice/create",
-        json={
+    response = post_invoice(
+        client,
+        {
             "_csrf_token": csrf,
             "name": "과거 전기요금",
             "items": [{
@@ -160,19 +163,22 @@ def test_payment_rejects_invalid_amount(app, client, csrf, units, combination):
     assert Payment.query.count() == 0
 
 
-def test_integrity_checks_find_preexisting_accounting_errors(
+def test_database_blocks_duplicate_source_and_checks_other_accounting_errors(
     app, units, combination, electric_bill
 ):
-    db.session.add_all([
-        InvoiceCombinationItem(
-            combination_id=combination.id, item_type="ELECTRIC",
-            billing_month=date(2025, 3, 1), electric_bill_id=electric_bill.id,
-        ),
-        InvoiceCombinationItem(
-            combination_id=combination.id, item_type="ELECTRIC",
-            billing_month=date(2025, 3, 1), electric_bill_id=electric_bill.id,
-        ),
-    ])
+    db.session.add(InvoiceCombinationItem(
+        combination_id=combination.id, item_type="ELECTRIC",
+        billing_month=date(2025, 3, 1), electric_bill_id=electric_bill.id,
+    ))
+    db.session.commit()
+    db.session.add(InvoiceCombinationItem(
+        combination_id=combination.id, item_type="ELECTRIC",
+        billing_month=date(2025, 3, 1), electric_bill_id=electric_bill.id,
+    ))
+    with pytest.raises(IntegrityError):
+        db.session.commit()
+    db.session.rollback()
+
     vacant_unit = next(u for u in units if u.is_vacant)
     db.session.add(Payment(
         combination_id=combination.id, unit_id=vacant_unit.id,
@@ -185,7 +191,7 @@ def test_integrity_checks_find_preexisting_accounting_errors(
     ))
     db.session.commit()
 
-    assert check_duplicate_invoice_sources().ok is False
+    assert check_duplicate_invoice_sources().ok is True
     assert check_payment_invoice_pairs().ok is False
     assert check_negative_electric_usage().ok is False
     assert check_common_bill_allocations().ok is False
