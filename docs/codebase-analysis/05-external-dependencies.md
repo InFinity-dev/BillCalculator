@@ -1,5 +1,7 @@
 # 05. 외부 시스템 / 의존성
 
+> **역사 문서:** 2026-07 기준 의존성 분석이다. 현재 실행 환경은 [README](../../README.md)와 [CURRENT_STATE](../refactoring/CURRENT_STATE.md)를 우선한다.
+
 ---
 
 ## 1. 요약

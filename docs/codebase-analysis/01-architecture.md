@@ -1,5 +1,7 @@
 # 01. 현재 Architecture 분석
 
+> **역사 문서:** 2026-07 MySQL 리팩토링 전 아키텍처를 기록한다. 현재 구조는 [CURRENT_STATE](../refactoring/CURRENT_STATE.md)와 현재 코드를 우선한다.
+
 ## 1. 한눈에 보는 전체 구조
 
 ```mermaid

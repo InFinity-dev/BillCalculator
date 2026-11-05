@@ -1,6 +1,7 @@
 # 03. 테스트 계획
 
 > 선행: [02-migration-plan.md](02-migration-plan.md)
+> 현재 실행 기록: 2026-11-05 기준 **278 passed**. 초기 번호는 계획 이력이며 최종 사실은 현재 테스트 코드와 [CURRENT_STATE](../CURRENT_STATE.md)를 우선한다.
 > 원칙: **스키마를 바꾸기 전에 테스트를 먼저 작성한다.** 테스트가 현재 동작을 박제한 뒤 구조를 바꾼다.
 
 ---
@@ -17,8 +18,13 @@ tests/
 ├── test_persistence.py      ← T-P: 계산 결과 영속화 회귀
 ├── test_carryover.py        ← T-K: 이월 불변식
 ├── test_snapshot.py         ← T-Y: 스냅샷 불변성
-├── test_settings.py         ← T-G: 설정 레지스트리 + Import
+├── test_settings.py         ← T-G: 설정 레지스트리 + 전체/부분 복원
 ├── test_legacy_migration.py ← T-M: 레거시 변환 로직
+├── test_data_safety_improvements.py ← 미리보기/할인/정산월 안전성
+├── test_payment_management.py ← 입금·삭제·잔액 흐름
+├── test_demo.py            ← 더미 DB 생성·보존
+├── test_frontend.py        ← 화면/정적 파일 스모크
+├── test_regressions.py     ← 주요 회귀 예외
 └── golden/
     ├── dataset.py           ← 대표 데이터셋 정의
     └── expected.json        ← 골든 마스터 (자동 생성)
@@ -242,9 +248,11 @@ tests/
 | T-Y1 | 계산 후 `unit.unit_name` 변경 → 과거 `unit_snapshot.unit_name` 불변 | ★핵심 자산 |
 | T-Y2 | 계산 후 `unit.residents_count` 변경 → 과거 스냅샷 불변 | |
 | T-Y3 | 계산 후 `unit.is_vacant` 변경 → 과거 스냅샷 불변 | |
-| T-Y4 | 스냅샷 7키 전부 존재 | |
+| T-Y4 | 스냅샷 11키(세대·층 식별 4키 포함) 전부 존재 | |
 | T-Y5 | 전기/수도/공동 3개 detail 모두 스냅샷 보유 | |
 | T-Y6 | 세대 속성 변경이 과거 `charged_amount`에 영향 없음 | |
+| T-Y7 | 세대명 변경 후 전기/수도/공동 과거 상세는 스냅샷 세대명 표시 | |
+| T-Y8 | 층명 변경 후 과거 전기 상세는 스냅샷 층명 표시 | |
 
 ---
 
@@ -258,17 +266,24 @@ tests/
 | T-G4 | 미등록 키 접근 | 명시적 에러 |
 | T-G5 | 255자 초과 메모 저장/복원 | ★TEXT 전환 검증 |
 
-### Settings Import (C-4 / I-11) — ★핵심
+### 전체/부분 복원 — ★핵심
 
 | # | 케이스 | 기대 |
 |---|---|---|
-| T-G6 | **회계 기록이 있는 상태에서 Import** | 기존 계산/정산/납부 데이터가 **하나도 삭제되지 않음** |
-| T-G7 | Import merge: 기존 층/세대 **갱신** | `(floor_number)` / `(floor_id, unit_name)` 자연키 upsert |
-| T-G8 | Import merge: 신규 층/세대 **추가** | |
-| T-G9 | Import에 없는 기존 세대 | **삭제되지 않음** (보존) |
-| T-G10 | 잘못된 payload | validation 에러, **DB 무변경** |
-| T-G11 | Import 중간 실패 | **전체 롤백** (부분 적용 없음) |
-| T-G12 | Import 후 기존 세대의 `unit_id`가 보존됨 | 과거 계산의 FK 참조 유효 |
+| T-G6 | v1 JSON 내보내기/미리보기 | 16개 테이블, 실제 DB 무변경 |
+| T-G7 | `full` 복원 | 모든 업무 테이블을 백업으로 완전 교체 |
+| T-G8 | `property_history` | 앱 설정은 유지, 주택 구성+이력은 완전 교체 |
+| T-G9 | `master` | 층·세대만 교체, 기존 이력은 유지 |
+| T-G10 | `accounting` | 계산·정산·입금만 교체, 마스터와 설정은 유지 |
+| T-G11 | `settings` | 등록 9키의 값만 교체, 내부 설정 키 보존 |
+| T-G12 | 계산·입금 참조 세대의 이름/층 연결 변경 | `master` 복원 차단 |
+| T-G13 | 백업 이력과 현재 마스터 구조 지문 불일치 | `accounting` 복원 차단 |
+| T-G14 | 선택 묶음이 비어 있음 | 고위험 삭제 경고, 명시 확인 전 미적용 |
+| T-G15 | 미리보기 후 현재 DB/백업/범위 변경 | 토큰 검증 실패, 재미리보기 요구 |
+| T-G16 | 자동 SQLite 백업 부분 복원 | JSON과 동일한 5개 묶음/안전 규칙 |
+| T-G17 | `0003` 이전 v1 JSON 스냅샷 | 4개 식별 키 자동 보강 후 복원 |
+| T-G18 | 잘못된 payload/참조/타입 | 적용 전 거부, DB 무변경 |
+| T-G19 | 적용 중 정합성 실패 | 전체 롤백, 직전 자동 백업 경로 반환 |
 
 ---
 

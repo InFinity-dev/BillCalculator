@@ -1,23 +1,62 @@
-"""BillCalculator 전체 JSON 백업 형식과 검증/복원.
+"""BillCalculator JSON·SQLite 백업 형식과 검증/복원.
 
-백업 가져오기는 병합하지 않는다. 현재 애플리케이션 데이터 테이블 전체를
-백업의 내용으로 교체하며, 사전 검증과 실제 적용이 동일한 스키마를 사용한다.
+전체 또는 안전하게 고정된 부분 묶음을 복원한다. 부분 복원도 행 단위로
+병합하지 않고, 선택 묶음 전체를 백업의 같은 묶음으로 교체한다.
 """
 
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
+from copy import deepcopy
+import hashlib
+import json
 import sqlite3
 
-from sqlalchemy import Boolean, Date, DateTime, Integer, create_engine, event, func, select, text
+from sqlalchemy import Boolean, Date, DateTime, Integer, JSON, create_engine, event, text
 
 from db_types import ExactDecimal, Money
 from extensions import db
 from models import TABLE_ORDER
+from settings_registry import SETTING_KEYS, get_def
 
 
 FORMAT_NAME = "billcalculator-full-backup"
 FORMAT_VERSION = 1
+CALCULATION_SNAPSHOT_KEYS = (
+    "unit_id", "floor_id", "floor_number", "floor_name", "unit_name",
+    "electric_welfare", "electric_voucher", "has_tv", "water_welfare",
+    "residents_count", "is_vacant",
+)
+
+RESTORE_SCOPES = {
+    "full": {
+        "label": "전체 데이터",
+        "description": "설정부터 정산·입금까지 모두 교체",
+        "tables": TABLE_ORDER,
+    },
+    "property_history": {
+        "label": "주택 구성 + 전체 이력",
+        "description": "앱 설정만 유지하고 나머지를 모두 교체",
+        "tables": tuple(name for name in TABLE_ORDER if name != "settings"),
+    },
+    "master": {
+        "label": "층·세대 구성",
+        "description": "층과 세대 구성만 교체",
+        "tables": ("floors", "units"),
+    },
+    "accounting": {
+        "label": "계산·정산·입금 이력",
+        "description": "설정과 층·세대는 유지하고 이력만 교체",
+        "tables": tuple(
+            name for name in TABLE_ORDER if name not in ("settings", "floors", "units")
+        ),
+    },
+    "settings": {
+        "label": "앱 설정",
+        "description": "등록된 설정 9개의 값만 교체",
+        "tables": ("settings",),
+    },
+}
 
 
 class BackupFormatError(ValueError):
@@ -73,6 +112,11 @@ def _decode_value(column, value):
         if isinstance(value, bool):
             raise BackupFormatError("{}.{} 값은 정수여야 합니다.".format(column.table.name, column.name))
         return int(value)
+    if isinstance(column_type, JSON) and isinstance(value, str):
+        try:
+            return json.loads(value)
+        except ValueError:
+            raise BackupFormatError("{}.{} JSON 값이 올바르지 않습니다.".format(column.table.name, column.name))
     return value
 
 
@@ -166,9 +210,49 @@ def _validate_in_temporary_database(decoded):
 
 
 def validate_payload(payload):
+    payload = _enrich_legacy_calculation_snapshots(payload)
     decoded = decode_payload(payload)
+    registered = {
+        row["setting_key"]: row.get("setting_value")
+        for row in decoded["settings"]
+        if row["setting_key"] in SETTING_KEYS
+    }
+    missing_settings = [key for key in SETTING_KEYS if key not in registered]
+    if missing_settings:
+        raise BackupFormatError(
+            "백업에 필수 앱 설정이 누락되었습니다: {}".format(", ".join(missing_settings))
+        )
+    for key, value in registered.items():
+        definition = get_def(key)
+        if not isinstance(value, str):
+            raise BackupFormatError("설정 {} 값은 문자열이어야 합니다.".format(key))
+        if definition.kind == "money":
+            try:
+                amount = Decimal(value)
+            except (ValueError, ArithmeticError):
+                raise BackupFormatError("설정 {} 값이 올바른 금액이 아닙니다.".format(key))
+            if not amount.is_finite() or amount < 0 or amount != amount.to_integral_value():
+                raise BackupFormatError("설정 {} 값은 0 이상의 정수 금액이어야 합니다.".format(key))
+    for table_name in (
+        "electric_bill_details",
+        "water_bill_details",
+        "common_bill_details",
+    ):
+        for row in decoded[table_name]:
+            snapshot = row.get("unit_snapshot")
+            missing = [
+                key for key in CALCULATION_SNAPSHOT_KEYS
+                if not isinstance(snapshot, dict) or key not in snapshot
+            ]
+            if missing:
+                raise BackupFormatError(
+                    "{}.id={} 계산 스냅샷에 필수 값이 누락되었습니다: {}".format(
+                        table_name, row.get("id"), ", ".join(missing)
+                    )
+                )
     _validate_in_temporary_database(decoded)
     return {
+        "payload": payload,
         "decoded": decoded,
         "counts": {name: len(decoded[name]) for name in TABLE_ORDER},
         "created_at": payload.get("created_at"),
@@ -224,12 +308,211 @@ def validate_sqlite_backup(path):
     return validate_payload(payload)
 
 
-def current_counts():
+def payload_digest(payload):
+    """백업 데이터 본문만의 안정적인 해시를 반환한다."""
+    canonical = {
+        "format": payload.get("format") if isinstance(payload, dict) else None,
+        "version": payload.get("version") if isinstance(payload, dict) else None,
+        "tables": payload.get("tables") if isinstance(payload, dict) else None,
+    }
+    encoded = json.dumps(
+        canonical, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str
+    )
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def _scope(scope):
+    if scope not in RESTORE_SCOPES:
+        raise BackupFormatError("지원하지 않는 복원 범위입니다.")
+    return RESTORE_SCOPES[scope]
+
+
+def _rows_by_id(payload, table_name):
+    return {row["id"]: row for row in payload["tables"][table_name]}
+
+
+def _referenced_master_ids(payload):
+    """이력이 참조하는 세대·층 ID를 모은다."""
+    tables = payload["tables"]
+    unit_ids = set()
+    for table_name in (
+        "electric_readings",
+        "electric_bill_details",
+        "water_bill_details",
+        "common_bill_details",
+        "final_invoices",
+        "payments",
+    ):
+        unit_ids.update(row["unit_id"] for row in tables[table_name])
+    floor_ids = {row["floor_id"] for row in tables["electric_bills"]}
+    units = _rows_by_id(payload, "units")
+    floor_ids.update(units[unit_id]["floor_id"] for unit_id in unit_ids if unit_id in units)
+    return unit_ids, floor_ids
+
+
+def _structural_identity(row, table_name):
+    if table_name == "units":
+        return (row["id"], row["floor_id"], row["unit_name"])
+    return (row["id"], row["floor_number"], row.get("name"))
+
+
+def _assert_structural_matches(reference_payload, candidate_payload, unit_ids, floor_ids, message):
+    for table_name, identifiers in (("units", unit_ids), ("floors", floor_ids)):
+        reference = _rows_by_id(reference_payload, table_name)
+        candidate = _rows_by_id(candidate_payload, table_name)
+        for identifier in sorted(identifiers):
+            if identifier not in reference or identifier not in candidate:
+                raise BackupFormatError(
+                    message.format(table=table_name, id=identifier, reason="누락")
+                )
+            if _structural_identity(reference[identifier], table_name) != _structural_identity(
+                candidate[identifier], table_name
+            ):
+                raise BackupFormatError(
+                    message.format(table=table_name, id=identifier, reason="식별 정보 불일치")
+                )
+
+
+def _replace_registered_settings(current_rows, backup_rows):
+    backup = {row["setting_key"]: row for row in backup_rows if row["setting_key"] in SETTING_KEYS}
+    missing = [key for key in SETTING_KEYS if key not in backup]
+    if missing:
+        raise BackupFormatError(
+            "설정 부분 복원에 필요한 키가 누락되었습니다: {}".format(", ".join(missing))
+        )
+    result = deepcopy(current_rows)
+    current = {row["setting_key"]: row for row in result}
+    if any(key not in current for key in SETTING_KEYS):
+        raise BackupFormatError("현재 DB의 등록 설정이 완전하지 않아 부분 복원할 수 없습니다.")
+    for key in SETTING_KEYS:
+        current[key]["setting_value"] = backup[key]["setting_value"]
+    return result
+
+
+def _enrich_legacy_calculation_snapshots(payload):
+    """
+    0003 이전에 내려받은 v1 백업에 세대·층 식별 스냅샷을 보강한다.
+
+    기존 계산 속성은 손대지 않고, 레거시 화면이 원래 보여주던 백업 내의
+    마스터 식별자만 이관 시점 값으로 고정한다.
+    """
+    enriched = deepcopy(payload)
+    tables = enriched.get("tables", {}) if isinstance(enriched, dict) else {}
+    if not isinstance(tables, dict):
+        return enriched
+    raw_units = tables.get("units", [])
+    raw_floors = tables.get("floors", [])
+    raw_units = raw_units if isinstance(raw_units, list) else []
+    raw_floors = raw_floors if isinstance(raw_floors, list) else []
+    units = {row.get("id"): row for row in raw_units if isinstance(row, dict)}
+    floors = {row.get("id"): row for row in raw_floors if isinstance(row, dict)}
+    for table_name in (
+        "electric_bill_details",
+        "water_bill_details",
+        "common_bill_details",
+    ):
+        rows = tables.get(table_name, [])
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            snapshot = row.get("unit_snapshot")
+            if isinstance(snapshot, str):
+                try:
+                    snapshot = json.loads(snapshot)
+                except ValueError:
+                    continue
+            if not isinstance(snapshot, dict):
+                continue
+            unit = units.get(row.get("unit_id"))
+            floor = floors.get(unit.get("floor_id")) if unit else None
+            if not unit or not floor:
+                continue
+            snapshot = dict(snapshot)
+            snapshot.setdefault("unit_id", unit["id"])
+            snapshot.setdefault("floor_id", floor["id"])
+            snapshot.setdefault("floor_number", floor["floor_number"])
+            snapshot.setdefault("floor_name", floor.get("name") or "")
+            row["unit_snapshot"] = snapshot
+    return enriched
+
+
+def compose_restore_payload(backup_payload, scope, current_payload=None):
+    """
+    선택 묶음은 백업으로 완전 교체하고 나머지는 현재 값을 보존한
+    하나의 완전한 목표 DB 페이로드를 만든다. 행 단위 병합은 하지 않는다.
+    """
+    definition = _scope(scope)
+    backup_payload = _enrich_legacy_calculation_snapshots(backup_payload)
+    validate_payload(backup_payload)
+    current_payload = _enrich_legacy_calculation_snapshots(current_payload or export_payload())
+    validate_payload(current_payload)
+
+    if scope == "master":
+        unit_ids, floor_ids = _referenced_master_ids(current_payload)
+        _assert_structural_matches(
+            current_payload,
+            backup_payload,
+            unit_ids,
+            floor_ids,
+            "현재 계산·정산·입금 이력이 참조하는 {table} id={id}이(가) "
+            "백업에서 {reason}입니다. 이력과 수신자를 다른 세대로 연결할 수 없어 복원을 중단했습니다.",
+        )
+    elif scope == "accounting":
+        unit_ids, floor_ids = _referenced_master_ids(backup_payload)
+        _assert_structural_matches(
+            backup_payload,
+            current_payload,
+            unit_ids,
+            floor_ids,
+            "백업 이력이 참조하는 {table} id={id}의 {reason}으로 현재 주택 구성에 "
+            "안전하게 연결할 수 없어 복원을 중단했습니다.",
+        )
+
+    composed = deepcopy(current_payload)
+    composed["created_at"] = backup_payload.get("created_at")
+    if scope == "settings":
+        composed["tables"]["settings"] = _replace_registered_settings(
+            current_payload["tables"]["settings"], backup_payload["tables"]["settings"]
+        )
+    else:
+        for table_name in definition["tables"]:
+            composed["tables"][table_name] = deepcopy(backup_payload["tables"][table_name])
+    return composed
+
+
+def prepare_restore(backup_payload, scope="full"):
+    """복원 미리보기와 실제 적용이 공유하는 단일 준비 경로."""
+    definition = _scope(scope)
+    current_payload = export_payload()
+    composed = compose_restore_payload(backup_payload, scope, current_payload)
+    validated = validate_payload(composed)
+    current_table_counts = {
+        name: len(current_payload["tables"][name]) for name in TABLE_ORDER
+    }
+    target_counts = validated["counts"]
+    warnings = []
+    selected = definition["tables"]
+    if (
+        scope != "settings"
+        and sum(target_counts[name] for name in selected) == 0
+        and sum(current_table_counts[name] for name in selected) > 0
+    ):
+        warnings.append(
+            "선택한 복원 묶음의 백업 데이터가 비어 있어, 현재 데이터가 모두 삭제됩니다."
+        )
     return {
-        table_name: db.session.execute(
-            select(func.count()).select_from(db.metadata.tables[table_name])
-        ).scalar()
-        for table_name in TABLE_ORDER
+        "scope": scope,
+        "scope_label": definition["label"],
+        "affected_tables": list(selected),
+        "warnings": warnings,
+        "current_counts": current_table_counts,
+        "target_counts": target_counts,
+        "backup_created_at": backup_payload.get("created_at"),
+        "backup_digest": payload_digest(backup_payload),
+        "current_digest": payload_digest(current_payload),
+        "validated": validated,
     }
 
 

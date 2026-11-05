@@ -467,6 +467,13 @@ balance 계산의 billed              ⊅ 이월 금액 제외    (이중계상 
 
 **분리 기준 명문화**: *비즈니스 로직이 값을 집계·판정에 사용하면 관계형, 표시 전용 스냅샷이면 JSON.*
 
+`unit_snapshot`의 현재 필수 키는 11개다:
+`unit_id`, `floor_id`, `floor_number`, `floor_name`, `unit_name`,
+`electric_welfare`, `electric_voucher`, `has_tv`, `water_welfare`,
+`residents_count`, `is_vacant`.
+상세 화면의 세대명·층명도 현재 마스터가 아닌 이 스냅샷을 사용한다.
+`0003_calculation_identity_snapshots`가 기존 7키 스냅샷에 4개 식별 키를 보강한다.
+
 ---
 
 ## 8. `billing_month` 정규화 (I-5)
@@ -515,7 +522,7 @@ balance 계산의 billed              ⊅ 이월 금액 제외    (이중계상 
 | 13 | 설정 키 정의 5곳 중복 → 단일 레지스트리 | M-4 |
 | 14 | `db.create_all()` → **Alembic** | H-10, C-5 |
 | 15 | 자격증명 하드코딩 → `config.py` + 환경변수 | C-2 |
-| 16 | 설정 Import 전체 삭제 → **merge/upsert** | C-4, I-11 |
+| 16 | 설정 Import 전체 삭제 → **버전된 전체 백업 + 고정 묶음 완전 교체** | C-4, I-11 |
 
 ---
 

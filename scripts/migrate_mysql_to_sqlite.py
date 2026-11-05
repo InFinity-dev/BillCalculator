@@ -541,13 +541,15 @@ class Migrator:
             "final_amount": final_amount,
             "charged_amount": charged,
             "unit_snapshot": self._check_snapshot(
-                "electric_bill_details", row["id"], parse_json_column(row.get("unit_snapshot"))
+                "electric_bill_details", row["id"], row.get("unit_id"),
+                parse_json_column(row.get("unit_snapshot"))
             ),
             "created_at": row.get("created_at") or datetime.utcnow(),
         }
 
-    def _check_snapshot(self, table, row_id, snapshot):
+    def _check_snapshot(self, table, row_id, unit_id, snapshot):
         required = (
+            "unit_id", "floor_id", "floor_number", "floor_name",
             "unit_name", "electric_welfare", "electric_voucher",
             "has_tv", "water_welfare", "residents_count", "is_vacant",
         )
@@ -557,6 +559,32 @@ class Migrator:
         if not isinstance(snapshot, dict):
             self.report.warn(table, row_id, "snapshot_not_object", repr(snapshot))
             return None
+        unit = next(
+            (item for item in self.extracted.get("units", []) if item["id"] == unit_id),
+            None,
+        )
+        floor = next(
+            (
+                item
+                for item in self.extracted.get("floors", [])
+                if unit is not None and item["id"] == unit["floor_id"]
+            ),
+            None,
+        )
+        if unit is None or floor is None:
+            self.report.block(
+                table, row_id, "snapshot_identity_source_missing",
+                "unit_id={} 세대/층 마스터를 찾을 수 없습니다".format(unit_id),
+            )
+            return snapshot
+        # 기존 스냅샷의 계산 속성은 보존하고, 레거시 상세 화면이
+        # 참조했던 마스터 식별자만 이관 시점 값으로 고정한다.
+        snapshot.update({
+            "unit_id": unit["id"],
+            "floor_id": floor["id"],
+            "floor_number": floor["floor_number"],
+            "floor_name": floor.get("name") or "",
+        })
         missing = [k for k in required if k not in snapshot]
         if missing:
             # 값을 채워 넣지 않는다. 스냅샷은 당시 상태의 박제이므로 추정이 곧 왜곡이다.
@@ -619,7 +647,8 @@ class Migrator:
             "final_amount": final_amount,
             "charged_amount": charged,
             "unit_snapshot": self._check_snapshot(
-                "water_bill_details", row["id"], parse_json_column(row.get("unit_snapshot"))
+                "water_bill_details", row["id"], row.get("unit_id"),
+                parse_json_column(row.get("unit_snapshot"))
             ),
             "is_excluded": to_bool(row.get("is_excluded")),
             "created_at": row.get("created_at") or datetime.utcnow(),
@@ -674,7 +703,8 @@ class Migrator:
             "amount": amount,
             "charged_amount": charged,
             "unit_snapshot": self._check_snapshot(
-                "common_bill_details", row["id"], parse_json_column(row.get("unit_snapshot"))
+                "common_bill_details", row["id"], row.get("unit_id"),
+                parse_json_column(row.get("unit_snapshot"))
             ),
             "created_at": row.get("created_at") or datetime.utcnow(),
         }

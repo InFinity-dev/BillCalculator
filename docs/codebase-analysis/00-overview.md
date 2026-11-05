@@ -1,5 +1,7 @@
 # 00. 프로젝트 개요
 
+> **역사 문서:** 2026-07 MySQL 리팩토링 전 상태를 분석한 기록이다. 현재 사실은 [CURRENT_STATE](../refactoring/CURRENT_STATE.md)와 현재 코드를 우선한다.
+
 > 분석 기준: `master` @ `6efd646` (계산 로직 FE/BE rowId 불일치 수정)
 > 분석 일자: 2026-07-31
 > 분석 범위: Repository 전체 (`app.py` 1,662줄 + `templates/` 12개 파일 6,467줄 + `SQLSchema.txt` + `TODO.md`)

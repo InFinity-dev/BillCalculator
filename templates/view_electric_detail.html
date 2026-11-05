@@ -5,7 +5,7 @@
 
     <div class="u-display-flex u-justify-content-space-between u-mb-20px">
         <div>
-            <h2>{{ bill.billing_month.strftime('%Y년 %m월') }} - {{ bill.floor_ref.name if bill.floor_ref else '' }}</h2>
+            <h2>{{ bill.billing_month.strftime('%Y년 %m월') }} - {{ details[0].unit_snapshot.floor_name if details else '' }}</h2>
             <p class="u-color-text-muted">
                 정산 개월수: <strong class="u-color-primary-color">{{ bill.billing_months_count|default(1) }}개월</strong> |
                 TV 배분: {% if bill.tv_distribution_mode == 'EQUAL' %}균등 분배{% else %}개별 부과{% endif %}
@@ -144,7 +144,7 @@
         {% for detail in details %}
             {% set reading = readings_map.get(detail.unit_id) %}
             <tr>
-                <td><strong>{{ detail.unit.unit_name }}</strong></td>
+                <td><strong>{{ detail.unit_snapshot.unit_name }}</strong></td>
                 <td class="u-align-right">{{ "{:,.2f}".format(reading.previous_reading if reading else 0) }}</td>
                 <td class="u-align-right">{{ "{:,.2f}".format(reading.current_reading if reading else 0) }}</td>
                 <td class="u-align-right u-weight-bold">{{ "{:,.2f}".format(detail.usage_amount) }}</td>

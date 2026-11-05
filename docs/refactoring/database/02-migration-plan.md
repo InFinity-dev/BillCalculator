@@ -1,6 +1,7 @@
 # 02. Migration 계획
 
 > 선행: [01-target-sqlite-schema.md](01-target-sqlite-schema.md)
+> 구현 상태: `0001` 초기 스키마, `0002` 정산 데이터 안전성, `0003` 계산 식별 스냅샷이 적용되었다. 실행 현황은 [CURRENT_STATE](../CURRENT_STATE.md)를 우선한다.
 
 **두 종류의 마이그레이션을 엄격히 분리한다.**
 
@@ -23,7 +24,9 @@ migrations/
 ├── env.py              ← target_metadata = db.metadata, render_as_batch=True
 ├── script.py.mako
 └── versions/
-    └── 0001_initial_sqlite_schema.py   ← baseline
+    ├── 0001_initial_sqlite_schema.py          ← baseline
+    ├── 0002_data_safety.py                    ← 정산서 스냅샷/원본 고유성
+    └── 0003_calculation_identity_snapshots.py ← 세대·층 식별 스냅샷
 ```
 
 **`render_as_batch=True` 필수**: SQLite는 `ALTER TABLE ... DROP COLUMN` / 제약 변경을 지원하지 않는다.
@@ -226,12 +229,17 @@ is_carryover→ ★ 레거시 문자열 규칙으로 1회 판정:
 ### C-8. `unit_snapshot` JSON
 
 ```
-변환 없음. 그대로 복사.
-검증:  필수 7키 존재 여부 확인 (unit_name, electric_welfare, electric_voucher,
-                                has_tv, water_welfare, residents_count, is_vacant)
-       누락 시 ⚠️ 경고 (broken snapshot 리포트). 값을 채워 넣지 않는다.
-NULL:  → NULL 유지 (목표 스키마에서도 nullable)
+기존 계산 속성 7키는 그대로 복사한다.
+식별 키 4개(unit_id, floor_id, floor_number, floor_name)는 이전 대상의 세대·층 마스터에서 추가한다.
+최종 필수 11키: unit_id, floor_id, floor_number, floor_name, unit_name,
+                 electric_welfare, electric_voucher, has_tv, water_welfare,
+                 residents_count, is_vacant
+검증: 세 상세 테이블의 모든 unit_snapshot이 객체이고 11키를 모두 갖는지 확인한다.
+스냅샷 원본이 없거나 세대·층 마스터를 찾을 수 없으면 임의 생성하지 않고 보고서로 차단한다.
 ```
+
+SQLite `0002` → `0003`은 기존 상세가 참조하던 현재 세대·층 식별자를 스냅샷에 박제한다.
+v1 JSON 백업도 복원 검증 시 동일한 4개 식별 키를 백업 내 마스터로 보강해 호환한다.
 
 ### C-9. 삭제되는 컬럼
 

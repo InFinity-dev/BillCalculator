@@ -1,5 +1,7 @@
 # 04. 데이터 구조 및 데이터 흐름
 
+> **역사 문서:** 2026-07 MySQL 기반 데이터 흐름을 기록한다. 현재 SQLite 스키마·복원 정책은 [CURRENT_STATE](../refactoring/CURRENT_STATE.md)와 `models.py`를 우선한다.
+
 ---
 
 ## 1. 도메인 데이터 분류

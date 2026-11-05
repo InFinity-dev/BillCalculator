@@ -30,6 +30,10 @@ from models import (
 )
 
 SNAPSHOT_KEYS = (
+    "unit_id",
+    "floor_id",
+    "floor_number",
+    "floor_name",
     "unit_name",
     "electric_welfare",
     "electric_voucher",

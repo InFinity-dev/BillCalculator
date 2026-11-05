@@ -37,10 +37,9 @@ from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 import balance as balance_service
 from backup_format import (
     BackupFormatError,
-    current_counts,
     export_payload,
+    prepare_restore,
     replace_all,
-    validate_payload,
     validate_sqlite_backup,
 )
 from calculation_service import (
@@ -270,6 +269,10 @@ def create_unit_snapshot(unit):
     구조를 변경하지 않는다.
     """
     return {
+        "unit_id": unit.id,
+        "floor_id": unit.floor_id,
+        "floor_number": unit.floor.floor_number,
+        "floor_name": unit.floor.name or "",
         "unit_name": unit.unit_name,
         "electric_welfare": unit.electric_welfare,
         "electric_voucher": unit.electric_voucher,
@@ -444,9 +447,59 @@ def _apply_full_restore(validated, backup_reason):
     return backup_path
 
 
+def _restore_preview_token(prepared, source=None):
+    return URLSafeTimedSerializer(app.secret_key, salt="restore-preview-v1").dumps({
+        "scope": prepared["scope"],
+        "backup": prepared["backup_digest"],
+        "current": prepared["current_digest"],
+        "source": source,
+    })
+
+
+def _verify_restore_preview(prepared, token, source=None):
+    if not token:
+        raise BackupFormatError("복원 전에 데이터 미리보기를 다시 확인해주세요.")
+    try:
+        signed = URLSafeTimedSerializer(app.secret_key, salt="restore-preview-v1").loads(
+            token, max_age=600
+        )
+    except SignatureExpired:
+        raise BackupFormatError("복원 미리보기가 만료되었습니다. 다시 확인해주세요.")
+    except BadSignature:
+        raise BackupFormatError("복원 미리보기 정보가 올바르지 않습니다. 다시 확인해주세요.")
+    expected = {
+        "scope": prepared["scope"],
+        "backup": prepared["backup_digest"],
+        "current": prepared["current_digest"],
+        "source": source,
+    }
+    if signed != expected:
+        raise BackupFormatError(
+            "미리보기 이후 복원 범위·백업 파일 또는 현재 데이터가 변경되었습니다. "
+            "다시 확인해주세요."
+        )
+
+
+def _restore_preview_response(prepared, message):
+    return {
+        "success": True,
+        "message": message,
+        "restore_scope": prepared["scope"],
+        "scope_label": prepared["scope_label"],
+        "affected_tables": prepared["affected_tables"],
+        "warnings": prepared["warnings"],
+        "current_counts": prepared["current_counts"],
+        "target_counts": prepared["target_counts"],
+        "backup_counts": prepared["target_counts"],
+        "backup_created_at": prepared["backup_created_at"],
+    }
+
+
 _BACKUP_REASON_LABELS = {
     "before_full_restore": "전체 백업 복원 전",
     "before_automatic_restore": "자동 백업으로 되돌리기 전",
+    "before_partial_restore": "부분 복원 전",
+    "before_partial_automatic_restore": "자동 백업 부분 복원 전",
     "before_floor_delete": "층 삭제 전",
     "before_unit_delete": "세대 삭제 전",
     "before_electric_overwrite": "전기요금 덮어쓰기 전",
@@ -492,13 +545,10 @@ def preview_automatic_backup():
         data = request.get_json(silent=True) or {}
         path = resolve_automatic_backup(data.get("filename"))
         validated = validate_sqlite_backup(path)
-        return jsonify({
-            "success": True,
-            "message": "자동 백업 검사가 완료되었습니다.",
-            "current_counts": current_counts(),
-            "backup_counts": validated["counts"],
-            "backup_created_at": validated["created_at"],
-        })
+        prepared = prepare_restore(validated["payload"], data.get("restore_scope", "full"))
+        response = _restore_preview_response(prepared, "자동 백업 검사가 완료되었습니다.")
+        response["preview_token"] = _restore_preview_token(prepared, path.name)
+        return jsonify(response)
     except Exception as exc:  # noqa: BLE001
         return json_error(str(exc))
 
@@ -506,21 +556,31 @@ def preview_automatic_backup():
 @app.route("/settings/automatic-backups/restore", methods=["POST"])
 @csrf_protect
 def restore_automatic_backup():
-    """자동 백업의 전체 데이터로 현재 상태를 교체한다."""
+    """자동 백업의 선택 묶음으로 현재 상태를 교체한다."""
     from db_backup import resolve_automatic_backup
 
     data = request.get_json(silent=True) or {}
-    if data.get("confirm_full_replace") is not True:
-        return json_error("전체 교체 확인이 필요합니다.")
+    if data.get("confirm_selected_replace") is not True and data.get("confirm_full_replace") is not True:
+        return json_error("선택 범위 교체 확인이 필요합니다.")
     new_backup = None
     try:
         path = resolve_automatic_backup(data.get("filename"))
         validated = validate_sqlite_backup(path)
-        new_backup = _apply_full_restore(validated, "before_automatic_restore")
+        prepared = prepare_restore(validated["payload"], data.get("restore_scope", "full"))
+        _verify_restore_preview(prepared, data.get("preview_token"), path.name)
+        reason = (
+            "before_automatic_restore"
+            if prepared["scope"] == "full"
+            else "before_partial_automatic_restore"
+        )
+        new_backup = _apply_full_restore(prepared["validated"], reason)
         return jsonify({
             "success": True,
-            "message": "선택한 자동 복원 지점으로 되돌렸습니다.",
-            "restored_counts": validated["counts"],
+            "message": "선택한 자동 복원 지점의 {} 범위로 되돌렸습니다.".format(
+                prepared["scope_label"]
+            ),
+            "restore_scope": prepared["scope"],
+            "restored_counts": prepared["target_counts"],
             "automatic_backup": str(new_backup),
         })
     except Exception as exc:  # noqa: BLE001
@@ -534,17 +594,14 @@ def restore_automatic_backup():
 @app.route("/settings/import/preview", methods=["POST"])
 @csrf_protect
 def preview_import_settings():
-    """전체 복원 파일을 실제 DB와 분리된 임시 DB에서 검증한다."""
+    """복원 목표를 실제 DB와 분리된 임시 DB에서 검증한다."""
     try:
         payload = request.get_json(silent=True)
-        validated = validate_payload(payload)
-        return jsonify({
-            "success": True,
-            "message": "전체 백업 검증이 완료되었습니다.",
-            "current_counts": current_counts(),
-            "backup_counts": validated["counts"],
-            "backup_created_at": validated["created_at"],
-        })
+        scope = payload.get("restore_scope", "full") if isinstance(payload, dict) else "full"
+        prepared = prepare_restore(payload, scope)
+        response = _restore_preview_response(prepared, "복원 목표 검증이 완료되었습니다.")
+        response["preview_token"] = _restore_preview_token(prepared)
+        return jsonify(response)
     except BackupFormatError as exc:
         return json_error(str(exc))
 
@@ -552,27 +609,32 @@ def preview_import_settings():
 @app.route("/settings/import", methods=["POST"])
 @csrf_protect
 def import_settings():
-    """현재 데이터 전체를 검증된 백업 파일의 내용으로 교체한다."""
+    """현재 DB의 선택 묶음을 검증된 백업 내용으로 교체한다."""
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
         return json_error("JSON 본문을 해석할 수 없습니다.")
-    if data.get("confirm_full_replace") is not True:
-        return json_error("전체 교체 확인이 필요합니다.")
+    if data.get("confirm_selected_replace") is not True and data.get("confirm_full_replace") is not True:
+        return json_error("선택 범위 교체 확인이 필요합니다.")
 
     backup_path = None
     try:
-        validated = validate_payload(data)
-        backup_path = _apply_full_restore(validated, "before_full_restore")
+        prepared = prepare_restore(data, data.get("restore_scope", "full"))
+        _verify_restore_preview(prepared, data.get("preview_token"))
+        reason = "before_full_restore" if prepared["scope"] == "full" else "before_partial_restore"
+        backup_path = _apply_full_restore(prepared["validated"], reason)
         return jsonify({
             "success": True,
-            "message": "전체 백업으로 복원했습니다.",
-            "restored_counts": validated["counts"],
+            "message": "{} 범위를 백업 내용으로 복원했습니다.".format(
+                prepared["scope_label"]
+            ),
+            "restore_scope": prepared["scope"],
+            "restored_counts": prepared["target_counts"],
             "automatic_backup": str(backup_path),
         })
     except Exception as e:  # noqa: BLE001
         db.session.rollback()
         return json_error(
-            "전체 복원 실패: {}".format(e),
+            "복원 실패: {}".format(e),
             automatic_backup=str(backup_path) if backup_path else None,
         )
 
@@ -1247,7 +1309,11 @@ def view_bills():
             "id": b.id,
             "billing_month": b.billing_month.isoformat(),
             "floor_id": b.floor_id,
-            "floor_name": b.floor_ref.name if b.floor_ref else "",
+            "floor_name": (
+                b.details[0].unit_snapshot.get("floor_name", "")
+                if b.details and isinstance(b.details[0].unit_snapshot, dict)
+                else ""
+            ),
             "total_amount": b.total_amount,
             "welfare_discount": b.welfare_discount or 0,
             "voucher_discount": b.voucher_discount or 0,
@@ -1256,7 +1322,7 @@ def view_bills():
             "monthly_details": b.monthly_details,
             "details": [
                 {
-                    "unit_name": d.unit.unit_name,
+                    "unit_name": d.unit_snapshot.get("unit_name", "") if d.unit_snapshot else "",
                     "usage_amount": float(d.usage_amount),
                     "base_amount": float(d.base_amount),
                     "welfare_discount": float(d.welfare_discount or 0),

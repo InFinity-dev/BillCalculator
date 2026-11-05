@@ -1,13 +1,14 @@
 """설정 레지스트리와 전체 백업 복원 정책."""
 
 from copy import deepcopy
+from datetime import date
 from pathlib import Path
 
 import pytest
 
 import app as app_module
 from extensions import db
-from models import Floor, Setting, Unit
+from models import CommonBill, CommonBillDetail, Floor, InvoiceCombination, Payment, Setting, Unit
 from settings_registry import SETTING_KEYS, get_def
 
 
@@ -61,17 +62,37 @@ def _export(client):
     return response.get_json()
 
 
-def _preview(client, csrf, payload):
+def _preview(client, csrf, payload, scope="full"):
     request_payload = deepcopy(payload)
     request_payload["_csrf_token"] = csrf
+    request_payload["restore_scope"] = scope
     return client.post("/settings/import/preview", json=request_payload).get_json()
 
 
-def _restore(client, csrf, payload):
+def _restore(client, csrf, payload, scope="full"):
+    preview = _preview(client, csrf, payload, scope)
+    assert preview["success"] is True, preview
     request_payload = deepcopy(payload)
     request_payload["_csrf_token"] = csrf
-    request_payload["confirm_full_replace"] = True
+    request_payload["restore_scope"] = scope
+    request_payload["preview_token"] = preview["preview_token"]
+    request_payload["confirm_selected_replace"] = True
     return client.post("/settings/import", json=request_payload).get_json()
+
+
+def _create_common_bill(client, csrf):
+    response = client.post(
+        "/calculate/common",
+        data={
+            "_csrf_token": csrf,
+            "billing_month": "2025-03",
+            "description": "공동 청소비",
+            "total_amount": "30000",
+            "distribution_method": "BY_RESIDENTS",
+        },
+    )
+    assert response.status_code in (200, 302)
+    assert CommonBill.query.count() == 1
 
 
 def test_export_is_complete_versioned_backup(app, client, floor, units):
@@ -136,7 +157,9 @@ def test_recent_automatic_backup_can_be_previewed_and_fully_restored(
         json={
             "_csrf_token": csrf,
             "filename": backup_path.name,
-            "confirm_full_replace": True,
+            "restore_scope": "full",
+            "preview_token": preview["preview_token"],
+            "confirm_selected_replace": True,
         },
     ).get_json()
     assert restored["success"] is True, restored
@@ -158,7 +181,7 @@ def test_restore_requires_explicit_full_replace_confirmation(app, client, csrf, 
     payload["_csrf_token"] = csrf
     result = client.post("/settings/import", json=payload).get_json()
     assert result["success"] is False
-    assert "전체 교체" in result["message"]
+    assert "선택 범위 교체" in result["message"]
     assert Unit.query.count() == 4
 
 
@@ -206,3 +229,258 @@ def test_fractional_resident_count_is_rejected(app, client, csrf, floor, units):
     assert response.get_json()["success"] is False
     db.session.expire_all()
     assert units[0].residents_count == original_count
+
+
+def test_master_restore_replaces_only_floor_and_unit_profiles(
+    app, client, csrf, floor, units
+):
+    _create_common_bill(client, csrf)
+    payload = _export(client)
+    target = next(row for row in payload["tables"]["units"] if row["id"] == units[0].id)
+    target["residents_count"] = 17
+    target["memo"] = "백업 프로필"
+
+    result = _restore(client, csrf, payload, "master")
+    assert result["success"] is True, result
+    db.session.expire_all()
+    assert db.session.get(Unit, units[0].id).residents_count == 17
+    assert db.session.get(Unit, units[0].id).memo == "백업 프로필"
+    assert CommonBill.query.count() == 1
+
+
+def test_master_restore_blocks_structural_change_for_calculation_reference(
+    app, client, csrf, floor, units
+):
+    _create_common_bill(client, csrf)
+    payload = _export(client)
+    target = next(row for row in payload["tables"]["units"] if row["id"] == units[0].id)
+    target["unit_name"] = "다른 세대"
+
+    result = _preview(client, csrf, payload, "master")
+    assert result["success"] is False
+    assert "참조" in result["message"]
+    assert db.session.get(Unit, units[0].id).unit_name == "101호"
+
+
+def test_master_restore_blocks_structural_change_for_unlinked_payment_reference(
+    app, client, csrf, floor, units
+):
+    combination = InvoiceCombination(invoice_name="기존 정산")
+    db.session.add(combination)
+    db.session.flush()
+    db.session.add(Payment(
+        combination_id=combination.id,
+        unit_id=units[0].id,
+        payment_date=date(2025, 3, 1),
+        payment_amount=10000,
+        payment_method="계좌이체",
+    ))
+    db.session.commit()
+    payload = _export(client)
+    next(row for row in payload["tables"]["units"] if row["id"] == units[0].id)[
+        "unit_name"
+    ] = "다른 수납자"
+
+    result = _preview(client, csrf, payload, "master")
+    assert result["success"] is False
+    assert "참조" in result["message"]
+
+
+def test_master_restore_may_remove_only_unreferenced_unit(app, client, csrf, floor, units):
+    _create_common_bill(client, csrf)
+    payload = _export(client)
+    unreferenced = next(unit for unit in units if unit.is_vacant)
+    unreferenced_id = unreferenced.id
+    payload["tables"]["units"] = [
+        row for row in payload["tables"]["units"] if row["id"] != unreferenced_id
+    ]
+
+    result = _restore(client, csrf, payload, "master")
+    assert result["success"] is True, result
+    assert db.session.get(Unit, unreferenced_id) is None
+    assert CommonBill.query.count() == 1
+
+
+def test_accounting_restore_replaces_history_and_keeps_master(
+    app, client, csrf, floor, units
+):
+    empty_history = _export(client)
+    _create_common_bill(client, csrf)
+
+    preview = _preview(client, csrf, empty_history, "accounting")
+    assert preview["success"] is True
+    assert preview["warnings"]
+    result = _restore(client, csrf, empty_history, "accounting")
+    assert result["success"] is True, result
+    assert CommonBill.query.count() == 0
+    assert Unit.query.count() == 4
+
+
+def test_accounting_restore_blocks_mismatched_master_fingerprint(
+    app, client, csrf, floor, units
+):
+    _create_common_bill(client, csrf)
+    payload = _export(client)
+    next(row for row in payload["tables"]["units"] if row["id"] == units[0].id)[
+        "unit_name"
+    ] = "백업의 다른 세대"
+
+    result = _preview(client, csrf, payload, "accounting")
+    assert result["success"] is False
+    assert "안전하게 연결" in result["message"]
+
+
+def test_settings_restore_changes_registered_values_only(app, client, csrf, floor, units):
+    internal = Setting(setting_key="__demo_dataset__", setting_value="current-marker")
+    db.session.add(internal)
+    db.session.commit()
+    payload = _export(client)
+    next(
+        row for row in payload["tables"]["settings"] if row["setting_key"] == "tv_fee"
+    )["setting_value"] = "9876"
+    next(
+        row
+        for row in payload["tables"]["settings"]
+        if row["setting_key"] == "__demo_dataset__"
+    )["setting_value"] = "backup-marker"
+
+    result = _restore(client, csrf, payload, "settings")
+    assert result["success"] is True, result
+    db.session.expire_all()
+    assert app_module.get_setting("tv_fee") == "9876"
+    assert Setting.query.filter_by(setting_key="__demo_dataset__").one().setting_value == "current-marker"
+    assert Unit.query.count() == 4
+
+
+def test_property_history_restore_preserves_current_settings(
+    app, client, csrf, floor, units
+):
+    payload = _export(client)
+    next(
+        row for row in payload["tables"]["settings"] if row["setting_key"] == "tv_fee"
+    )["setting_value"] = "9999"
+    payload["tables"]["units"][0]["residents_count"] = 23
+    app_module.set_setting("tv_fee", "4321")
+    db.session.commit()
+
+    result = _restore(client, csrf, payload, "property_history")
+    assert result["success"] is True, result
+    db.session.expire_all()
+    assert app_module.get_setting("tv_fee") == "4321"
+    assert db.session.get(Unit, payload["tables"]["units"][0]["id"]).residents_count == 23
+
+
+def test_restore_rejects_stale_preview_after_current_data_changes(
+    app, client, csrf, floor, units
+):
+    payload = _export(client)
+    preview = _preview(client, csrf, payload, "full")
+    app_module.set_setting("tv_fee", "7777")
+    db.session.commit()
+    request_payload = deepcopy(payload)
+    request_payload.update({
+        "_csrf_token": csrf,
+        "restore_scope": "full",
+        "preview_token": preview["preview_token"],
+        "confirm_selected_replace": True,
+    })
+
+    result = client.post("/settings/import", json=request_payload).get_json()
+    assert result["success"] is False
+    assert "현재 데이터가 변경" in result["message"]
+    assert app_module.get_setting("tv_fee") == "7777"
+
+
+def test_restore_rejects_changed_backup_after_preview(app, client, csrf, floor, units):
+    payload = _export(client)
+    preview = _preview(client, csrf, payload, "settings")
+    next(
+        row for row in payload["tables"]["settings"] if row["setting_key"] == "tv_fee"
+    )["setting_value"] = "8888"
+    payload.update({
+        "_csrf_token": csrf,
+        "restore_scope": "settings",
+        "preview_token": preview["preview_token"],
+        "confirm_selected_replace": True,
+    })
+
+    result = client.post("/settings/import", json=payload).get_json()
+    assert result["success"] is False
+    assert "백업 파일" in result["message"]
+
+
+def test_restore_rejects_unknown_scope(app, client, csrf, floor, units):
+    result = _preview(client, csrf, _export(client), "payments_only")
+    assert result["success"] is False
+    assert "지원하지 않는" in result["message"]
+
+
+def test_v1_backup_with_legacy_calculation_snapshot_is_enriched(
+    app, client, csrf, floor, units
+):
+    _create_common_bill(client, csrf)
+    payload = _export(client)
+    for row in payload["tables"]["common_bill_details"]:
+        for key in ("unit_id", "floor_id", "floor_number", "floor_name"):
+            row["unit_snapshot"].pop(key)
+
+    result = _restore(client, csrf, payload, "full")
+    assert result["success"] is True, result
+    snapshot = CommonBillDetail.query.first().unit_snapshot
+    assert snapshot["unit_id"] in {unit.id for unit in units}
+    assert snapshot["floor_id"] == floor.id
+    assert snapshot["floor_number"] == floor.floor_number
+    assert snapshot["floor_name"] == floor.name
+
+
+def test_automatic_sqlite_backup_with_json_snapshots_can_be_previewed(
+    app, client, csrf, floor, units
+):
+    _create_common_bill(client, csrf)
+    backup_path = app_module._create_safety_backup("before_common_delete")
+
+    preview = client.post(
+        "/settings/automatic-backups/preview",
+        json={
+            "_csrf_token": csrf,
+            "filename": backup_path.name,
+            "restore_scope": "accounting",
+        },
+    ).get_json()
+    assert preview["success"] is True, preview
+    assert preview["target_counts"]["common_bill_details"] > 0
+
+
+def test_automatic_backup_supports_settings_only_restore(
+    app, client, csrf, floor, units
+):
+    app_module.set_setting("tv_fee", "3000")
+    db.session.commit()
+    backup_path = app_module._create_safety_backup("before_partial_restore")
+    app_module.set_setting("tv_fee", "7000")
+    units[0].residents_count = 41
+    db.session.commit()
+
+    preview = client.post(
+        "/settings/automatic-backups/preview",
+        json={
+            "_csrf_token": csrf,
+            "filename": backup_path.name,
+            "restore_scope": "settings",
+        },
+    ).get_json()
+    assert preview["success"] is True, preview
+    result = client.post(
+        "/settings/automatic-backups/restore",
+        json={
+            "_csrf_token": csrf,
+            "filename": backup_path.name,
+            "restore_scope": "settings",
+            "preview_token": preview["preview_token"],
+            "confirm_selected_replace": True,
+        },
+    ).get_json()
+    assert result["success"] is True, result
+    db.session.expire_all()
+    assert app_module.get_setting("tv_fee") == "3000"
+    assert db.session.get(Unit, units[0].id).residents_count == 41

@@ -1,5 +1,7 @@
 # 00. 현재 Database 감사 (Current DB Audit)
 
+> **역사 문서:** 제목의 "현재"는 2026-07-31 MySQL 리팩토링 전 기준이다. 현재 DB·이전·복원 상태는 [CURRENT_STATE](../CURRENT_STATE.md)와 현재 코드를 우선한다.
+
 > 감사 기준: `master` @ `273f01d`
 > 감사 일자: 2026-07-31
 > 선행 문서: [../../codebase-analysis/](../../codebase-analysis/) 8종

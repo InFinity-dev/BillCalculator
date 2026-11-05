@@ -12,6 +12,10 @@ from extensions import db
 from models import CommonBillDetail, ElectricBillDetail, WaterBillDetail
 
 SNAPSHOT_KEYS = {
+    "unit_id",
+    "floor_id",
+    "floor_number",
+    "floor_name",
     "unit_name",
     "electric_welfare",
     "electric_voucher",
@@ -80,6 +84,10 @@ def test_snapshot_captures_values_at_calculation_time(app, calculated):
     unit = calculated[0]
     detail = ElectricBillDetail.query.filter_by(unit_id=unit.id).one()
     assert detail.unit_snapshot["unit_name"] == "101호"
+    assert detail.unit_snapshot["unit_id"] == unit.id
+    assert detail.unit_snapshot["floor_id"] == unit.floor_id
+    assert detail.unit_snapshot["floor_number"] == unit.floor.floor_number
+    assert detail.unit_snapshot["floor_name"] == unit.floor.name
     assert detail.unit_snapshot["residents_count"] == 2
     assert detail.unit_snapshot["electric_welfare"] is True
     assert detail.unit_snapshot["is_vacant"] is False
@@ -94,6 +102,42 @@ def test_renaming_unit_does_not_change_past_snapshot(app, calculated):
 
     detail = ElectricBillDetail.query.filter_by(unit_id=unit.id).one()
     assert detail.unit_snapshot["unit_name"] == "101호"
+
+
+@pytest.mark.parametrize(
+    ("path", "original_text"),
+    (
+        ("/view/electric/{bill_id}", "101호"),
+        ("/view/water/{bill_id}", "101호"),
+        ("/view/common/{bill_id}", "101호"),
+    ),
+)
+def test_detail_views_use_historical_unit_name(app, client, calculated, path, original_text):
+    unit = calculated[0]
+    unit.unit_name = "현재 세대명"
+    db.session.commit()
+
+    model = {
+        "electric": ElectricBillDetail,
+        "water": WaterBillDetail,
+        "common": CommonBillDetail,
+    }[path.split("/")[2]]
+    detail = model.query.filter_by(unit_id=unit.id).one()
+    bill_id = getattr(detail, path.split("/")[2] + "_bill_id")
+    html = client.get(path.format(bill_id=bill_id)).get_data(as_text=True)
+    assert original_text in html
+    assert "현재 세대명" not in html
+
+
+def test_electric_detail_view_uses_historical_floor_name(app, client, calculated):
+    detail = ElectricBillDetail.query.filter_by(unit_id=calculated[0].id).one()
+    original_name = detail.unit_snapshot["floor_name"]
+    calculated[0].floor.name = "현재 층명"
+    db.session.commit()
+
+    html = client.get("/view/electric/{}".format(detail.electric_bill_id)).get_data(as_text=True)
+    assert original_name in html
+    assert "현재 층명" not in html
 
 
 def test_changing_residents_does_not_change_past_snapshot(app, calculated):

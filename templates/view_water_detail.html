@@ -71,7 +71,7 @@
                 다음 세대는 정산 대상에서 제외되어 0원으로 청구됩니다:
                 <strong>
                     {% for d in excluded_details %}
-                        {{ d.unit.unit_name }}{% if not loop.last %}, {% endif %}
+                        {{ d.unit_snapshot.unit_name }}{% if not loop.last %}, {% endif %}
                     {% endfor %}
                 </strong>
             </p>
@@ -93,7 +93,7 @@
         <tbody>
         {% for d in details %}
             <tr class="{% if d.is_excluded %}u-bg-surface-subtle u-opacity-0_7{% endif %}">
-                <td><strong>{{ d.unit.unit_name }}</strong></td>
+                <td><strong>{{ d.unit_snapshot.unit_name }}</strong></td>
                 <td class="u-align-center">
                     {% if d.is_excluded %}
                         <span class="badge badge-danger">제외됨</span>

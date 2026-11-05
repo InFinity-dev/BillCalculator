@@ -1,5 +1,7 @@
 # 02. 기능 인벤토리
 
+> **역사 문서:** 2026-07 기준 기능 분석이다. 최신 기능·복원 정책은 [CURRENT_STATE](../refactoring/CURRENT_STATE.md)와 [Knowledge Base](../../BillCalculator_Knowledge_Base.md)를 우선한다.
+
 현재 구현된 모든 기능을 **사용자/시스템 관점의 의미 단위**로 정리한다.
 `F-xx` = 사용자 기능, `S-xx` = 운영/보조 기능.
 

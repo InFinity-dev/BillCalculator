@@ -78,7 +78,7 @@
         <tbody>
         {% for detail in details %}
             <tr>
-                <td><strong>{{ detail.unit.unit_name }}</strong></td>
+                <td><strong>{{ detail.unit_snapshot.unit_name }}</strong></td>
                 {% if bill.distribution_method == 'BY_RESIDENTS' %}
                     <td class="u-align-center">{{ detail.unit_snapshot.residents_count }}명</td>
                 {% endif %}
