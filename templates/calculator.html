@@ -114,7 +114,7 @@
                             <input class="u-cursor-pointer" type="checkbox" name="overwrite">
                             <span class="u-text-14px u-color-text-secondary u-weight-500">기존 정산 데이터 덮어쓰기</span>
                         </label>
-                        <button type="submit" class="btn btn-primary u-p-12px-32px u-text-15px u-weight-600">
+                        <button type="submit" class="btn btn-primary u-p-12px-32px u-text-15px u-weight-600" data-tutorial-target="electric-save">
                             전기요금 저장
                         </button>
                     </div>
@@ -293,7 +293,7 @@
             <div id="calculationPreviewStatus" class="form-help" aria-live="assertive"></div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" type="button" data-close-modal="calculationPreviewModal">입력 수정</button>
-                <button class="btn btn-primary" type="button" id="calculationSaveConfirmed">검증 결과대로 저장</button>
+                <button class="btn btn-primary" type="button" id="calculationSaveConfirmed" data-tutorial-target="calculation-confirm">검증 결과대로 저장</button>
             </div>
         </div>
     </div>
@@ -532,7 +532,7 @@
             }
             const floor = FLOORS.find(f => f.id === parseInt(floorId));
             wrap.innerHTML = `
-                <section class="content-card meter-panel">
+                <section class="content-card meter-panel" data-tutorial-target="meter-readings">
                     <div class="section-heading"><div><h4>세대별 검침 입력</h4>
                         <p class="page-description">${escapeHtml(floor?.name || '')} · 사용량은 현월 검침에서 전월 검침을 뺀 값입니다.</p></div>
                         <button type="button" class="btn btn-secondary" onclick="loadPreviousReadings()">이전 검침 불러오기</button>

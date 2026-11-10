@@ -9,9 +9,10 @@
     <title>{% block title %}공과금 정산 시스템{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
+    {% if live_tutorial %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tutorial_overlay.css') }}">{% endif %}
     {% block extra_css %}{% endblock %}
 </head>
-<body data-page="{{ request.endpoint }}">
+<body data-page="{{ request.endpoint }}"{% if live_tutorial %} class="tutorial-live-mode"{% endif %}>
 {% from 'components/icons.html' import icon %}
 <a class="skip-link" href="#main-content">본문으로 이동</a>
 <div class="nav-backdrop" id="navBackdrop" hidden></div>
@@ -24,11 +25,15 @@
         ('view_bills', '계산 내역', 'chart', ['view_bills', 'view_electric_detail', 'view_water_detail', 'view_common_detail']),
         ('invoice_combination', '정산서', 'document', ['invoice_combination', 'view_invoice']),
         ('payments', '납부 관리', 'wallet', ['payments']),
-        ('settings', '설정', 'settings', ['settings'])
+        ('settings', '설정', 'settings', ['settings']),
+        ('tutorial', '사용 안내', 'help', ['tutorial'])
     ] %}
     <nav class="navigation">
         {% for endpoint, label, symbol, active_endpoints in navigation %}
-            <a href="{{ url_for(endpoint) }}" class="nav-link {% if request.endpoint in active_endpoints %}active{% endif %}" {% if request.endpoint in active_endpoints %}aria-current="page"{% endif %}>{{ icon(symbol) }}<span>{{ label }}</span></a>
+            <a href="{% if live_tutorial and endpoint == 'tutorial' %}#{% else %}{{ url_for(endpoint) }}{% endif %}"
+               data-tutorial-nav="{{ endpoint }}"
+               class="nav-link {% if request.endpoint in active_endpoints %}active{% endif %}{% if live_tutorial and endpoint == 'tutorial' %} tutorial-entry{% endif %}"
+               {% if request.endpoint in active_endpoints %}aria-current="page"{% endif %}>{{ icon(symbol) }}<span>{{ label }}</span>{% if endpoint == 'tutorial' %}<span class="nav-revisit-badge">다시 보기</span>{% endif %}</a>
         {% endfor %}
     </nav>
     <div class="sidebar-footer">세대별 요금부터 납부 내역까지<br>한 곳에서 관리하세요.</div>
@@ -41,7 +46,9 @@
         <a class="header-settings icon-button" href="{{ url_for('settings') }}" aria-label="설정">{{ icon('settings') }}</a>
     </header>
     <main class="page-content" id="main-content" tabindex="-1">
-        {% if config.get('DEMO_MODE') %}
+        {% if config.get('TUTORIAL_MODE') %}
+            <div class="alert alert-info tutorial-data-banner" role="status">연습 데이터 사용 중 · 실제 데이터와 완전히 분리되어 있습니다.</div>
+        {% elif config.get('DEMO_MODE') %}
             <div class="alert alert-info" role="status">테스트 데이터 사용 중 · 변경 사항은 테스트 데이터에만 저장됩니다.</div>
         {% endif %}
         {% with messages = get_flashed_messages(with_categories=true) %}
@@ -52,7 +59,12 @@
     <footer class="app-footer">BillCalculator · 공과금 정산 시스템</footer>
 </div>
 {% block modals %}{% endblock %}
+{% if live_tutorial %}
+    {% include 'components/tutorial_overlay.html' %}
+    <script id="liveTutorialConfig" type="application/json">{{ live_tutorial|tojson }}</script>
+{% endif %}
 <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 {% block scripts %}{% endblock %}
+{% if live_tutorial %}<script src="{{ url_for('static', filename='js/tutorial_overlay.js') }}"></script>{% endif %}
 </body>
 </html>

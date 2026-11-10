@@ -11,6 +11,13 @@ BILLCALC_SECRET_KEY    Flask SECRET_KEY. 미지정 시 프로세스마다 랜덤
 BILLCALC_DEBUG         '1'/'true'/'yes' 일 때만 debug 모드.
 BILLCALC_HOST          바인딩 주소. 기본값 127.0.0.1 (외부 노출 금지).
 BILLCALC_PORT          포트. 기본값 5000.
+BILLCALC_ONBOARDING_ENABLED  '0'/'false'/'no' 일 때 첫 실행 안내를 끈다.
+BILLCALC_ONBOARDING_STATE_PATH  사용 안내 완료 상태 파일 경로.
+BILLCALC_TUTORIAL_DATA_DIR  격리된 세션별 연습 DB 디렉터리.
+BILLCALC_TUTORIAL_MODE  '1'이면 격리된 실제 화면 튜토리얼 서버로 실행한다.
+BILLCALC_TUTORIAL_MAIN_URL  튜토리얼 완료 뒤 돌아갈 본 앱 주소.
+BILLCALC_TUTORIAL_CONTROL_TOKEN  본 앱의 튜토리얼 종료 요청용 서명 토큰.
+BILLCALC_TUTORIAL_HAD_USER_DATA  시작 전에 실제 사용자 데이터가 있었는지 여부.
 """
 
 import os
@@ -89,6 +96,33 @@ class Config:
     DEBUG = _env_flag("BILLCALC_DEBUG", False)
     HOST = os.environ.get("BILLCALC_HOST", "127.0.0.1")
     PORT = int(os.environ.get("BILLCALC_PORT", "5000"))
+    ONBOARDING_ENABLED = _env_flag("BILLCALC_ONBOARDING_ENABLED", True)
+    TUTORIAL_MODE = _env_flag("BILLCALC_TUTORIAL_MODE", False)
+    TUTORIAL_MAIN_URL = os.environ.get("BILLCALC_TUTORIAL_MAIN_URL", "").rstrip("/")
+    TUTORIAL_CONTROL_TOKEN = os.environ.get("BILLCALC_TUTORIAL_CONTROL_TOKEN", "")
+    TUTORIAL_HAD_USER_DATA = _env_flag("BILLCALC_TUTORIAL_HAD_USER_DATA", False)
+    # 쿠키는 포트가 아니라 호스트 기준으로 공유된다. 본 앱 세션과 연습 앱
+    # 세션이 서로 덮어쓰지 않도록 이름을 반드시 분리한다.
+    SESSION_COOKIE_NAME = (
+        "billcalc_tutorial_session" if TUTORIAL_MODE else "session"
+    )
+    DEMO_MODE = TUTORIAL_MODE
+
+    # 완료 여부는 업무 DB 전체 복원과 분리해 유지한다. 경로를 명시하지 않으면
+    # 실제 SQLite DB와 같은 디렉터리의 app_state.json을 사용한다.
+    _DB_PATH = resolve_db_path()
+    ONBOARDING_STATE_PATH = Path(
+        os.environ.get(
+            "BILLCALC_ONBOARDING_STATE_PATH",
+            str((_DB_PATH.parent if _DB_PATH else DATA_DIR) / "app_state.json"),
+        )
+    ).expanduser().resolve()
+    TUTORIAL_DATA_DIR = Path(
+        os.environ.get(
+            "BILLCALC_TUTORIAL_DATA_DIR",
+            str((_DB_PATH.parent if _DB_PATH else DATA_DIR) / "tutorial_sessions"),
+        )
+    ).expanduser().resolve()
 
 
 class TestConfig(Config):
@@ -101,3 +135,4 @@ class TestConfig(Config):
     TESTING = True
     SECRET_KEY = "test-secret-key"
     WTF_CSRF_ENABLED = False
+    ONBOARDING_ENABLED = False

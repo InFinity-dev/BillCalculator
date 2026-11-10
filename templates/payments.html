@@ -74,7 +74,7 @@
                 </thead>
                 <tbody>
                 {% for unit in units %}
-                    <tr class="unit-row" tabindex="0" role="button" aria-label="{{ unit.floor.name if unit.floor else '' }} {{ unit.unit_name }} 납부 내역 확인"
+                    <tr class="unit-row" tabindex="0" role="button" data-tutorial-target="payment-unit" aria-label="{{ unit.floor.name if unit.floor else '' }} {{ unit.unit_name }} 납부 내역 확인"
                         onkeydown="if(event.key === 'Enter' || event.key === ' ') { event.preventDefault(); this.click(); }"
                         onclick="loadUnitHistory({{ unit.id }}, this.dataset.unitName, this.dataset.floorName, this)"
                         data-unit-name="{{ unit.unit_name }}"
@@ -96,7 +96,7 @@
 
         <!-- 우측: 선택 세대의 정산 이력 -->
         <div class="content-card">
-            <div id="historySection" hidden>
+            <div id="historySection" hidden data-tutorial-target="payment-history">
                 <div class="u-display-flex u-justify-content-space-between u-align-items-center u-mb-20px">
                     <h2 class="u-m-0" id="historyTitle"></h2>
                 </div>

@@ -25,6 +25,7 @@ _TMP_DIR = tempfile.mkdtemp(prefix="billcalc-test-")
 os.environ.pop("BILLCALC_DATABASE_URI", None)
 os.environ["BILLCALC_DB_PATH"] = str(Path(_TMP_DIR) / "test.db")
 os.environ["BILLCALC_SECRET_KEY"] = "test-secret-key"
+os.environ["BILLCALC_ONBOARDING_ENABLED"] = "0"
 
 from flask_migrate import upgrade  # noqa: E402
 

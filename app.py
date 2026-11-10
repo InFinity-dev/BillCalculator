@@ -22,6 +22,7 @@ from functools import wraps
 import click
 from flask import (
     Flask,
+    abort,
     flash,
     jsonify,
     redirect,
@@ -30,7 +31,7 @@ from flask import (
     session,
     url_for,
 )
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import joinedload, selectinload
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
@@ -70,6 +71,13 @@ from models import (
     WaterBillDetail,
 )
 from settings_registry import SETTING_DEFS, SETTING_KEYS, get_def
+from onboarding_state import mark_onboarding_completed, onboarding_completed
+from tutorial_service import (
+    cleanup_stale_tutorial_databases,
+    create_tutorial_database,
+    delete_tutorial_database,
+)
+from tutorial_runtime import launch_tutorial_process, stop_tutorial_process
 
 # =========================
 # Safe numeric helpers & JSON provider (Decimal-safe)
@@ -371,9 +379,204 @@ def register_cli(application):
 app = create_app()
 
 
+@app.context_processor
+def tutorial_screen_context():
+    """격리된 연습 서버의 모든 실제 화면에 안내 레이어 설정을 제공한다."""
+    if not app.config.get("TUTORIAL_MODE"):
+        return {"live_tutorial": None}
+    main_url = app.config.get("TUTORIAL_MAIN_URL", "").rstrip("/")
+    token = app.config.get("TUTORIAL_CONTROL_TOKEN", "")
+    return {
+        "live_tutorial": {
+            "endpoint": request.endpoint,
+            "path": request.path,
+            "mainUrl": main_url,
+            "controlToken": token,
+            "controlBase": main_url + "/tutorial/control",
+            "hadUserData": bool(app.config.get("TUTORIAL_HAD_USER_DATA")),
+        }
+    }
+
+
 # ======================================================
 # Routes - Core pages
 # ======================================================
+def _has_operational_data():
+    """기본 설정 행만 있는 초기 DB와 사용 중인 DB를 구분한다."""
+    return any((
+        Floor.query.limit(1).first(),
+        Unit.query.limit(1).first(),
+        ElectricBill.query.limit(1).first(),
+        WaterBill.query.limit(1).first(),
+        CommonBill.query.limit(1).first(),
+        InvoiceCombination.query.limit(1).first(),
+        Payment.query.limit(1).first(),
+    ))
+
+
+@app.before_request
+def offer_first_run_tutorial():
+    """완료 전의 빈 DB에서만 주요 HTML 화면을 튜토리얼로 연결한다."""
+    if app.config.get("TUTORIAL_MODE"):
+        return None
+    if not app.config.get("ONBOARDING_ENABLED", True) or request.method != "GET":
+        return None
+    if request.endpoint not in {
+        "index", "settings", "calculator", "view_bills", "invoice_combination", "payments",
+    }:
+        return None
+    if session.get("onboarding_deferred"):
+        return None
+    if onboarding_completed(app.config["ONBOARDING_STATE_PATH"]):
+        return None
+    try:
+        if _has_operational_data():
+            return None
+    except SQLAlchemyError:  # 스키마 준비 전에는 기존 오류 화면을 가로채지 않는다.
+        return None
+    return redirect(url_for("tutorial"))
+
+
+@app.route("/tutorial")
+def tutorial():
+    if app.config.get("TUTORIAL_MODE"):
+        return redirect(url_for("index"))
+    tutorial_id = session.get("tutorial_id")
+    if not tutorial_id:
+        tutorial_id = secrets.token_hex(16)
+        session["tutorial_id"] = tutorial_id
+        session["tutorial_had_user_data"] = _has_operational_data()
+    session.pop("onboarding_deferred", None)
+    try:
+        cleanup_stale_tutorial_databases(app.config["TUTORIAL_DATA_DIR"])
+        path = create_tutorial_database(app.config["TUTORIAL_DATA_DIR"], tutorial_id)
+        control_token = URLSafeTimedSerializer(
+            app.secret_key, salt="live-tutorial-control-v1"
+        ).dumps({"tutorial_id": tutorial_id})
+        running = launch_tutorial_process(
+            tutorial_id,
+            path,
+            request.host_url.rstrip("/"),
+            control_token,
+            preferred_port=session.get("tutorial_port"),
+            had_user_data=bool(session.get("tutorial_had_user_data")),
+        )
+        session["tutorial_port"] = running.port
+        return redirect("http://127.0.0.1:{}/".format(running.port))
+    except (OSError, RuntimeError, ValueError) as error:
+        # 빈 DB의 자동 안내가 시작 실패 → 자동 안내 재진입을 반복하지 않게 한다.
+        # 사용자는 본 화면에서 오류를 확인한 뒤 메뉴로 다시 시도할 수 있다.
+        session["onboarding_deferred"] = True
+        flash("사용 안내를 시작하지 못했습니다: {}".format(error), "error")
+        return redirect(url_for("index")), 303
+
+
+@app.route("/tutorial/health")
+def tutorial_health():
+    if not app.config.get("TUTORIAL_MODE"):
+        abort(404)
+    return jsonify({"success": True, "mode": "tutorial"})
+
+
+def _stop_and_delete_tutorial(tutorial_id):
+    stop_tutorial_process(tutorial_id)
+    delete_tutorial_database(app.config["TUTORIAL_DATA_DIR"], tutorial_id)
+
+
+def _clear_tutorial_session():
+    session.pop("tutorial_id", None)
+    session.pop("tutorial_had_user_data", None)
+    session.pop("tutorial_port", None)
+    session.pop("onboarding_deferred", None)
+
+
+def _finish_tutorial(next_action=None):
+    tutorial_id = session.get("tutorial_id")
+    try:
+        if tutorial_id:
+            _stop_and_delete_tutorial(tutorial_id)
+        mark_onboarding_completed(app.config["ONBOARDING_STATE_PATH"])
+    except (OSError, RuntimeError, ValueError) as error:
+        flash("사용 안내를 안전하게 종료하지 못했습니다: {}".format(error), "error")
+        return redirect(url_for("tutorial"))
+
+    had_user_data = bool(session.get("tutorial_had_user_data")) or _has_operational_data()
+    _clear_tutorial_session()
+    flash("사용 안내를 완료했습니다. 연습 데이터는 삭제되었습니다.", "success")
+    if had_user_data:
+        return redirect(url_for("index"))
+    if next_action == "import":
+        return redirect(url_for("settings", tab="import-export-tab"))
+    return redirect(url_for("settings", tab="floors-tab"))
+
+
+@app.route("/tutorial/control/<action>")
+def tutorial_control(action):
+    if action not in {"complete", "defer", "restart"}:
+        abort(404)
+    try:
+        signed = URLSafeTimedSerializer(
+            app.secret_key, salt="live-tutorial-control-v1"
+        ).loads(request.args.get("token", ""), max_age=24 * 60 * 60)
+    except SignatureExpired:
+        abort(403, "사용 안내 연결 시간이 만료되었습니다.")
+    except BadSignature:
+        abort(403, "사용 안내 연결 정보가 올바르지 않습니다.")
+    tutorial_id = session.get("tutorial_id")
+    if not tutorial_id or signed.get("tutorial_id") != tutorial_id:
+        abort(403, "현재 사용 안내 세션과 일치하지 않습니다.")
+
+    if action == "complete":
+        return _finish_tutorial(request.args.get("next_action"))
+    if action == "defer":
+        stop_tutorial_process(tutorial_id)
+        session["onboarding_deferred"] = True
+        flash("사용 안내를 멈췄습니다. 왼쪽 메뉴의 ‘사용 안내’에서 이어볼 수 있습니다.", "info")
+        return redirect(url_for("index"))
+
+    try:
+        _stop_and_delete_tutorial(tutorial_id)
+    except (OSError, RuntimeError, ValueError) as error:
+        flash("연습 데이터를 안전하게 초기화하지 못했습니다: {}".format(error), "error")
+        return redirect(url_for("tutorial"))
+    _clear_tutorial_session()
+    return redirect(url_for("tutorial"))
+
+
+@app.route("/tutorial/restart", methods=["POST"])
+@csrf_protect
+def restart_tutorial():
+    tutorial_id = session.pop("tutorial_id", None)
+    if tutorial_id:
+        try:
+            _stop_and_delete_tutorial(tutorial_id)
+        except (OSError, RuntimeError, ValueError):
+            flash("기존 연습 데이터를 안전하게 확인하지 못해 새로 시작하지 않았습니다.", "error")
+            session["tutorial_id"] = tutorial_id
+            return redirect(url_for("tutorial"))
+    session.pop("tutorial_had_user_data", None)
+    session.pop("tutorial_port", None)
+    session.pop("onboarding_deferred", None)
+    return redirect(url_for("tutorial"))
+
+
+@app.route("/tutorial/defer", methods=["POST"])
+@csrf_protect
+def defer_tutorial():
+    tutorial_id = session.get("tutorial_id")
+    if tutorial_id:
+        stop_tutorial_process(tutorial_id)
+    session["onboarding_deferred"] = True
+    flash("사용 안내는 왼쪽 메뉴의 ‘사용 안내’에서 언제든 이어볼 수 있습니다.", "info")
+    return redirect(url_for("index"))
+
+
+@app.route("/tutorial/complete", methods=["POST"])
+@csrf_protect
+def complete_tutorial():
+    return _finish_tutorial(request.form.get("next_action"))
+
+
 @app.route("/")
 def index():
     floors_count = Floor.query.count()

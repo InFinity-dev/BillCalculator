@@ -13,7 +13,7 @@
     </div>
     <div class="tabs-container">
         <!-- 층/세대 관리 탭 -->
-        <div id="floors-tab" class="tab-content">
+        <div id="floors-tab" class="tab-content" data-tutorial-target="unit-management">
             <div class="section-heading">
                 <div>
                     <h2 class="u-mb-8px"> 층 및 세대 관리</h2>
@@ -562,6 +562,10 @@
 {% block scripts %}
     <script>
         function showTab(tabId) { selectTab(tabId); }
+        const requestedTab = new URLSearchParams(window.location.search).get('tab');
+        if (['floors-tab', 'settings-tab', 'bill-inquiry-tab', 'invoice-settings-tab', 'import-export-tab'].includes(requestedTab)) {
+            showTab(requestedTab);
+        }
 
         // Modal helpers
         document.addEventListener('click', (e) => {

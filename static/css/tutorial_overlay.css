@@ -1,0 +1,93 @@
+:root { --tutorial-guide-width: 360px; }
+
+.tutorial-live-mode .app-shell { margin-right: var(--tutorial-guide-width); }
+.tutorial-live-mode .modal { right: var(--tutorial-guide-width); }
+.tutorial-live-mode .tutorial-entry {
+    color: #173d77;
+    background: #e7f0ff;
+    box-shadow: inset 0 0 0 2px #78a5e5;
+}
+.tutorial-live-mode .tutorial-entry .nav-revisit-badge { background: #2856a3; color: white; }
+.tutorial-data-banner { border-style: dashed; font-weight: 650; }
+
+.tutorial-mask {
+    position: fixed;
+    z-index: 300;
+    background: rgb(15 24 38 / 64%);
+    pointer-events: auto;
+    transition: inset 180ms ease, width 180ms ease, height 180ms ease;
+}
+.tutorial-mask-top { inset: 0 0 auto 0; height: 0; }
+.tutorial-mask-right { top: 0; right: 0; width: 0; height: 0; }
+.tutorial-mask-bottom { right: 0; bottom: 0; left: 0; height: 0; }
+.tutorial-mask-left { top: 0; left: 0; width: 0; height: 0; }
+.tutorial-spotlight {
+    position: fixed;
+    z-index: 320;
+    border: 3px solid #79aaf3;
+    border-radius: 10px;
+    box-shadow: 0 0 0 4px rgb(121 170 243 / 30%), 0 12px 38px rgb(0 0 0 / 22%);
+    pointer-events: none;
+    transition: inset 180ms ease, width 180ms ease, height 180ms ease;
+}
+.tutorial-live-mode .modal.active { z-index: 310; }
+
+.tutorial-guide {
+    position: fixed;
+    z-index: 500;
+    inset: 0 0 0 auto;
+    width: var(--tutorial-guide-width);
+    padding: 28px 26px 24px;
+    background: #fff;
+    border-left: 1px solid #ccd7e5;
+    box-shadow: -14px 0 40px rgb(22 42 69 / 18%);
+    overflow-y: auto;
+    color: #1c293c;
+}
+.tutorial-guide-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tutorial-guide-kicker { color: #2856a3; font-size: 12px; font-weight: 750; letter-spacing: .04em; }
+.tutorial-guide-close { border: 0; background: #f0f3f7; color: #55657b; border-radius: 999px; width: 36px; height: 36px; font-size: 24px; line-height: 1; }
+.tutorial-progress { height: 6px; margin: 22px 0 10px; overflow: hidden; border-radius: 999px; background: #e6ebf2; }
+.tutorial-progress span { display: block; height: 100%; width: 0; background: #2856a3; border-radius: inherit; transition: width 180ms ease; }
+.tutorial-step-count { color: #66768a; font-size: 12px; font-weight: 650; }
+.tutorial-guide h2 { margin: 10px 0 12px; font-size: 22px; line-height: 1.35; }
+.tutorial-guide > p { color: #40536d; font-size: 15px; line-height: 1.75; }
+.tutorial-concept { margin: 18px 0; padding: 14px 15px; border-radius: 8px; background: #edf3fc; color: #1d427f; font-size: 14px; line-height: 1.65; }
+.tutorial-target-hint { margin: 18px 0 12px; padding: 11px 13px; border-radius: 7px; background: #fff6df; color: #7a5216; font-size: 13px; font-weight: 700; }
+.tutorial-guide-actions { display: grid; gap: 10px; margin-top: 20px; }
+.tutorial-guide-actions .btn { width: 100%; }
+.tutorial-guide-links { display: flex; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #e0e6ee; }
+.link-button { border: 0; padding: 6px 0; background: transparent; color: #66768a; font-size: 12px; text-decoration: underline; }
+
+@media (max-width: 1100px) {
+    :root { --tutorial-guide-width: 320px; }
+}
+
+@media (max-width: 768px) {
+    :root { --tutorial-guide-height: min(42dvh, 350px); }
+    .tutorial-live-mode .app-shell { margin-right: 0; padding-bottom: var(--tutorial-guide-height); }
+    .tutorial-live-mode .modal { right: 0; bottom: var(--tutorial-guide-height); }
+    .tutorial-live-mode .modal-content { max-height: calc(100dvh - var(--tutorial-guide-height) - 24px); }
+    .tutorial-guide {
+        inset: auto 0 0;
+        width: 100%;
+        height: var(--tutorial-guide-height);
+        padding: 18px 18px 16px;
+        border-top: 1px solid #ccd7e5;
+        border-left: 0;
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -14px 40px rgb(22 42 69 / 22%);
+    }
+    .tutorial-guide-head { position: sticky; top: -18px; margin: -18px -18px 0; padding: 14px 18px 8px; background: white; z-index: 1; }
+    .tutorial-progress { margin: 12px 0 7px; }
+    .tutorial-guide h2 { margin: 6px 0 8px; font-size: 19px; }
+    .tutorial-guide > p { font-size: 14px; line-height: 1.6; }
+    .tutorial-concept { margin: 12px 0; padding: 10px 12px; }
+    .tutorial-target-hint { margin: 12px 0 8px; }
+    .tutorial-guide-actions { margin-top: 12px; }
+    .tutorial-guide-links { margin-top: 14px; padding-top: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tutorial-mask, .tutorial-spotlight, .tutorial-progress span { transition: none; }
+}
