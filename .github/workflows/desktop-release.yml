@@ -1,0 +1,111 @@
+name: Desktop build and release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Python tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+      - name: Install test dependencies
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run test suite
+        run: python -m pytest -q
+
+  build:
+    name: ${{ matrix.label }}
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows x64
+            os: windows-latest
+            builder_args: --win nsis --x64
+            artifact_name: BillCalculator-Windows-x64
+            artifact_path: dist/*.exe
+          - label: macOS Apple Silicon
+            os: macos-15
+            builder_args: --mac dmg --arm64
+            artifact_name: BillCalculator-macOS-arm64
+            artifact_path: dist/*.dmg
+          - label: macOS Intel
+            os: macos-15-intel
+            builder_args: --mac dmg --x64
+            artifact_name: BillCalculator-macOS-x64
+            artifact_path: dist/*.dmg
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-desktop.txt
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: npm
+      - name: Install Python packaging dependencies
+        run: python -m pip install -r requirements-desktop.txt
+      - name: Install Electron dependencies
+        run: npm ci
+      - name: Use the release tag as the app version
+        run: node scripts/sync_release_version.cjs
+      - name: Generate application icons
+        run: python scripts/generate_desktop_icons.py
+      - name: Build native Python backend
+        run: python scripts/build_desktop_backend.py
+      - name: Smoke-test packaged backend
+        run: python scripts/smoke_test_desktop_backend.py
+      - name: Build desktop installer
+        run: npx electron-builder ${{ matrix.builder_args }} --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: ${{ matrix.artifact_path }}
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish GitHub Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          path: release-assets
+          merge-multiple: true
+      - name: Generate SHA-256 checksums
+        working-directory: release-assets
+        run: sha256sum * > SHA256SUMS.txt
+      - name: Create or update release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" release-assets/* --clobber
+          else
+            gh release create "$TAG" release-assets/* --verify-tag --generate-notes --title "BillCalculator $TAG"
+          fi

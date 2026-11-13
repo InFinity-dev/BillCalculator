@@ -24,6 +24,7 @@ from onboarding_state import onboarding_completed
 from scripts import demo
 from tests.test_frontend import AssetParser
 from tutorial_service import (
+    cleanup_owned_tutorial_databases,
     create_tutorial_database,
     delete_tutorial_database,
     tutorial_database_path,
@@ -423,6 +424,17 @@ def test_active_tutorial_database_is_never_deleted(tmp_path):
         connection.close()
     assert delete_tutorial_database(directory, tutorial_id) is True
     assert not target.exists()
+
+
+def test_desktop_cleanup_removes_only_owned_inactive_tutorial_databases(tmp_path):
+    directory = tmp_path / "tutorial_sessions"
+    owned = create_tutorial_database(directory, "e" * 32)
+    unknown = tutorial_database_path(directory, "f" * 32)
+    unknown.write_bytes(b"unrecognized user file")
+
+    assert cleanup_owned_tutorial_databases(directory) == 1
+    assert not owned.exists()
+    assert unknown.read_bytes() == b"unrecognized user file"
 
 
 def test_demo_cli_forwards_custom_database_path(monkeypatch, tmp_path):

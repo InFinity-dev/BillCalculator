@@ -18,6 +18,14 @@ STALE_AFTER = timedelta(hours=24)
 TUTORIAL_SCENARIO_VERSION = 3
 
 
+def demo_seed_command(target):
+    """소스 실행과 PyInstaller 실행에서 각각 올바른 더미 생성 명령을 만든다."""
+    arguments = ["seed", "--db-path", str(target), "--tutorial-ready"]
+    if getattr(sys, "frozen", False):
+        return [sys.executable, "seed-demo"] + arguments[1:]
+    return [sys.executable, str(DEMO_SCRIPT)] + arguments
+
+
 def _root_path(directory, *, create=False):
     root = Path(directory).expanduser()
     if root.is_symlink():
@@ -59,10 +67,7 @@ def create_tutorial_database(directory, session_id):
     environment["BILLCALC_ONBOARDING_ENABLED"] = "0"
     try:
         subprocess.run(
-            [
-                sys.executable, str(DEMO_SCRIPT), "seed", "--db-path", str(target),
-                "--tutorial-ready",
-            ],
+            demo_seed_command(target),
             cwd=str(REPO_ROOT), env=environment, check=True,
             capture_output=True, text=True, timeout=120,
         )
@@ -112,6 +117,25 @@ def cleanup_stale_tutorial_databases(directory, now=None):
             removed += int(delete_tutorial_database(root, match.group(1)))
         except (OSError, RuntimeError, ValueError):
             # 식별되지 않은 파일은 자동으로 지우지 않는다.
+            continue
+    return removed
+
+
+def cleanup_owned_tutorial_databases(directory):
+    """생성기 소유가 확인된 모든 종료된 연습 DB를 정리한다.
+
+    데스크톱 앱 종료·재시작 시 사용한다. 사용 중이거나 식별되지 않은 파일은
+    ``delete_tutorial_database``의 기존 보호 규칙에 따라 보존한다.
+    """
+    root = _root_path(directory, create=True)
+    removed = 0
+    for target in root.glob("tutorial-*.db"):
+        match = re.fullmatch(r"tutorial-([0-9a-f]{32})\.db", target.name)
+        if not match or target.is_symlink():
+            continue
+        try:
+            removed += int(delete_tutorial_database(root, match.group(1)))
+        except (OSError, RuntimeError, ValueError):
             continue
     return removed
 

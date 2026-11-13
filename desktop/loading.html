@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BillCalculator 시작 중</title>
+    <style>
+        :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f5f7fa; color: #182338; }
+        main { width: min(520px, calc(100vw - 40px)); padding: 40px; text-align: center; background: #fff; border: 1px solid #dce3ec; border-radius: 16px; box-shadow: 0 18px 50px rgba(26, 42, 68, .10); }
+        .mark { width: 64px; height: 64px; margin: 0 auto 22px; display: grid; place-items: center; border-radius: 14px; background: #2856a3; color: #fff; font-size: 28px; font-weight: 700; }
+        h1 { margin: 0 0 10px; font-size: 24px; }
+        p { margin: 0; color: #5b6678; line-height: 1.65; }
+        .spinner { width: 34px; height: 34px; margin: 26px auto 0; border: 3px solid #dce6f5; border-top-color: #2856a3; border-radius: 50%; animation: spin .8s linear infinite; }
+        .error { color: #a12d2d; white-space: pre-wrap; }
+        .log { margin-top: 18px; padding: 12px; border-radius: 8px; background: #f7f8fa; color: #687386; font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+<main>
+    <div class="mark" aria-hidden="true">B</div>
+    <h1 id="title">BillCalculator를 준비하고 있습니다</h1>
+    <p id="message">저장된 데이터를 확인하고 앱을 시작하는 중입니다.</p>
+    <div class="spinner" id="spinner" aria-label="로딩 중"></div>
+    <div class="log" id="log" hidden></div>
+</main>
+<script>
+    const query = new URLSearchParams(window.location.search);
+    const error = query.get('error');
+    if (error) {
+        document.getElementById('title').textContent = '앱을 시작하지 못했습니다';
+        const message = document.getElementById('message');
+        message.textContent = error + '\n앱을 종료한 뒤 다시 실행해주세요.';
+        message.className = 'error';
+        document.getElementById('spinner').hidden = true;
+        const log = document.getElementById('log');
+        log.textContent = '진단 기록: ' + (query.get('log') || 'backend.log');
+        log.hidden = false;
+    }
+</script>
+</body>
+</html>

@@ -27,6 +27,31 @@ python app.py           # http://127.0.0.1:5000
 
 ---
 
+## Windows·macOS 데스크톱 앱
+
+Electron 패키지는 Flask·SQLite를 사용자 PC 안에서만 실행하므로 Python이나 DB 서버를 별도로
+설치할 필요가 없습니다. GitHub Releases에는 Windows x64 설치 파일과 macOS Apple Silicon·Intel용
+DMG를 각각 배포합니다.
+
+```bash
+source .venv/bin/activate
+pip install -r requirements-desktop.txt
+npm ci
+
+npm run desktop:dev     # 소스 상태에서 Electron 실행
+npm run desktop:dist    # 현재 운영체제용 설치 파일 생성
+```
+
+데스크톱 빌드는 Node.js 22.12 이상과 Python 3.9 이상이 필요합니다. `v1.0.0` 형태의 태그를
+GitHub에 푸시하면 전체 테스트 후 Windows·macOS 3개 빌드와 SHA-256 체크섬이 같은 GitHub Release에
+자동으로 등록됩니다. 현재 정책상 코드 서명·Apple 공증을 적용하지 않으므로 최초 실행 시 운영체제
+보안 경고를 사용자가 직접 승인해야 합니다.
+
+구조, 데이터 위치, 로컬 빌드, 태그 배포와 설치 시 주의사항은
+[Electron 데스크톱 앱 빌드·배포](docs/desktop-distribution.md)를 참고하세요.
+
+---
+
 ## PyCharm에서 실행
 
 1. 복제한 `BillCalculator` 폴더를 프로젝트로 엽니다.
@@ -213,6 +238,9 @@ Flask가 HTML과 정적 파일을 직접 제공합니다. 별도의 프론트엔
 | `BILLCALC_TUTORIAL_CONTROL_TOKEN` | (자동 생성) | 내부용. 본 앱이 연습 실행을 제어하는 서명 토큰 |
 | `BILLCALC_TUTORIAL_HAD_USER_DATA` | (자동 판정) | 내부용. 연습 시작 전 실제 업무 데이터 존재 여부 |
 | `BILLCALC_TUTORIAL_RUN_ID` | 실행 시 자동 생성 | 브라우저 진행 상태를 현재 일회성 연습에만 연결하는 식별자 |
+| `BILLCALC_DESKTOP_MODE` | `0` | 내부용. Electron이 관리하는 로컬 백엔드 여부 |
+| `BILLCALC_DESKTOP_SHUTDOWN_TOKEN` | (자동 생성) | 내부용. Electron의 안전 종료 요청 검증 토큰 |
+| `BILLCALC_APP_VERSION` | (패키지 버전) | 내부용. 데스크톱 앱 버전 |
 
 DB 접속 정보는 소스에 하드코딩되어 있지 않습니다.
 
@@ -279,7 +307,7 @@ pytest tests/test_golden.py --update-golden
 
 ### 최근 검증 결과 — 2026-11-13
 
-- 전체 자동 테스트 **303개 통과**. 기존 검증에 더해 할인 초과 0원 제한·미재배분, TV 수신료 정책, 기존 v1 운영 백업 호환, 자유 연습 전환 CTA 분리, 일반 실행의 빈 DB와 연습 DB 격리, 연습 종료 후 본 앱 복귀를 검증합니다.
+- 전체 자동 테스트 **310개 통과**. 기존 검증에 더해 할인 초과 0원 제한·미재배분, TV 수신료 정책, 기존 v1 운영 백업 호환, 자유 연습 전환 CTA 분리, 일반 실행의 빈 DB와 연습 DB 격리, 연습 종료 후 본 앱 복귀, 데스크톱 DB bootstrap과 패키지 재실행 명령을 검증합니다.
 - 임시 DB로 12개 화면과 12개 로컬 정적 파일의 정상 응답 및 JavaScript 구문을 확인했습니다.
 - 브라우저 너비 **320·768·1440px**에서 11개 화면을 확인했고, 문서 전체의 가로 넘침이 없었습니다. 상세 내역 표는 표 영역 안에서 가로 스크롤됩니다.
 - 임시 DB에서 **공동 요금 정산 → 청구서 생성 → 입금 등록 → 잔액 확인** 흐름과 모바일 메뉴·모달·검침 오류 표시를 확인했습니다.

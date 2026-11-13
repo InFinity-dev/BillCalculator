@@ -1,7 +1,7 @@
 # 03. 테스트 계획
 
 > 선행: [02-migration-plan.md](02-migration-plan.md)
-> 현재 실행 기록: 2026-11-13 기준 **303 passed**. 초기 번호는 계획 이력이며 최종 사실은 현재 테스트 코드와 [CURRENT_STATE](../CURRENT_STATE.md)를 우선한다.
+> 현재 실행 기록: 2026-11-13 기준 **310 passed**. 초기 번호는 계획 이력이며 최종 사실은 현재 테스트 코드와 [CURRENT_STATE](../CURRENT_STATE.md)를 우선한다.
 > 원칙: **스키마를 바꾸기 전에 테스트를 먼저 작성한다.** 테스트가 현재 동작을 박제한 뒤 구조를 바꾼다.
 
 ---
@@ -24,6 +24,7 @@ tests/
 ├── test_payment_management.py ← 입금·삭제·잔액 흐름
 ├── test_demo.py            ← 더미 DB 생성·보존
 ├── test_tutorial.py        ← 격리 연습 앱·24단계 안내·종료 복귀
+├── test_desktop.py         ← Electron 백엔드 bootstrap·패키지 재실행 명령
 ├── test_frontend.py        ← 화면/정적 파일 스모크
 ├── test_regressions.py     ← 주요 회귀 예외
 └── golden/

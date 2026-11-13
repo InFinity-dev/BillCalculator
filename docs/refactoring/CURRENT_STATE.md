@@ -4,11 +4,11 @@
 > Ground Truth 우선순위는 `현재 코드 + migrations/ + 자동 테스트 > 이 문서 > 2026-07 분석 문서`다.
 
 - 최종 갱신: 2026-11-13
-- 작업 묶음: `처음 사용자 온보딩 튜토리얼 mk2`
+- 작업 묶음: `Electron 독립형 앱·GitHub Releases 자동 배포`
 - branch: `master`
-- 이 갱신 직전 기준 commit: `a027bad`
+- 이 갱신 직전 기준 commit: `2414925`
 - 스키마 최신 revision: `0004`
-- 자동 테스트: **303 passed**
+- 자동 테스트: **310 passed**
 - DB 정합성 검사: **20개 중 실패 0개**
 
 ---
@@ -16,7 +16,9 @@
 ## 1. 현재 시스템
 
 BillCalculator는 단일 관리자가 다세대 주택의 전기·수도·공동 공과금을 세대별로
-배분하고, 정산서 발행·입금·잔액·이월을 관리하는 Flask + SQLite 로컬 웹 애플리케이션이다.
+배분하고, 정산서 발행·입금·잔액·이월을 관리하는 Flask + SQLite 애플리케이션이다.
+소스에서는 로컬 웹앱으로 실행할 수 있고, 배포본은 Electron 안에 같은 Flask 도메인 코드와
+SQLite를 묶은 Windows·macOS 독립형 앱이다.
 
 핵심 흐름:
 
@@ -43,6 +45,9 @@ BillCalculator는 단일 관리자가 다세대 주택의 전기·수도·공동
 | MySQL → SQLite | `scripts/migrate_mysql_to_sqlite.py` |
 | 설정 레지스트리 | `settings_registry.py` |
 | 사용 안내 상태/연습 앱 | `onboarding_state.py`, `tutorial_service.py`, `tutorial_runtime.py`, `scripts/demo.py` |
+| 데스크톱 실행 | `desktop/main.cjs`, `desktop_backend.py` |
+| 데스크톱 패키징 | `package.json`, `desktop/backend.spec`, `scripts/build_desktop_backend.py` |
+| 릴리즈 자동화 | `.github/workflows/desktop-release.yml` |
 | 현재 도메인 요약 | `BillCalculator_Knowledge_Base.md` |
 
 `SQLSchema.txt`는 역사적 참고자료이며 스키마 생성에 사용하지 않는다. 빈 DB와 기존 DB 모두
@@ -55,6 +60,16 @@ SQLite 실행 정책:
 - `synchronous=FULL`
 - `busy_timeout=5000`
 - 통화는 `Money`(INTEGER 원), 배분 중간값·계량값은 `ExactDecimal`(TEXT)
+
+### 데스크톱 배포
+
+- Windows x64 NSIS, macOS 13+ arm64/x64 DMG를 대상별 네이티브 GitHub Actions 러너에서 만든다.
+- PyInstaller one-file 백엔드에 migrations·templates·static을 포함하며 시작 시 자동 upgrade·설정 시딩·20개 정합성 검사를 수행한다.
+- Electron은 단일 인스턴스로 동작하고 임의 loopback 포트의 백엔드를 관리한다. Node integration은 끄고 context isolation·sandbox를 켠다.
+- 사용자 DB는 Windows `%APPDATA%`, macOS `~/Library/Application Support` 아래 BillCalculator 데이터 폴더에 저장한다.
+- DB revision 변경 전 자동 백업을 만들고, 앱 종료 시 백엔드와 튜토리얼 프로세스를 정상 종료한다.
+- `v*` 태그는 Windows x64·macOS arm64·macOS x64 산출물과 `SHA256SUMS.txt`가 포함된 GitHub Release를 자동 생성한다.
+- 코드 서명과 Apple 공증은 제품 결정에 따라 비활성화되어 있다. 최초 실행 OS 경고는 배포 문서에서 안내한다.
 
 ---
 
@@ -167,7 +182,7 @@ MySQL 이전 스크립트는 원본을 읽기 전용으로 열고, 임시 SQLite
 
 ```
 pytest -q
-303 passed
+310 passed
 ```
 
 범위:

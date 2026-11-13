@@ -1,3 +1,4 @@
 flask==3.0.3
 flask_sqlalchemy==3.1.1
 Flask-Migrate==4.0.7
+waitress==3.0.2

@@ -1,0 +1,94 @@
+{
+  "name": "billcalculator-desktop",
+  "version": "1.0.0",
+  "description": "다세대 주택 공과금 정산 데스크톱 앱",
+  "main": "desktop/main.cjs",
+  "author": "InFinity-dev",
+  "license": "UNLICENSED",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/InFinity-dev/BillCalculator.git"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "desktop:dev": "electron .",
+    "desktop:icons": "python scripts/generate_desktop_icons.py",
+    "backend:build": "python scripts/build_desktop_backend.py",
+    "backend:smoke": "python scripts/smoke_test_desktop_backend.py",
+    "desktop:pack": "npm run desktop:icons && npm run backend:build && electron-builder --dir --publish never",
+    "desktop:dist": "npm run desktop:icons && npm run backend:build && electron-builder --publish never"
+  },
+  "devDependencies": {
+    "electron": "45.3.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "dev.infinity.billcalculator",
+    "productName": "BillCalculator",
+    "asar": true,
+    "compression": "normal",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "desktop/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build/backend",
+        "to": "backend",
+        "filter": [
+          "billcalculator-backend",
+          "billcalculator-backend.exe"
+        ]
+      }
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.finance",
+      "icon": "build/icon.icns",
+      "minimumSystemVersion": "13.0",
+      "identity": null,
+      "hardenedRuntime": false,
+      "notarize": false,
+      "artifactName": "BillCalculator-${version}-macOS-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "BillCalculator ${version}",
+      "contents": [
+        {
+          "x": 140,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "BillCalculator-Setup-${version}-Windows-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BillCalculator",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

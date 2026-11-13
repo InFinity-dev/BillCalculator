@@ -20,6 +20,13 @@ _LOCK = threading.RLock()
 _PROCESSES = {}
 
 
+def server_command():
+    """소스 실행과 PyInstaller 실행에서 각각 올바른 서버 명령을 만든다."""
+    if getattr(sys, "frozen", False):
+        return [sys.executable, "serve"]
+    return [sys.executable, str(APP_SCRIPT)]
+
+
 @dataclass
 class TutorialProcess:
     session_id: str
@@ -91,7 +98,7 @@ def launch_tutorial_process(
             "BILLCALC_SECRET_KEY": secrets.token_hex(32),
         })
         process = subprocess.Popen(
-            [sys.executable, str(APP_SCRIPT)],
+            server_command(),
             cwd=str(REPO_ROOT),
             env=environment,
             stdin=subprocess.DEVNULL,
