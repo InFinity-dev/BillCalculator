@@ -205,13 +205,17 @@ def test_live_tutorial_wraps_actual_pages_with_bright_guide(app, client, csrf):
     combination_id = created["id"]
     previous = {
         key: app.config.get(key)
-        for key in ("TUTORIAL_MODE", "TUTORIAL_MAIN_URL", "TUTORIAL_CONTROL_TOKEN", "TUTORIAL_HAD_USER_DATA")
+        for key in (
+            "TUTORIAL_MODE", "TUTORIAL_MAIN_URL", "TUTORIAL_CONTROL_TOKEN",
+            "TUTORIAL_HAD_USER_DATA", "APP_VERSION",
+        )
     }
     app.config.update(
         TUTORIAL_MODE=True,
         TUTORIAL_MAIN_URL="http://127.0.0.1:5000",
         TUTORIAL_CONTROL_TOKEN="signed-token",
         TUTORIAL_HAD_USER_DATA=True,
+        APP_VERSION="1.2.3",
     )
     try:
         body = client.get("/settings").get_data(as_text=True)
@@ -232,6 +236,8 @@ def test_live_tutorial_wraps_actual_pages_with_bright_guide(app, client, csrf):
     assert 'id="tutorialCue"' in body
     assert "tutorial-mask" not in body
     assert "signed-token" in body
+    assert 'href="http://127.0.0.1:5000/static/css/app.css?v=1.2.3"' in body
+    assert 'src="http://127.0.0.1:5000/static/js/tutorial_overlay.js?v=1.2.3"' in body
     parsed = AssetParser()
     parsed.feed(body)
     assert "/static/css/tutorial_overlay.css" in parsed.assets
@@ -325,7 +331,13 @@ def test_live_tutorial_overlay_tracks_layout_changes_and_covers_full_invoice_flo
     assert "document.addEventListener('submit', guardSubmit, true)" in source
     assert source.count("if (!event.isTrusted) return;") == 4
     assert "const navigationStepParameter = '_tutorial_step'" in source
-    assert "destination.searchParams.set(navigationStepParameter" in source
+    assert "const stepCookieKey = `billcalc_live_tutorial_step_${runId}`" in source
+    assert "const modeCookieKey = `billcalc_live_tutorial_mode_${runId}`" in source
+    assert "function safeStorageGet(key)" in source
+    assert "function writeCookie(key, value)" in source
+    assert "function navigateWithStep(destination, index, replace = false)" in source
+    assert "url.searchParams.set(navigationStepParameter" in source
+    assert "navigateWithStep(destination, index, true)" in source
     assert '[data-electric-month-select="2026-09"]' in source
     assert '[data-electric-month-select="2026-10"]' in source
     assert '.water-item[data-month^="2026-10"]' in source

@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#f5f7fa">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ asset_url('favicon.svg') }}">
     <title>{% block title %}공과금 정산 시스템{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
-    {% if live_tutorial %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tutorial_overlay.css') }}">{% endif %}
+    <link rel="stylesheet" href="{{ asset_url('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset_url('css/utilities.css') }}">
+    {% if live_tutorial %}<link rel="stylesheet" href="{{ asset_url('css/tutorial_overlay.css') }}">{% endif %}
     {% block extra_css %}{% endblock %}
 </head>
 <body data-page="{{ request.endpoint }}"{% if live_tutorial %} class="tutorial-live-mode"{% endif %}>
@@ -63,8 +63,8 @@
     {% include 'components/tutorial_overlay.html' %}
     <script id="liveTutorialConfig" type="application/json">{{ live_tutorial|tojson }}</script>
 {% endif %}
-<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<script src="{{ asset_url('js/app.js') }}"></script>
 {% block scripts %}{% endblock %}
-{% if live_tutorial %}<script src="{{ url_for('static', filename='js/tutorial_overlay.js') }}"></script>{% endif %}
+{% if live_tutorial %}<script src="{{ asset_url('js/tutorial_overlay.js') }}"></script>{% endif %}
 </body>
 </html>

@@ -23,6 +23,7 @@ import click
 from flask import (
     Flask,
     abort,
+    current_app,
     flash,
     jsonify,
     redirect,
@@ -189,6 +190,7 @@ def create_app(config_object=Config):
     migrate.init_app(application, db, render_as_batch=True, compare_type=True)
 
     application.jinja_env.globals["csrf_token"] = generate_csrf_token
+    application.jinja_env.globals["asset_url"] = asset_url
     register_cli(application)
     return application
 
@@ -200,6 +202,25 @@ def generate_csrf_token():
     if "_csrf_token" not in session:
         session["_csrf_token"] = secrets.token_hex(16)
     return session["_csrf_token"]
+
+
+def asset_url(filename):
+    """정적 자원의 안정적인 주소를 반환한다.
+
+    튜토리얼 서버는 일회성 포트에서 실행되므로 CSS·JavaScript는 수명이 긴
+    메인 앱 서버에서 받는다. 패키징 버전은 쿼리에 붙여 업데이트 뒤에도
+    Electron 캐시에 남은 이전 자원이 재사용되지 않게 한다.
+    """
+    values = {"filename": filename}
+    version = str(current_app.config.get("APP_VERSION") or "").strip()
+    if version:
+        values["v"] = version
+    path = url_for("static", **values)
+    if current_app.config.get("TUTORIAL_MODE"):
+        main_url = str(current_app.config.get("TUTORIAL_MAIN_URL") or "").rstrip("/")
+        if main_url:
+            return main_url + path
+    return path
 
 
 def csrf_protect(f):

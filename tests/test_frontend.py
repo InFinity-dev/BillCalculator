@@ -1,5 +1,6 @@
 """Smoke tests for empty screens, populated detail pages and their local assets."""
 from html.parser import HTMLParser
+from urllib.parse import urlsplit
 
 import pytest
 
@@ -20,8 +21,10 @@ class AssetParser(HTMLParser):
         if tag == 'h1':
             self.heading_count += 1
         asset = attrs.get('src') if tag == 'script' else attrs.get('href') if tag == 'link' else None
-        if asset and asset.startswith('/static/'):
-            self.assets.add(asset)
+        if asset:
+            path = urlsplit(asset).path
+            if path.startswith('/static/'):
+                self.assets.add(path)
 
 
 def assert_page(client, route):

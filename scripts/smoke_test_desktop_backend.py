@@ -11,8 +11,9 @@ import subprocess
 import sys
 import tempfile
 import time
+from http.cookiejar import CookieJar
 from urllib.error import URLError
-from urllib.request import Request, urlopen
+from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -63,6 +64,7 @@ def main():
             BILLCALC_DESKTOP_SHUTDOWN_TOKEN=token,
             BILLCALC_SECRET_KEY="desktop-smoke-secret",
             BILLCALC_ONBOARDING_ENABLED="0",
+            BILLCALC_APP_VERSION="smoke-test",
         )
         process = subprocess.Popen(
             [str(executable), "serve", "--host", "127.0.0.1", "--port", str(port)],
@@ -73,11 +75,32 @@ def main():
             text=True,
         )
         url = "http://127.0.0.1:{}".format(port)
+        opener = build_opener(HTTPCookieProcessor(CookieJar()))
         try:
             wait_for_health(url, process)
-            with urlopen(url + "/", timeout=2) as response:
+            with opener.open(url + "/", timeout=2) as response:
                 if response.status != 200:
                     raise RuntimeError("첫 화면 응답이 올바르지 않습니다.")
+            # 패키징된 실행 파일이 다시 자기 자신을 실행해 만드는 튜토리얼
+            # 서버까지 검증한다. Windows에서 이 경로의 화면 이동과 정적 자원
+            # 로딩이 실제 릴리즈 전에 깨졌는지 확인할 수 있다.
+            with opener.open(url + "/tutorial", timeout=150) as response:
+                tutorial_url = response.geturl()
+                tutorial_body = response.read().decode("utf-8")
+            if tutorial_url.startswith(url + "/"):
+                raise RuntimeError("튜토리얼 전용 서버로 이동하지 않았습니다.")
+            required_assets = (
+                url + "/static/css/app.css?v=smoke-test",
+                url + "/static/css/tutorial_overlay.css?v=smoke-test",
+                url + "/static/js/tutorial_overlay.js?v=smoke-test",
+            )
+            if not all(asset in tutorial_body for asset in required_assets):
+                raise RuntimeError("튜토리얼 화면이 메인 앱의 정적 자원을 사용하지 않습니다.")
+            for asset in required_assets:
+                with opener.open(asset, timeout=5) as response:
+                    content = response.read()
+                    if response.status != 200 or not content:
+                        raise RuntimeError("튜토리얼 정적 자원을 불러오지 못했습니다: {}".format(asset))
             # sqlite3.Connection 컨텍스트 매니저는 트랜잭션만 끝내고 파일
             # 핸들은 닫지 않는다. Windows에서도 임시 DB를 즉시 정리할 수
             # 있도록 연결 수명을 명시적으로 종료한다.
@@ -97,7 +120,7 @@ def main():
                 headers={"X-BillCalculator-Shutdown": token},
                 method="POST",
             )
-            with urlopen(request, timeout=2) as response:
+            with opener.open(request, timeout=2) as response:
                 if not json.load(response).get("success"):
                     raise RuntimeError("안전 종료 요청이 거부되었습니다.")
             process.wait(timeout=10)
@@ -110,11 +133,22 @@ def main():
                 )
         finally:
             if process.poll() is None:
-                process.terminate()
                 try:
-                    process.wait(timeout=5)
-                except subprocess.TimeoutExpired:
-                    process.kill()
+                    cleanup_request = Request(
+                        url + "/__desktop__/shutdown",
+                        data=b"",
+                        headers={"X-BillCalculator-Shutdown": token},
+                        method="POST",
+                    )
+                    with opener.open(cleanup_request, timeout=2):
+                        pass
+                    process.wait(timeout=10)
+                except (OSError, URLError, subprocess.TimeoutExpired):
+                    process.terminate()
+                    try:
+                        process.wait(timeout=5)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
         print("desktop backend smoke test passed")
     return 0
 

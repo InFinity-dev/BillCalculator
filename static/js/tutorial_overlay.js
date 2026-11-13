@@ -7,6 +7,8 @@
     const runId = String(config.runId || config.controlToken || 'current');
     const storageKey = `billcalc-live-tutorial-step-v5:${runId}`;
     const modeStorageKey = `billcalc-live-tutorial-mode-v2:${runId}`;
+    const stepCookieKey = `billcalc_live_tutorial_step_${runId}`;
+    const modeCookieKey = `billcalc_live_tutorial_mode_${runId}`;
     const legacyStorageKeys = [
         'billcalc-live-tutorial-step-v4',
         'billcalc-live-tutorial-step-v3',
@@ -14,9 +16,85 @@
     ];
     const navigationStepParameter = '_tutorial_step';
 
+    function safeStorageGet(key) {
+        try {
+            return window.localStorage.getItem(key);
+        } catch (_error) {
+            return null;
+        }
+    }
+
+    function safeStorageSet(key, value) {
+        try {
+            window.localStorage.setItem(key, value);
+        } catch (_error) {
+            // URL과 호스트 쿠키가 진행 상태를 계속 보존한다.
+        }
+    }
+
+    function safeStorageRemove(key) {
+        try {
+            window.localStorage.removeItem(key);
+        } catch (_error) {
+            // 저장소 접근이 제한된 환경에서도 튜토리얼을 계속 진행한다.
+        }
+    }
+
+    function readCookie(key) {
+        try {
+            const prefix = `${encodeURIComponent(key)}=`;
+            const item = document.cookie.split(';').map(value => value.trim())
+                .find(value => value.startsWith(prefix));
+            return item ? decodeURIComponent(item.slice(prefix.length)) : null;
+        } catch (_error) {
+            return null;
+        }
+    }
+
+    function writeCookie(key, value) {
+        try {
+            document.cookie = `${encodeURIComponent(key)}=${encodeURIComponent(value)}; Path=/; Max-Age=86400; SameSite=Strict`;
+        } catch (_error) {
+            // 쿠키가 제한돼도 URL과 로컬 저장소로 진행 상태를 유지한다.
+        }
+    }
+
+    function clearCookie(key) {
+        try {
+            document.cookie = `${encodeURIComponent(key)}=; Path=/; Max-Age=0; SameSite=Strict`;
+        } catch (_error) {
+            // 제한된 저장 환경에서도 종료 흐름은 계속한다.
+        }
+    }
+
+    function normalizedStep(value, fallback = null) {
+        const parsed = Number.parseInt(value ?? '', 10);
+        return Number.isInteger(parsed) && parsed >= 0 && parsed < steps.length ? parsed : fallback;
+    }
+
+    function annotateCurrentUrl(index) {
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set(navigationStepParameter, String(index));
+        window.history.replaceState(
+            window.history.state, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+        );
+    }
+
+    function withTutorialStep(destination, index) {
+        const url = new URL(destination, window.location.href);
+        url.searchParams.set(navigationStepParameter, String(index));
+        return url.toString();
+    }
+
+    function navigateWithStep(destination, index, replace = false) {
+        const url = withTutorialStep(destination, index);
+        if (replace) window.location.replace(url);
+        else window.location.assign(url);
+    }
+
     // 새 연습은 항상 첫 단계와 기본 데모 데이터에서 시작한다. 이전 버전의
     // 브라우저 진행 상태는 현재 일회성 실행으로 가져오지 않는다.
-    legacyStorageKeys.forEach(key => localStorage.removeItem(key));
+    legacyStorageKeys.forEach(safeStorageRemove);
     const steps = [
         {
             endpoint: 'index', selector: '[data-tutorial-nav="tutorial"]', action: true,
@@ -231,37 +309,46 @@
 
     function readStep() {
         const currentUrl = new URL(window.location.href);
-        const navigationStep = Number.parseInt(currentUrl.searchParams.get(navigationStepParameter) || '', 10);
-        if (Number.isInteger(navigationStep) && navigationStep >= 0 && navigationStep < steps.length) {
-            localStorage.setItem(storageKey, String(navigationStep));
-            currentUrl.searchParams.delete(navigationStepParameter);
-            window.history.replaceState(
-                window.history.state, '', `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
-            );
+        const navigationStep = normalizedStep(currentUrl.searchParams.get(navigationStepParameter));
+        if (navigationStep !== null) {
+            safeStorageSet(storageKey, String(navigationStep));
+            writeCookie(stepCookieKey, String(navigationStep));
             return navigationStep;
         }
-        const stored = localStorage.getItem(storageKey);
-        const parsed = Number.parseInt(stored || '0', 10);
-        return Number.isInteger(parsed) && parsed >= 0 && parsed < steps.length ? parsed : 0;
+        const stored = normalizedStep(readCookie(stepCookieKey), normalizedStep(safeStorageGet(storageKey), 0));
+        safeStorageSet(storageKey, String(stored));
+        writeCookie(stepCookieKey, String(stored));
+        annotateCurrentUrl(stored);
+        return stored;
     }
 
     function writeStep(index) {
-        localStorage.setItem(storageKey, String(Math.max(0, Math.min(index, steps.length - 1))));
+        const normalized = Math.max(0, Math.min(index, steps.length - 1));
+        safeStorageSet(storageKey, String(normalized));
+        writeCookie(stepCookieKey, String(normalized));
+        annotateCurrentUrl(normalized);
     }
 
     function isPracticeMode() {
-        return localStorage.getItem(modeStorageKey) === 'practice';
+        return readCookie(modeCookieKey) === 'practice' || safeStorageGet(modeStorageKey) === 'practice';
     }
 
     function setPracticeMode(active) {
-        if (active) localStorage.setItem(modeStorageKey, 'practice');
-        else localStorage.removeItem(modeStorageKey);
+        if (active) {
+            safeStorageSet(modeStorageKey, 'practice');
+            writeCookie(modeCookieKey, 'practice');
+        } else {
+            safeStorageRemove(modeStorageKey);
+            clearCookie(modeCookieKey);
+        }
     }
 
     function clearTutorialStorage() {
-        localStorage.removeItem(storageKey);
-        localStorage.removeItem(modeStorageKey);
-        legacyStorageKeys.forEach(key => localStorage.removeItem(key));
+        safeStorageRemove(storageKey);
+        safeStorageRemove(modeStorageKey);
+        clearCookie(stepCookieKey);
+        clearCookie(modeCookieKey);
+        legacyStorageKeys.forEach(safeStorageRemove);
     }
 
     function enterPracticeMode() {
@@ -527,7 +614,7 @@
         writeStep(index + 1);
         const destination = step.nextPath || endpointPath(steps[index + 1]);
         if (step.nextPath || (destination && steps[index + 1].endpoint !== config.endpoint)) {
-            window.location.assign(destination);
+            navigateWithStep(destination, index + 1);
             return;
         }
         scheduleRender(40);
@@ -597,9 +684,7 @@
             const href = anchor?.getAttribute('href');
             if (step.overridePath || (event.type === 'click' && href && href !== '#')) {
                 event.preventDefault();
-                const destination = new URL(step.overridePath || anchor.href, window.location.href);
-                destination.searchParams.set(navigationStepParameter, String(index + 1));
-                window.location.assign(destination.toString());
+                navigateWithStep(step.overridePath || anchor.href, index + 1);
                 return;
             }
             window.setTimeout(() => scheduleRender(80), 80);
@@ -804,7 +889,7 @@
         const step = steps[index];
         if (!expectedEndpoint(step)) {
             const destination = endpointPath(step);
-            if (destination) window.location.replace(destination);
+            if (destination) navigateWithStep(destination, index, true);
             else writeStep(0);
             return;
         }

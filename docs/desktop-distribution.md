@@ -34,6 +34,10 @@ Electron main process
 - Electron 렌더러는 Node.js 통합을 사용하지 않고 context isolation·sandbox를 활성화한다.
 - 앱 안의 이동은 loopback 주소로 제한하며 외부 요금 조회 링크는 기본 브라우저로 연다.
 - Python 백엔드는 외부 네트워크 인터페이스에 바인딩하지 않는다.
+- 일회성 포트에서 실행되는 튜토리얼 화면도 CSS·JavaScript는 수명이 긴 메인 백엔드에서
+  불러온다. 모든 정적 자원 주소에는 앱 버전을 붙여 업데이트 뒤의 이전 캐시 혼용을 막는다.
+- 튜토리얼 진행도는 실행 ID별 URL·호스트 쿠키·브라우저 저장소에 함께 기록한다. 화면 이동이나
+  저장소 접근 제한이 생겨도 나머지 경로로 현재 단계를 복구하며 다른 연습 실행과 섞이지 않는다.
 - 앱 시작 시 현재 Alembic head까지 자동 업그레이드하고 설정 기본값 시딩 및 20개 DB 정합성
   검사를 수행한다.
 - 기존 DB에 마이그레이션이 필요하면 먼저 `backups/before_desktop_migration_*.db`를 만든다.
@@ -87,7 +91,7 @@ python scripts/smoke_test_desktop_backend.py
 
 1. 전체 Python 테스트 실행
 2. Windows x64, macOS Apple Silicon, macOS Intel 러너에서 병렬 빌드
-3. 각 PyInstaller 백엔드의 새 DB·HTTP·안전 종료 스모크 테스트
+3. 각 PyInstaller 백엔드의 새 DB·HTTP, 튜토리얼 하위 프로세스·정적 자원, 안전 종료 스모크 테스트
 4. NSIS 설치 파일과 두 DMG 생성
 5. SHA-256 체크섬 생성
 6. 태그와 같은 이름의 GitHub Release 생성 후 산출물 첨부
