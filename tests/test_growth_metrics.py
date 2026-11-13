@@ -108,3 +108,17 @@ def test_write_outputs_creates_daily_json_and_csv_history(tmp_path):
     readme = (tmp_path / "README.md").read_text(encoding="utf-8")
     assert "설치 파일 누적 다운로드: **5회**" in readme
     assert "전일 대비: **+3회**" in readme
+
+
+def test_first_snapshot_labels_daily_change_as_baseline(tmp_path):
+    snapshot = build_snapshot(
+        "InFinity-dev/BillCalculator",
+        _release(windows=1, mac_arm=1),
+        {"available": False, "reason": "test"},
+        collected_at=datetime(2026, 11, 13, tzinfo=timezone.utc),
+    )
+    write_outputs(tmp_path, snapshot)
+
+    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert "전일 대비: **기준선**" in readme
+    assert "기준선회" not in readme

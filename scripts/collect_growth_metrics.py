@@ -218,6 +218,12 @@ def _format_delta(value: int | None) -> str:
     return f"{value:+,}"
 
 
+def _format_delta_with_unit(value: int | None) -> str:
+    if value is None:
+        return "기준선"
+    return f"{value:+,}회"
+
+
 def render_readme(snapshot: dict[str, Any]) -> str:
     totals = snapshot["totals"]
     installer_assets = [
@@ -233,7 +239,7 @@ def render_readme(snapshot: dict[str, Any]) -> str:
         f"- 마지막 수집: `{snapshot['collected_at']}`",
         f"- 한국 기준일: `{snapshot['date_kst']}`",
         f"- 설치 파일 누적 다운로드: **{totals['installer_downloads']:,}회**",
-        f"- 전일 대비: **{_format_delta(totals['installer_daily_change'])}회**",
+        f"- 전일 대비: **{_format_delta_with_unit(totals['installer_daily_change'])}**",
         "",
         "## 설치 파일별 다운로드",
         "",
