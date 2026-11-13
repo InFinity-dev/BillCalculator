@@ -1,0 +1,89 @@
+name: Collect growth metrics
+
+on:
+  schedule:
+    - cron: "17 9 * * *"
+      timezone: "Asia/Seoul"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: collect-growth-metrics
+  cancel-in-progress: false
+
+jobs:
+  collect:
+    name: Archive GitHub metrics
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out collector
+        uses: actions/checkout@v7
+        with:
+          path: source
+
+      - name: Check analytics data branch
+        id: analytics_branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/branches/analytics-data" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check out existing analytics data
+        if: steps.analytics_branch.outputs.exists == 'true'
+        uses: actions/checkout@v7
+        with:
+          ref: analytics-data
+          path: analytics-data
+          fetch-depth: 0
+
+      - name: Prepare new analytics data branch
+        if: steps.analytics_branch.outputs.exists == 'false'
+        uses: actions/checkout@v7
+        with:
+          path: analytics-data
+          fetch-depth: 0
+
+      - name: Initialize analytics data branch
+        if: steps.analytics_branch.outputs.exists == 'false'
+        working-directory: analytics-data
+        run: |
+          git switch --orphan analytics-data
+          git rm -rf .
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Collect release downloads and repository traffic
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          METRICS_TRAFFIC_TOKEN: ${{ secrets.METRICS_TRAFFIC_TOKEN }}
+        run: >-
+          python source/scripts/collect_growth_metrics.py
+          --repository "$GITHUB_REPOSITORY"
+          --output-dir analytics-data
+
+      - name: Show latest metrics
+        run: cat analytics-data/README.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit daily snapshot
+        working-directory: analytics-data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md latest.json downloads.csv daily-summary.csv snapshots
+          if git diff --cached --quiet; then
+            echo "No metric changes to commit."
+            exit 0
+          fi
+          git commit -m "chore: update daily growth metrics"
+          git push origin HEAD:analytics-data

@@ -247,5 +247,6 @@ pytest tests/test_golden.py --update-golden
 - [도메인 지식 베이스](../BillCalculator_Knowledge_Base.md)
 - [DB 감사·설계·이전·테스트 계획](refactoring/database/)
 - [Electron 빌드·배포](desktop-distribution.md)
+- [GitHub 성장 지표 자동 수집](growth-metrics.md)
 - [기능 과제와 검증 기록](../TODO.md)
 - [기여 방법](../CONTRIBUTING.md)
