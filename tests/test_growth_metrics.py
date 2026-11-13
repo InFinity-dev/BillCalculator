@@ -97,6 +97,8 @@ def test_write_outputs_creates_daily_json_and_csv_history(tmp_path):
     assert latest["date_kst"] == "2026-11-14"
     assert (tmp_path / "snapshots" / "2026-11-13.json").exists()
     assert (tmp_path / "snapshots" / "2026-11-14.json").exists()
+    assert (tmp_path / "downloads-trend.svg").exists()
+    assert (tmp_path / "platform-breakdown.svg").exists()
 
     with (tmp_path / "daily-summary.csv").open(encoding="utf-8") as file:
         rows = list(csv.DictReader(file))
@@ -108,6 +110,20 @@ def test_write_outputs_creates_daily_json_and_csv_history(tmp_path):
     readme = (tmp_path / "README.md").read_text(encoding="utf-8")
     assert "설치 파일 누적 다운로드: **5회**" in readme
     assert "전일 대비: **+3회**" in readme
+    assert "![최근 30일 일간 및 누적 다운로드 추이](downloads-trend.svg)" in readme
+
+    trend_svg = (tmp_path / "downloads-trend.svg").read_text(encoding="utf-8")
+    assert "<svg" in trend_svg
+    assert "11-13" in trend_svg
+    assert "11-14" in trend_svg
+    assert "최근 30일 다운로드 추이" in trend_svg
+
+    platform_svg = (tmp_path / "platform-breakdown.svg").read_text(
+        encoding="utf-8"
+    )
+    assert "Windows x64" in platform_svg
+    assert "Apple Silicon Mac" in platform_svg
+    assert "총 5회" in platform_svg
 
 
 def test_first_snapshot_labels_daily_change_as_baseline(tmp_path):

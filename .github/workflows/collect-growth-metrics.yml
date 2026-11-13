@@ -80,7 +80,8 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md latest.json downloads.csv daily-summary.csv snapshots
+          git add README.md latest.json downloads.csv daily-summary.csv \
+            downloads-trend.svg platform-breakdown.svg snapshots
           if git diff --cached --quiet; then
             echo "No metric changes to commit."
             exit 0

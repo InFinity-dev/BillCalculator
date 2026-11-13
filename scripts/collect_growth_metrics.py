@@ -9,6 +9,8 @@ import json
 import os
 import ssl
 from datetime import datetime, timezone
+from html import escape
+from math import ceil
 from pathlib import Path
 from typing import Any, Iterable
 from urllib.error import HTTPError, URLError
@@ -20,6 +22,7 @@ from zoneinfo import ZoneInfo
 API_ROOT = "https://api.github.com"
 SEOUL = ZoneInfo("Asia/Seoul")
 INSTALLER_SUFFIXES = (".exe", ".dmg", ".msi", ".pkg", ".appimage", ".deb", ".rpm")
+CHART_FONT = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
 
 
 def _ssl_context() -> ssl.SSLContext:
@@ -224,6 +227,210 @@ def _format_delta_with_unit(value: int | None) -> str:
     return f"{value:+,}회"
 
 
+def _svg_document(width: int, height: int, title: str, body: list[str]) -> str:
+    return "\n".join(
+        [
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" '
+            f'viewBox="0 0 {width} {height}" role="img" aria-labelledby="title desc">',
+            f"  <title id=\"title\">{escape(title)}</title>",
+            "  <desc id=\"desc\">GitHub Release 설치 파일 다운로드 집계 그래프</desc>",
+            "  <rect width=\"100%\" height=\"100%\" rx=\"16\" fill=\"#ffffff\"/>",
+            "  <rect x=\"0.5\" y=\"0.5\" width=\"959\" "
+            f'height="{height - 1}" rx="15.5" fill="none" stroke="#dbe3ef"/>',
+            f'  <g font-family="{CHART_FONT}" fill="#172033">',
+            *body,
+            "  </g>",
+            "</svg>",
+            "",
+        ]
+    )
+
+
+def render_download_trend_svg(snapshots: list[dict[str, Any]]) -> str:
+    recent = snapshots[-30:]
+    width, height = 960, 620
+    left, right = 76, 924
+    plot_width = right - left
+    daily_top, daily_bottom = 112, 280
+    cumulative_top, cumulative_bottom = 398, 548
+    body = [
+        '    <text x="40" y="48" font-size="24" font-weight="700">최근 30일 다운로드 추이</text>',
+        '    <text x="40" y="76" font-size="14" fill="#64748b">매일 오전 9시 17분(한국시간) 사이의 누적값 차이</text>',
+        '    <text x="40" y="104" font-size="14" font-weight="600" fill="#334155">일간 신규 다운로드</text>',
+    ]
+
+    if not recent:
+        body.append(
+            '    <text x="480" y="310" text-anchor="middle" font-size="16" '
+            'fill="#64748b">아직 수집된 데이터가 없습니다.</text>'
+        )
+        return _svg_document(width, height, "BillCalculator 다운로드 추이", body)
+
+    daily_values = [
+        max(int(item["totals"].get("installer_daily_change") or 0), 0)
+        for item in recent
+    ]
+    daily_max = max(max(daily_values), 1)
+    cumulative_values = [
+        int(item["totals"].get("installer_downloads", 0)) for item in recent
+    ]
+    cumulative_max = max(max(cumulative_values), 1)
+    slot = plot_width / max(len(recent), 1)
+    bar_width = min(34, max(8, slot * 0.58))
+    label_step = max(1, ceil(len(recent) / 8))
+
+    daily_ticks = (
+        list(range(daily_max, -1, -1))
+        if daily_max <= 4
+        else [round(daily_max * (4 - index) / 4) for index in range(5)]
+    )
+    daily_tick_divisor = max(len(daily_ticks) - 1, 1)
+    for index, value in enumerate(daily_ticks):
+        y = daily_top + (daily_bottom - daily_top) * index / daily_tick_divisor
+        body.extend(
+            [
+                f'    <line x1="{left}" y1="{y:.1f}" x2="{right}" y2="{y:.1f}" '
+                'stroke="#e8edf5" stroke-width="1"/>',
+                f'    <text x="{left - 12}" y="{y + 5:.1f}" text-anchor="end" '
+                f'font-size="12" fill="#64748b">{value}</text>',
+            ]
+        )
+
+    for index, (item, daily_value) in enumerate(zip(recent, daily_values)):
+        center_x = left + slot * (index + 0.5)
+        bar_height = (daily_value / daily_max) * (daily_bottom - daily_top)
+        bar_y = daily_bottom - bar_height
+        original_delta = item["totals"].get("installer_daily_change")
+        color = "#dc2626" if isinstance(original_delta, int) and original_delta < 0 else "#315fba"
+        if bar_height > 0:
+            body.append(
+                f'    <rect x="{center_x - bar_width / 2:.1f}" y="{bar_y:.1f}" '
+                f'width="{bar_width:.1f}" height="{bar_height:.1f}" rx="4" fill="{color}"/>'
+            )
+        else:
+            body.append(
+                f'    <circle cx="{center_x:.1f}" cy="{daily_bottom}" r="3" fill="{color}"/>'
+            )
+
+        if len(recent) <= 10 or index % label_step == 0 or index == len(recent) - 1:
+            label = escape(str(item["date_kst"])[5:])
+            body.append(
+                f'    <text x="{center_x:.1f}" y="{daily_bottom + 24}" text-anchor="middle" '
+                f'font-size="12" fill="#64748b">{label}</text>'
+            )
+
+    body.extend(
+        [
+            '    <text x="40" y="374" font-size="14" font-weight="600" fill="#334155">누적 설치 파일 다운로드</text>',
+            f'    <text x="{right}" y="374" text-anchor="end" font-size="22" '
+            f'font-weight="700" fill="#315fba">{cumulative_values[-1]:,}회</text>',
+        ]
+    )
+
+    for index in range(4):
+        value = round(cumulative_max * (3 - index) / 3)
+        y = cumulative_top + (cumulative_bottom - cumulative_top) * index / 3
+        body.extend(
+            [
+                f'    <line x1="{left}" y1="{y:.1f}" x2="{right}" y2="{y:.1f}" '
+                'stroke="#e8edf5" stroke-width="1"/>',
+                f'    <text x="{left - 12}" y="{y + 5:.1f}" text-anchor="end" '
+                f'font-size="12" fill="#64748b">{value}</text>',
+            ]
+        )
+
+    points = []
+    for index, value in enumerate(cumulative_values):
+        x = left + slot * (index + 0.5)
+        y = cumulative_bottom - (value / cumulative_max) * (
+            cumulative_bottom - cumulative_top
+        )
+        points.append((x, y))
+
+    if len(points) > 1:
+        point_text = " ".join(f"{x:.1f},{y:.1f}" for x, y in points)
+        body.append(
+            f'    <polyline points="{point_text}" fill="none" stroke="#16a085" '
+            'stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'
+        )
+    for x, y in points:
+        body.append(
+            f'    <circle cx="{x:.1f}" cy="{y:.1f}" r="5" fill="#ffffff" '
+            'stroke="#16a085" stroke-width="3"/>'
+        )
+
+    body.append(
+        '    <text x="40" y="590" font-size="12" fill="#64748b">'
+        "첫 수집일은 과거 일간 값을 알 수 없어 기준선으로 표시합니다.</text>"
+    )
+    return _svg_document(width, height, "BillCalculator 최근 30일 다운로드 추이", body)
+
+
+def _platform_label(asset_name: str) -> str:
+    lowered = asset_name.lower()
+    if "windows" in lowered or lowered.endswith((".exe", ".msi")):
+        return "Windows x64"
+    if "macos-arm64" in lowered or "arm64" in lowered:
+        return "Apple Silicon Mac"
+    if "macos-x64" in lowered:
+        return "Intel Mac"
+    return "기타"
+
+
+def render_platform_breakdown_svg(snapshot: dict[str, Any]) -> str:
+    totals: dict[str, int] = {}
+    for asset in snapshot.get("assets", []):
+        if asset.get("kind") != "installer":
+            continue
+        label = _platform_label(str(asset.get("name", "")))
+        totals[label] = totals.get(label, 0) + int(asset.get("download_count", 0))
+
+    ordered_labels = ["Windows x64", "Apple Silicon Mac", "Intel Mac", "기타"]
+    rows = [(label, totals[label]) for label in ordered_labels if label in totals]
+    width = 960
+    height = max(300, 170 + len(rows) * 58)
+    max_value = max((value for _, value in rows), default=1)
+    grand_total = sum(value for _, value in rows)
+    colors = {
+        "Windows x64": "#315fba",
+        "Apple Silicon Mac": "#16a085",
+        "Intel Mac": "#8b5cf6",
+        "기타": "#64748b",
+    }
+    body = [
+        '    <text x="40" y="48" font-size="24" font-weight="700">운영체제별 누적 다운로드</text>',
+        f'    <text x="40" y="76" font-size="14" fill="#64748b">전체 버전 설치 파일 합계 · 총 {grand_total:,}회</text>',
+    ]
+
+    if not rows:
+        body.append(
+            '    <text x="480" y="170" text-anchor="middle" font-size="16" '
+            'fill="#64748b">설치 파일 다운로드 데이터가 없습니다.</text>'
+        )
+        return _svg_document(width, height, "BillCalculator 운영체제별 다운로드", body)
+
+    for index, (label, value) in enumerate(rows):
+        y = 118 + index * 58
+        bar_width = 560 * value / max_value if max_value else 0
+        percent = value / grand_total * 100 if grand_total else 0
+        body.extend(
+            [
+                f'    <text x="40" y="{y + 17}" font-size="14" font-weight="600">{escape(label)}</text>',
+                f'    <rect x="210" y="{y}" width="560" height="24" rx="7" fill="#edf2f8"/>',
+                f'    <rect x="210" y="{y}" width="{bar_width:.1f}" height="24" rx="7" '
+                f'fill="{colors[label]}"/>',
+                f'    <text x="900" y="{y + 17}" text-anchor="end" font-size="14" '
+                f'font-weight="700">{value:,}회 · {percent:.1f}%</text>',
+            ]
+        )
+
+    body.append(
+        f'    <text x="40" y="{height - 28}" font-size="12" fill="#64748b">'
+        "같은 사용자의 재다운로드도 각각 포함될 수 있습니다.</text>"
+    )
+    return _svg_document(width, height, "BillCalculator 운영체제별 누적 다운로드", body)
+
+
 def render_readme(snapshot: dict[str, Any]) -> str:
     totals = snapshot["totals"]
     installer_assets = [
@@ -240,6 +447,12 @@ def render_readme(snapshot: dict[str, Any]) -> str:
         f"- 한국 기준일: `{snapshot['date_kst']}`",
         f"- 설치 파일 누적 다운로드: **{totals['installer_downloads']:,}회**",
         f"- 전일 대비: **{_format_delta_with_unit(totals['installer_daily_change'])}**",
+        "",
+        "## 다운로드 추이",
+        "",
+        "![최근 30일 일간 및 누적 다운로드 추이](downloads-trend.svg)",
+        "",
+        "![운영체제별 누적 다운로드](platform-breakdown.svg)",
         "",
         "## 설치 파일별 다운로드",
         "",
@@ -277,6 +490,8 @@ def render_readme(snapshot: dict[str, Any]) -> str:
             "- `snapshots/YYYY-MM-DD.json`: 날짜별 원본",
             "- `downloads.csv`: 파일별 누적 다운로드와 일간 변화",
             "- `daily-summary.csv`: 날짜별 제품 지표 요약",
+            "- `downloads-trend.svg`: 최근 30일 일간·누적 다운로드 그래프",
+            "- `platform-breakdown.svg`: 운영체제별 누적 다운로드 그래프",
             "",
             "GitHub의 `download_count`는 고유 사용자 수가 아니라 파일별 누적 요청 횟수입니다. "
             "체크섬 같은 보조 파일은 설치 파일 합계에서 제외합니다.",
@@ -301,9 +516,15 @@ def write_outputs(output_dir: Path, snapshot: dict[str, Any]) -> None:
         serialized, encoding="utf-8"
     )
     (output_dir / "latest.json").write_text(serialized, encoding="utf-8")
-    (output_dir / "README.md").write_text(render_readme(snapshot), encoding="utf-8")
 
     snapshots = _load_snapshots(output_dir)
+    (output_dir / "downloads-trend.svg").write_text(
+        render_download_trend_svg(snapshots), encoding="utf-8"
+    )
+    (output_dir / "platform-breakdown.svg").write_text(
+        render_platform_breakdown_svg(snapshot), encoding="utf-8"
+    )
+    (output_dir / "README.md").write_text(render_readme(snapshot), encoding="utf-8")
     with (output_dir / "downloads.csv").open("w", encoding="utf-8", newline="") as file:
         fieldnames = [
             "date_kst",

@@ -7,6 +7,7 @@ BillCalculator는 `.github/workflows/collect-growth-metrics.yml`을 통해 GitHu
 - Release별·파일별 누적 다운로드 수
 - `.exe`, `.dmg` 등 설치 파일의 누적 합계와 전일 대비 변화
 - 체크섬 등 보조 파일의 누적 다운로드 수
+- 최근 30일 일간 다운로드·누적 추이와 운영체제별 다운로드 그래프
 - 권한이 허용된 경우 최근 14일 저장소 조회·순 방문자·클론·유입 경로
 
 GitHub의 `download_count`는 고유 사용자 수가 아니라 파일 요청 횟수다. 앱 설치와 실행 성공 여부도 뜻하지 않는다.
@@ -29,6 +30,8 @@ GitHub의 `download_count`는 고유 사용자 수가 아니라 파일 요청 �
 | `snapshots/YYYY-MM-DD.json` | 한국 기준 날짜별 원본 |
 | `downloads.csv` | 파일별 누적 다운로드와 일간 변화 |
 | `daily-summary.csv` | 날짜별 설치 파일 합계와 저장소 트래픽 요약 |
+| `downloads-trend.svg` | 최근 30일 일간·누적 다운로드 그래프 |
+| `platform-breakdown.svg` | Windows·Apple Silicon·Intel Mac 누적 다운로드 그래프 |
 
 같은 날 수동으로 다시 실행하면 그 날짜의 스냅샷을 최신 값으로 교체하고, 일간 변화는 직전 날짜의 스냅샷과 비교한다. Release 자산을 삭제하고 다시 올려 누적 수가 초기화되면 음수 변화가 기록될 수 있으므로 해당 날짜를 별도로 확인한다.
 
