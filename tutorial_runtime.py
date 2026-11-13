@@ -48,6 +48,27 @@ def _output_tail(output, limit=2000):
         return ""
 
 
+def _terminate_process(process, timeout):
+    """PyInstaller 부트로더를 포함한 튜토리얼 프로세스를 종료한다."""
+    if sys.platform == "win32":
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+            timeout=timeout,
+        )
+        process.wait(timeout=timeout)
+        return
+    process.terminate()
+    try:
+        process.wait(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=timeout)
+
+
 def _port_is_available(port):
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
@@ -152,12 +173,7 @@ def stop_tutorial_process(session_id, timeout=4):
         return False
     try:
         if running.process.poll() is None:
-            running.process.terminate()
-            try:
-                running.process.wait(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                running.process.kill()
-                running.process.wait(timeout=timeout)
+            _terminate_process(running.process, timeout)
     finally:
         if running.output is not None:
             running.output.close()

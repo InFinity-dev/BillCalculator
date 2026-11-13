@@ -32,6 +32,25 @@ def backend_path():
     )
 
 
+def force_stop(process):
+    if process.poll() is not None:
+        return
+    if sys.platform == "win32":
+        subprocess.run(
+            ["taskkill", "/PID", str(process.pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    else:
+        process.terminate()
+    try:
+        process.wait(timeout=10)
+    except subprocess.TimeoutExpired:
+        process.kill()
+        process.wait(timeout=5)
+
+
 def wait_for_health(url, process, timeout=45):
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -155,11 +174,7 @@ def main():
                         pass
                     process.wait(timeout=10)
                 except (OSError, URLError, subprocess.TimeoutExpired):
-                    process.terminate()
-                    try:
-                        process.wait(timeout=5)
-                    except subprocess.TimeoutExpired:
-                        process.kill()
+                    force_stop(process)
         print("desktop backend smoke test passed")
     return 0
 

@@ -1,6 +1,7 @@
 """Electron 패키징용 백엔드와 하위 프로세스 명령의 회귀 테스트."""
 
 from pathlib import Path
+from types import SimpleNamespace
 import sys
 
 import desktop_backend
@@ -83,6 +84,27 @@ def test_frozen_tutorial_server_starts_as_independent_onefile_instance(
     assert captured["environment"]["PYINSTALLER_RESET_ENVIRONMENT"] == "1"
     assert captured["environment"]["PYTHONIOENCODING"] == "utf-8"
     running.output.close()
+
+
+def test_windows_tutorial_shutdown_terminates_full_process_tree(monkeypatch):
+    commands = []
+    waits = []
+    process = SimpleNamespace(
+        pid=4321,
+        wait=lambda timeout: waits.append(timeout),
+    )
+
+    monkeypatch.setattr(sys, "platform", "win32")
+    monkeypatch.setattr(
+        tutorial_runtime.subprocess,
+        "run",
+        lambda command, **_options: commands.append(command),
+    )
+
+    tutorial_runtime._terminate_process(process, 4)
+
+    assert commands == [["taskkill", "/PID", "4321", "/T", "/F"]]
+    assert waits == [4]
 
 
 def test_desktop_parser_accepts_explicit_loopback_server():
