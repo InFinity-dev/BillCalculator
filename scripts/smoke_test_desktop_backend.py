@@ -78,7 +78,10 @@ def main():
             with urlopen(url + "/", timeout=2) as response:
                 if response.status != 200:
                     raise RuntimeError("첫 화면 응답이 올바르지 않습니다.")
-            with sqlite3.connect(str(database)) as connection:
+            # sqlite3.Connection 컨텍스트 매니저는 트랜잭션만 끝내고 파일
+            # 핸들은 닫지 않는다. Windows에서도 임시 DB를 즉시 정리할 수
+            # 있도록 연결 수명을 명시적으로 종료한다.
+            with closing(sqlite3.connect(str(database))) as connection:
                 revision = connection.execute("SELECT version_num FROM alembic_version").fetchone()[0]
                 settings = connection.execute("SELECT COUNT(*) FROM settings").fetchone()[0]
                 floors = connection.execute("SELECT COUNT(*) FROM floors").fetchone()[0]
