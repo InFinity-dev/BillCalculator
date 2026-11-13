@@ -1,5 +1,6 @@
 """실제 업무 DB와 분리된 튜토리얼 데이터 수명주기."""
 
+from contextlib import closing
 from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
@@ -92,10 +93,13 @@ def delete_tutorial_database(directory, session_id):
             # 프로세스가 막 종료된 직후에는 운영체제에 따라 WAL 잠금 해제가
             # 아주 잠깐 늦을 수 있다. 활성 DB는 계속 보호하되, 종료된 DB의
             # 잠금이 정리될 시간을 제한적으로 허용한다.
-            with sqlite3.connect(str(target), timeout=TUTORIAL_DB_LOCK_TIMEOUT) as connection:
-                mode = connection.execute("PRAGMA journal_mode=DELETE").fetchone()[0]
-                if str(mode).lower() != "delete":
-                    raise sqlite3.OperationalError("DB in use")
+            with closing(sqlite3.connect(
+                str(target), timeout=TUTORIAL_DB_LOCK_TIMEOUT
+            )) as connection:
+                with connection:
+                    mode = connection.execute("PRAGMA journal_mode=DELETE").fetchone()[0]
+                    if str(mode).lower() != "delete":
+                        raise sqlite3.OperationalError("DB in use")
         except sqlite3.Error as error:
             raise RuntimeError(
                 "연습 데이터가 아직 사용 중입니다. 연습 화면을 닫은 뒤 다시 시도하세요."
