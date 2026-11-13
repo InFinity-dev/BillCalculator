@@ -56,7 +56,7 @@ jobs:
         working-directory: analytics-data
         run: |
           git switch --orphan analytics-data
-          git rm -rf .
+          git rm -rf --ignore-unmatch .
 
       - name: Set up Python
         uses: actions/setup-python@v7
