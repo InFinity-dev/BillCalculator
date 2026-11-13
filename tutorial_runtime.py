@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 import atexit
+import json
 import os
 from pathlib import Path
 import secrets
@@ -11,7 +12,7 @@ import sys
 import tempfile
 import threading
 import time
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
 
 
@@ -95,8 +96,21 @@ def _wait_until_ready(port, process, timeout=12):
             raise RuntimeError("연습 화면 서버가 시작 중 종료되었습니다.")
         try:
             with urlopen(health_url, timeout=0.4) as response:
-                if response.status == 200:
+                payload = json.load(response)
+                if response.status == 200 and payload.get("dataset_ready"):
                     return
+                detail = " ".join(payload.get("errors") or [])
+                raise RuntimeError("연습 데이터가 준비되지 않았습니다: {}".format(detail))
+        except HTTPError as error:
+            if error.code == 503:
+                try:
+                    payload = json.loads(error.read().decode("utf-8"))
+                    detail = " ".join(payload.get("errors") or [])
+                except (UnicodeDecodeError, ValueError, AttributeError):
+                    detail = "HTTP 503"
+                raise RuntimeError(
+                    "연습 데이터가 준비되지 않았습니다: {}".format(detail)
+                ) from error
         except (OSError, URLError):
             time.sleep(0.08)
     raise RuntimeError("연습 화면 서버가 제한 시간 안에 시작되지 않았습니다.")

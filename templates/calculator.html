@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}계산 - 공과금 정산 시스템{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{{ asset_url('css/pages/calculator.css') }}">{% endblock %}
+{% block extra_css %}{{ stylesheet_asset('css/pages/calculator.css') }}{% endblock %}
 {% block content %}
     <div class="page-heading"><div><h1>요금 계산</h1><p class="page-description">고지 내역과 검침값을 입력해 세대별 부담액을 계산하세요.</p></div></div>
 

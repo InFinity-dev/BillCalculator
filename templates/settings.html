@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}설정 - 공과금 정산 시스템{% endblock %}
-{% block extra_css %}<link rel="stylesheet" href="{{ asset_url('css/pages/settings.css') }}">{% endblock %}
+{% block extra_css %}{{ stylesheet_asset('css/pages/settings.css') }}{% endblock %}
 {% block content %}
     <div class="page-heading"><div><h1>설정</h1><p class="page-description">세대 정보, 요금 기준과 정산서 기본값을 관리하세요.</p></div></div>
 

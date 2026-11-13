@@ -1,6 +1,6 @@
 {
   "name": "billcalculator-desktop",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "다세대 주택 공과금 정산 데스크톱 앱",
   "main": "desktop/main.cjs",
   "author": "InFinity-dev",

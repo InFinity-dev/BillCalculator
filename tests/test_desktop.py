@@ -2,7 +2,10 @@
 
 from pathlib import Path
 from types import SimpleNamespace
+import json
 import sys
+
+import pytest
 
 import desktop_backend
 import tutorial_runtime
@@ -105,6 +108,26 @@ def test_windows_tutorial_shutdown_terminates_full_process_tree(monkeypatch):
 
     assert commands == [["taskkill", "/PID", "4321", "/T", "/F"]]
     assert waits == [4]
+
+
+def test_tutorial_readiness_requires_valid_demo_dataset(monkeypatch):
+    class FakeResponse:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def read(self):
+            return json.dumps({"dataset_ready": False, "errors": ["세대 없음"]}).encode()
+
+    process = SimpleNamespace(poll=lambda: None)
+    monkeypatch.setattr(tutorial_runtime, "urlopen", lambda *_args, **_options: FakeResponse())
+
+    with pytest.raises(RuntimeError, match="세대 없음"):
+        tutorial_runtime._wait_until_ready(53123, process)
 
 
 def test_desktop_parser_accepts_explicit_loopback_server():

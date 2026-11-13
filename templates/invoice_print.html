@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>청구서 인쇄 - {{ combination.invoice_name }}</title>
-    <link rel="stylesheet" href="{{ asset_url('css/app.css') }}">
-    <link rel="stylesheet" href="{{ asset_url('css/utilities.css') }}">
-    <link rel="stylesheet" href="{{ asset_url('css/pages/invoice_print.css') }}">
-    {% if live_tutorial %}<link rel="stylesheet" href="{{ asset_url('css/tutorial_overlay.css') }}">{% endif %}
+    {{ stylesheet_asset('css/app.css') }}
+    {{ stylesheet_asset('css/utilities.css') }}
+    {{ stylesheet_asset('css/pages/invoice_print.css') }}
+    {% if live_tutorial %}{{ stylesheet_asset('css/tutorial_overlay.css') }}{% endif %}
 </head>
 <body{% if live_tutorial %} class="tutorial-live-mode tutorial-print-mode"{% endif %}>
 <div class="print-actions no-print">
@@ -176,7 +176,7 @@
 {% if live_tutorial %}
     {% include 'components/tutorial_overlay.html' %}
     <script id="liveTutorialConfig" type="application/json">{{ live_tutorial|tojson }}</script>
-    <script src="{{ asset_url('js/tutorial_overlay.js') }}"></script>
+    {{ script_asset('js/tutorial_overlay.js') }}
 {% endif %}
 </body>
 </html>

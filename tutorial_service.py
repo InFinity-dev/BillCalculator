@@ -18,6 +18,16 @@ SESSION_ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
 STALE_AFTER = timedelta(hours=24)
 TUTORIAL_SCENARIO_VERSION = 3
 TUTORIAL_DB_LOCK_TIMEOUT = 1.0
+EXPECTED_TUTORIAL_FLOORS = ((-1, "지하 1층"), (1, "1층"), (2, "2층"))
+EXPECTED_TUTORIAL_UNIT_COUNT = 8
+EXPECTED_AVAILABLE_ELECTRIC = (
+    ("2026-09-01", -1),
+    ("2026-09-01", 1),
+    ("2026-09-01", 2),
+    ("2026-10-01", 1),
+    ("2026-10-01", 2),
+)
+EXPECTED_AVAILABLE_WATER = (("2026-10-01", 348000, 6),)
 
 
 def demo_seed_command(target):
@@ -62,6 +72,93 @@ def tutorial_database_path(directory, session_id):
     return target
 
 
+def inspect_tutorial_database(target):
+    """튜토리얼 시작에 필요한 실제 데이터가 모두 있는지 읽기 전용으로 확인한다."""
+    target = Path(target)
+    metadata = existing_metadata(target)
+    errors = []
+    if metadata is None:
+        return {
+            "ready": False,
+            "errors": ["데모 데이터 식별 정보가 없습니다."],
+            "scenario_version": None,
+            "floor_count": 0,
+            "unit_count": 0,
+            "available_electric_count": 0,
+            "available_water_count": 0,
+        }
+    if not metadata.get("tutorial_ready"):
+        errors.append("튜토리얼 전용 데이터가 아닙니다.")
+    if metadata.get("tutorial_scenario_version") != TUTORIAL_SCENARIO_VERSION:
+        errors.append("튜토리얼 데이터 버전이 현재 시나리오와 다릅니다.")
+
+    floor_rows = []
+    unit_count = 0
+    available_electric = []
+    available_water = []
+    try:
+        uri = target.resolve().as_uri() + "?mode=ro"
+        with closing(sqlite3.connect(uri, uri=True)) as connection:
+            floor_rows = connection.execute(
+                "SELECT floor_number, name FROM floors ORDER BY floor_number"
+            ).fetchall()
+            unit_count = connection.execute("SELECT COUNT(*) FROM units").fetchone()[0]
+            available_electric = connection.execute(
+                """
+                SELECT bill.billing_month, floor.floor_number
+                FROM electric_bills AS bill
+                JOIN floors AS floor ON floor.id = bill.floor_id
+                LEFT JOIN invoice_combination_items AS item
+                  ON item.electric_bill_id = bill.id
+                WHERE item.id IS NULL
+                ORDER BY bill.billing_month, floor.floor_number
+                """
+            ).fetchall()
+            available_water = connection.execute(
+                """
+                SELECT bill.billing_month, bill.total_amount, COUNT(detail.id)
+                FROM water_bills AS bill
+                LEFT JOIN invoice_combination_items AS item
+                  ON item.water_bill_id = bill.id
+                LEFT JOIN water_bill_details AS detail
+                  ON detail.water_bill_id = bill.id
+                WHERE item.id IS NULL
+                GROUP BY bill.id
+                ORDER BY bill.billing_month
+                """
+            ).fetchall()
+    except sqlite3.Error as error:
+        errors.append("튜토리얼 DB를 읽을 수 없습니다: {}".format(error))
+
+    if tuple(floor_rows) != EXPECTED_TUTORIAL_FLOORS:
+        errors.append("연습용 층 구성이 올바르지 않습니다.")
+    if unit_count != EXPECTED_TUTORIAL_UNIT_COUNT:
+        errors.append("연습용 세대 구성이 올바르지 않습니다.")
+    if tuple(available_electric) != EXPECTED_AVAILABLE_ELECTRIC:
+        errors.append("정산 연습용 전기요금 구성이 올바르지 않습니다.")
+    if tuple(available_water) != EXPECTED_AVAILABLE_WATER:
+        errors.append("정산 연습용 수도요금 구성이 올바르지 않습니다.")
+
+    return {
+        "ready": not errors,
+        "errors": errors,
+        "scenario_version": metadata.get("tutorial_scenario_version"),
+        "floor_count": len(floor_rows),
+        "unit_count": unit_count,
+        "available_electric_count": len(available_electric),
+        "available_water_count": len(available_water),
+    }
+
+
+def _require_tutorial_database(target):
+    status = inspect_tutorial_database(target)
+    if not status["ready"]:
+        raise RuntimeError("튜토리얼 데모 데이터 검증 실패: {}".format(
+            " ".join(status["errors"])
+        ))
+    return status
+
+
 def create_tutorial_database(directory, session_id):
     """기존 더미 생성기를 별도 프로세스로 실행해 전용 DB를 만든다."""
     target = tutorial_database_path(directory, session_id)
@@ -71,9 +168,12 @@ def create_tutorial_database(directory, session_id):
             raise RuntimeError("기존 튜토리얼 데이터를 확인할 수 없습니다.")
         if (metadata.get("tutorial_ready")
                 and metadata.get("tutorial_scenario_version") == TUTORIAL_SCENARIO_VERSION):
-            return target
+            status = inspect_tutorial_database(target)
+            if status["ready"]:
+                return target
         # 이전 연습 데이터에는 모든 층의 9·10월 전기와 격월 수도를 함께 묶는 구성이 없다.
-        # 생성기 소유이고 사용 중이 아닌 경우에만 현재 시나리오로 교체한다.
+        # 생성기 소유이고 사용 중이 아닌 경우에만 현재 시나리오로 교체한다. 완료
+        # 표시가 있어도 실제 데이터가 비었거나 손상됐으면 그대로 재사용하지 않는다.
         delete_tutorial_database(directory, session_id)
     environment = demo_seed_environment()
     try:
@@ -85,8 +185,14 @@ def create_tutorial_database(directory, session_id):
     except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
         detail = getattr(error, "stderr", "") or getattr(error, "stdout", "") or str(error)
         raise RuntimeError("튜토리얼 데이터를 준비하지 못했습니다: {}".format(detail.strip()[-500:])) from error
-    if existing_metadata(target) is None:
-        raise RuntimeError("생성된 튜토리얼 데이터를 확인할 수 없습니다.")
+    try:
+        _require_tutorial_database(target)
+    except RuntimeError:
+        try:
+            delete_tutorial_database(directory, session_id)
+        except (OSError, RuntimeError, ValueError):
+            pass
+        raise
     return target
 
 

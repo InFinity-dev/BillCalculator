@@ -27,6 +27,7 @@ from tutorial_service import (
     cleanup_owned_tutorial_databases,
     create_tutorial_database,
     delete_tutorial_database,
+    inspect_tutorial_database,
     tutorial_database_path,
 )
 import app as app_module
@@ -236,12 +237,18 @@ def test_live_tutorial_wraps_actual_pages_with_bright_guide(app, client, csrf):
     assert 'id="tutorialCue"' in body
     assert "tutorial-mask" not in body
     assert "signed-token" in body
-    assert 'href="http://127.0.0.1:5000/static/css/app.css?v=1.2.3"' in body
-    assert 'src="http://127.0.0.1:5000/static/js/tutorial_overlay.js?v=1.2.3"' in body
+    assert 'data-inline-stylesheet="css/app.css"' in body
+    assert 'data-inline-stylesheet="css/utilities.css"' in body
+    assert 'data-inline-stylesheet="css/tutorial_overlay.css"' in body
+    assert 'data-inline-stylesheet="css/pages/settings.css"' in body
+    assert 'data-inline-script="js/app.js"' in body
+    assert 'data-inline-script="js/tutorial_overlay.js"' in body
+    assert 'data-inline-stylesheet="css/pages/calculator.css"' in calculator_body
+    assert ".meter-panel { margin-bottom: 20px; }" in calculator_body
+    assert 'rel="stylesheet"' not in calculator_body
     parsed = AssetParser()
     parsed.feed(body)
-    assert "/static/css/tutorial_overlay.css" in parsed.assets
-    assert "/static/js/tutorial_overlay.js" in parsed.assets
+    assert "/static/favicon.svg" in parsed.assets
     assert all(client.get(asset).status_code == 200 for asset in parsed.assets)
     assert 'data-tutorial-target="invoice-name"' in invoice_body
     assert 'data-tutorial-target="invoice-next-items"' in invoice_body
@@ -516,6 +523,66 @@ def test_tutorial_database_prepares_all_floor_electric_and_bimonthly_water(tmp_p
     ]
     assert available_water == [("2026-10-01", 348000, 6)]
     assert available_common == 0
+
+
+def test_tutorial_database_repairs_owned_dataset_with_missing_demo_rows(tmp_path):
+    directory = tmp_path / "tutorial_sessions"
+    tutorial_id = "1" * 32
+    target = create_tutorial_database(directory, tutorial_id)
+    with sqlite3.connect(str(target)) as connection:
+        connection.execute("PRAGMA foreign_keys = OFF")
+        connection.execute("DELETE FROM floors")
+
+    broken = inspect_tutorial_database(target)
+    assert broken["ready"] is False
+    assert broken["floor_count"] == 0
+
+    repaired = create_tutorial_database(directory, tutorial_id)
+    assert repaired == target
+    status = inspect_tutorial_database(repaired)
+    assert status == {
+        "ready": True,
+        "errors": [],
+        "scenario_version": 3,
+        "floor_count": 3,
+        "unit_count": 8,
+        "available_electric_count": 5,
+        "available_water_count": 1,
+    }
+
+
+def test_tutorial_health_rejects_empty_database_and_reports_ready_dataset(app, client):
+    previous = app.config.get("TUTORIAL_MODE")
+    app.config["TUTORIAL_MODE"] = True
+    try:
+        empty = client.get("/tutorial/health")
+        assert empty.status_code == 503
+        assert empty.get_json()["dataset_ready"] is False
+
+        build_demo(app, date(2026, 4, 1), 6, tutorial_ready=True)
+        db.session.remove()
+        db.engine.dispose()
+        with sqlite3.connect(str(db.engine.url.database)) as connection:
+            connection.execute("PRAGMA application_id = {}".format(demo.DEMO_APPLICATION_ID))
+            connection.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            connection.execute("PRAGMA journal_mode=DELETE")
+        ready = client.get("/tutorial/health")
+        payload = ready.get_json()
+        assert ready.status_code == 200, payload
+        assert payload == {
+            "available_electric_count": 5,
+            "available_water_count": 1,
+            "dataset_ready": True,
+            "errors": [],
+            "floor_count": 3,
+            "mode": "tutorial",
+            "ready": True,
+            "scenario_version": 3,
+            "success": True,
+            "unit_count": 8,
+        }
+    finally:
+        app.config["TUTORIAL_MODE"] = previous
 
 
 def test_tutorial_invoice_combines_all_floor_electric_and_bimonthly_water(app, client, csrf):

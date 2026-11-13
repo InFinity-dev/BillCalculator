@@ -119,18 +119,51 @@ def main():
                         tutorial_url, summary
                     )
                 )
-            required_assets = (
-                url + "/static/css/app.css?v=smoke-test",
-                url + "/static/css/tutorial_overlay.css?v=smoke-test",
-                url + "/static/js/tutorial_overlay.js?v=smoke-test",
+            tutorial_origin = "{}://{}".format(
+                urlsplit(tutorial_url).scheme, urlsplit(tutorial_url).netloc
             )
-            if not all(asset in tutorial_body for asset in required_assets):
-                raise RuntimeError("튜토리얼 화면이 메인 앱의 정적 자원을 사용하지 않습니다.")
-            for asset in required_assets:
-                with opener.open(asset, timeout=5) as response:
-                    content = response.read()
-                    if response.status != 200 or not content:
-                        raise RuntimeError("튜토리얼 정적 자원을 불러오지 못했습니다: {}".format(asset))
+            with opener.open(tutorial_origin + "/tutorial/health", timeout=5) as response:
+                tutorial_health = json.load(response)
+            expected_tutorial_health = {
+                "dataset_ready": True,
+                "scenario_version": 3,
+                "floor_count": 3,
+                "unit_count": 8,
+                "available_electric_count": 5,
+                "available_water_count": 1,
+            }
+            mismatched = {
+                key: (tutorial_health.get(key), expected)
+                for key, expected in expected_tutorial_health.items()
+                if tutorial_health.get(key) != expected
+            }
+            if mismatched:
+                raise RuntimeError(
+                    "튜토리얼 데모 데이터가 올바르지 않습니다: {}".format(mismatched)
+                )
+            required_inline_assets = (
+                'data-inline-stylesheet="css/app.css"',
+                'data-inline-stylesheet="css/utilities.css"',
+                'data-inline-stylesheet="css/tutorial_overlay.css"',
+                'data-inline-script="js/app.js"',
+                'data-inline-script="js/tutorial_overlay.js"',
+            )
+            if not all(asset in tutorial_body for asset in required_inline_assets):
+                raise RuntimeError("튜토리얼 핵심 스타일·동작 파일이 HTML에 포함되지 않았습니다.")
+            calculator_url = tutorial_origin + "/calculator?_tutorial_step=4"
+            with opener.open(calculator_url, timeout=10) as response:
+                calculator_body = response.read().decode("utf-8")
+            calculator_requirements = required_inline_assets + (
+                'data-inline-stylesheet="css/pages/calculator.css"',
+                ".meter-panel { margin-bottom: 20px; }",
+                'data-tutorial-target="meter-readings"',
+            )
+            if not all(item in calculator_body for item in calculator_requirements):
+                raise RuntimeError(
+                    "튜토리얼 5단계 계산 화면의 스타일 또는 연습 데이터가 올바르지 않습니다."
+                )
+            if 'rel="stylesheet"' in calculator_body:
+                raise RuntimeError("튜토리얼 계산 화면에 외부 CSS 요청이 남아 있습니다.")
             # sqlite3.Connection 컨텍스트 매니저는 트랜잭션만 끝내고 파일
             # 핸들은 닫지 않는다. Windows에서도 임시 DB를 즉시 정리할 수
             # 있도록 연결 수명을 명시적으로 종료한다.

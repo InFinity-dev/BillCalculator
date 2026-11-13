@@ -18,6 +18,7 @@ import secrets
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from functools import wraps
+from pathlib import Path
 
 import click
 from flask import (
@@ -35,6 +36,7 @@ from flask import (
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import joinedload, selectinload
 from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from markupsafe import Markup
 
 import balance as balance_service
 from backup_format import (
@@ -77,6 +79,7 @@ from tutorial_service import (
     cleanup_stale_tutorial_databases,
     create_tutorial_database,
     delete_tutorial_database,
+    inspect_tutorial_database,
 )
 from tutorial_runtime import launch_tutorial_process, stop_tutorial_process
 
@@ -191,6 +194,8 @@ def create_app(config_object=Config):
 
     application.jinja_env.globals["csrf_token"] = generate_csrf_token
     application.jinja_env.globals["asset_url"] = asset_url
+    application.jinja_env.globals["stylesheet_asset"] = stylesheet_asset
+    application.jinja_env.globals["script_asset"] = script_asset
     register_cli(application)
     return application
 
@@ -221,6 +226,35 @@ def asset_url(filename):
         if main_url:
             return main_url + path
     return path
+
+
+def _static_asset_text(filename):
+    static_root = Path(current_app.static_folder).resolve()
+    target = (static_root / str(filename)).resolve()
+    if static_root != target.parent and static_root not in target.parents:
+        raise ValueError("정적 자원 경로가 올바르지 않습니다.")
+    try:
+        return target.read_text(encoding="utf-8")
+    except OSError as error:
+        raise RuntimeError("튜토리얼 자원을 읽을 수 없습니다: {}".format(filename)) from error
+
+
+def stylesheet_asset(filename):
+    """튜토리얼 CSS는 HTML에 포함하고 일반 화면은 정적 파일로 제공한다."""
+    if not current_app.config.get("TUTORIAL_MODE"):
+        return Markup('<link rel="stylesheet" href="{}">').format(asset_url(filename))
+    return Markup('<style data-inline-stylesheet="{}">\n{}\n</style>').format(
+        filename, Markup(_static_asset_text(filename))
+    )
+
+
+def script_asset(filename):
+    """화면 이동 뒤에도 튜토리얼 동작 파일을 HTML과 함께 확실히 전달한다."""
+    if not current_app.config.get("TUTORIAL_MODE"):
+        return Markup('<script src="{}"></script>').format(asset_url(filename))
+    return Markup('<script data-inline-script="{}">\n{}\n</script>').format(
+        filename, Markup(_static_asset_text(filename))
+    )
 
 
 def csrf_protect(f):
@@ -525,7 +559,19 @@ def tutorial():
 def tutorial_health():
     if not app.config.get("TUTORIAL_MODE"):
         abort(404)
-    return jsonify({"success": True, "mode": "tutorial"})
+    from config import resolve_db_path
+
+    path = resolve_db_path()
+    try:
+        status = inspect_tutorial_database(path) if path else {
+            "ready": False,
+            "errors": ["튜토리얼 DB 경로를 확인할 수 없습니다."],
+        }
+    except (OSError, RuntimeError, ValueError) as error:
+        status = {"ready": False, "errors": [str(error)]}
+    payload = dict(status, success=bool(status.get("ready")), mode="tutorial",
+                   dataset_ready=bool(status.get("ready")))
+    return jsonify(payload), 200 if status.get("ready") else 503
 
 
 def _stop_and_delete_tutorial(tutorial_id):
