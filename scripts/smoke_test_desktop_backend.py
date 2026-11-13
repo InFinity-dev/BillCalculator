@@ -89,7 +89,11 @@ def main():
                 tutorial_url = response.geturl()
                 tutorial_body = response.read().decode("utf-8")
             if urlsplit(tutorial_url).netloc == urlsplit(url).netloc:
-                summary = " ".join(tutorial_body.split())[-1000:]
+                marker = tutorial_body.find("사용 안내를 시작하지 못했습니다")
+                if marker >= 0:
+                    summary = " ".join(tutorial_body[marker:marker + 2200].split())
+                else:
+                    summary = " ".join(tutorial_body.split())[-1000:]
                 raise RuntimeError(
                     "튜토리얼 전용 서버로 이동하지 않았습니다: {}\n{}".format(
                         tutorial_url, summary

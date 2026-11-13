@@ -39,6 +39,17 @@ def test_frozen_process_commands_reenter_packaged_backend(monkeypatch, tmp_path)
     assert seed[-1] == "--tutorial-ready"
 
 
+def test_frozen_demo_seed_starts_as_independent_onefile_instance(monkeypatch):
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setenv("BILLCALC_DATABASE_URI", "sqlite:///must-not-leak.db")
+
+    environment = tutorial_service.demo_seed_environment()
+
+    assert "BILLCALC_DATABASE_URI" not in environment
+    assert environment["BILLCALC_ONBOARDING_ENABLED"] == "0"
+    assert environment["PYINSTALLER_RESET_ENVIRONMENT"] == "1"
+
+
 def test_frozen_tutorial_server_starts_as_independent_onefile_instance(
     monkeypatch, tmp_path,
 ):
@@ -69,6 +80,7 @@ def test_frozen_tutorial_server_starts_as_independent_onefile_instance(
     assert running.process.poll() is None
     assert captured["command"] == [sys.executable, "serve"]
     assert captured["environment"]["PYINSTALLER_RESET_ENVIRONMENT"] == "1"
+    running.output.close()
 
 
 def test_desktop_parser_accepts_explicit_loopback_server():

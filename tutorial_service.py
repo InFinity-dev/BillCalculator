@@ -28,6 +28,16 @@ def demo_seed_command(target):
     return [sys.executable, str(DEMO_SCRIPT)] + arguments
 
 
+def demo_seed_environment():
+    """데모 생성기를 현재 앱과 분리된 실행 인스턴스로 준비한다."""
+    environment = dict(os.environ)
+    environment.pop("BILLCALC_DATABASE_URI", None)
+    environment["BILLCALC_ONBOARDING_ENABLED"] = "0"
+    if getattr(sys, "frozen", False):
+        environment["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
+    return environment
+
+
 def _root_path(directory, *, create=False):
     root = Path(directory).expanduser()
     if root.is_symlink():
@@ -64,9 +74,7 @@ def create_tutorial_database(directory, session_id):
         # 이전 연습 데이터에는 모든 층의 9·10월 전기와 격월 수도를 함께 묶는 구성이 없다.
         # 생성기 소유이고 사용 중이 아닌 경우에만 현재 시나리오로 교체한다.
         delete_tutorial_database(directory, session_id)
-    environment = dict(os.environ)
-    environment.pop("BILLCALC_DATABASE_URI", None)
-    environment["BILLCALC_ONBOARDING_ENABLED"] = "0"
+    environment = demo_seed_environment()
     try:
         subprocess.run(
             demo_seed_command(target),

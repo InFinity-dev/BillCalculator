@@ -8,6 +8,7 @@ import secrets
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from urllib.error import URLError
@@ -33,6 +34,18 @@ class TutorialProcess:
     port: int
     database_path: Path
     process: subprocess.Popen
+    output: object = None
+
+
+def _output_tail(output, limit=2000):
+    if output is None:
+        return ""
+    try:
+        output.flush()
+        output.seek(0)
+        return output.read().decode("utf-8", errors="replace")[-limit:].strip()
+    except (OSError, ValueError):
+        return ""
 
 
 def _port_is_available(port):
@@ -103,21 +116,29 @@ def launch_tutorial_process(
             # 그렇지 않으면 특히 Windows에서 부모의 임시 번들을 재사용하다
             # 튜토리얼 서버가 시작 직후 종료될 수 있다.
             environment["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
-        process = subprocess.Popen(
-            server_command(),
-            cwd=str(REPO_ROOT),
-            env=environment,
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-        running = TutorialProcess(session_id, port, database_path, process)
+        output = tempfile.TemporaryFile(mode="w+b")
+        try:
+            process = subprocess.Popen(
+                server_command(),
+                cwd=str(REPO_ROOT),
+                env=environment,
+                stdin=subprocess.DEVNULL,
+                stdout=output,
+                stderr=subprocess.STDOUT,
+                start_new_session=True,
+            )
+        except Exception:
+            output.close()
+            raise
+        running = TutorialProcess(session_id, port, database_path, process, output)
         _PROCESSES[session_id] = running
         try:
             _wait_until_ready(port, process)
-        except Exception:
+        except Exception as error:
+            detail = _output_tail(output)
             stop_tutorial_process(session_id)
+            if detail:
+                raise RuntimeError("{}: {}".format(error, detail)) from error
             raise
         return running
 
@@ -128,13 +149,17 @@ def stop_tutorial_process(session_id, timeout=4):
         running = _PROCESSES.pop(session_id, None)
     if not running:
         return False
-    if running.process.poll() is None:
-        running.process.terminate()
-        try:
-            running.process.wait(timeout=timeout)
-        except subprocess.TimeoutExpired:
-            running.process.kill()
-            running.process.wait(timeout=timeout)
+    try:
+        if running.process.poll() is None:
+            running.process.terminate()
+            try:
+                running.process.wait(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                running.process.kill()
+                running.process.wait(timeout=timeout)
+    finally:
+        if running.output is not None:
+            running.output.close()
     return True
 
 
