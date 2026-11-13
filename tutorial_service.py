@@ -16,6 +16,7 @@ DEMO_SCRIPT = REPO_ROOT / "scripts" / "demo.py"
 SESSION_ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
 STALE_AFTER = timedelta(hours=24)
 TUTORIAL_SCENARIO_VERSION = 3
+TUTORIAL_DB_LOCK_TIMEOUT = 1.0
 
 
 def demo_seed_command(target):
@@ -88,7 +89,10 @@ def delete_tutorial_database(directory, session_id):
     sidecars = [Path(str(target) + suffix) for suffix in ("-wal", "-shm", "-journal")]
     if any(path.exists() for path in sidecars):
         try:
-            with sqlite3.connect(str(target), timeout=0) as connection:
+            # 프로세스가 막 종료된 직후에는 운영체제에 따라 WAL 잠금 해제가
+            # 아주 잠깐 늦을 수 있다. 활성 DB는 계속 보호하되, 종료된 DB의
+            # 잠금이 정리될 시간을 제한적으로 허용한다.
+            with sqlite3.connect(str(target), timeout=TUTORIAL_DB_LOCK_TIMEOUT) as connection:
                 mode = connection.execute("PRAGMA journal_mode=DELETE").fetchone()[0]
                 if str(mode).lower() != "delete":
                     raise sqlite3.OperationalError("DB in use")
