@@ -109,6 +109,7 @@ def launch_tutorial_process(
             "BILLCALC_TUTORIAL_HAD_USER_DATA": "1" if had_user_data else "0",
             "BILLCALC_TUTORIAL_RUN_ID": session_id,
             "BILLCALC_SECRET_KEY": secrets.token_hex(32),
+            "PYTHONIOENCODING": "utf-8",
         })
         if getattr(sys, "frozen", False):
             # PyInstaller 6.9+ onefile 실행 파일이 자기 자신을 장시간 실행되는

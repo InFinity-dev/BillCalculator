@@ -66,6 +66,7 @@ def main():
             BILLCALC_SECRET_KEY="desktop-smoke-secret",
             BILLCALC_ONBOARDING_ENABLED="0",
             BILLCALC_APP_VERSION="smoke-test",
+            PYTHONIOENCODING="utf-8",
         )
         process = subprocess.Popen(
             [str(executable), "serve", "--host", "127.0.0.1", "--port", str(port)],

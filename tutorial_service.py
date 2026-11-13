@@ -33,6 +33,7 @@ def demo_seed_environment():
     environment = dict(os.environ)
     environment.pop("BILLCALC_DATABASE_URI", None)
     environment["BILLCALC_ONBOARDING_ENABLED"] = "0"
+    environment["PYTHONIOENCODING"] = "utf-8"
     if getattr(sys, "frozen", False):
         environment["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
     return environment
@@ -79,7 +80,7 @@ def create_tutorial_database(directory, session_id):
         subprocess.run(
             demo_seed_command(target),
             cwd=str(REPO_ROOT), env=environment, check=True,
-            capture_output=True, text=True, timeout=120,
+            capture_output=True, encoding="utf-8", timeout=120,
         )
     except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired) as error:
         detail = getattr(error, "stderr", "") or getattr(error, "stdout", "") or str(error)

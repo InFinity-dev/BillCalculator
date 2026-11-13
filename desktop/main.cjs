@@ -155,6 +155,7 @@ async function startBackend() {
   const environment = {
     ...process.env,
     PYTHONUNBUFFERED: "1",
+    PYTHONIOENCODING: "utf-8",
     BILLCALC_DB_PATH: path.join(dataDirectory, "bill_calculator.db"),
     BILLCALC_ONBOARDING_STATE_PATH: path.join(dataDirectory, "app_state.json"),
     BILLCALC_TUTORIAL_DATA_DIR: path.join(dataDirectory, "tutorial_sessions"),

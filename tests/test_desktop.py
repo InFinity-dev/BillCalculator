@@ -48,6 +48,7 @@ def test_frozen_demo_seed_starts_as_independent_onefile_instance(monkeypatch):
     assert "BILLCALC_DATABASE_URI" not in environment
     assert environment["BILLCALC_ONBOARDING_ENABLED"] == "0"
     assert environment["PYINSTALLER_RESET_ENVIRONMENT"] == "1"
+    assert environment["PYTHONIOENCODING"] == "utf-8"
 
 
 def test_frozen_tutorial_server_starts_as_independent_onefile_instance(
@@ -80,6 +81,7 @@ def test_frozen_tutorial_server_starts_as_independent_onefile_instance(
     assert running.process.poll() is None
     assert captured["command"] == [sys.executable, "serve"]
     assert captured["environment"]["PYINSTALLER_RESET_ENVIRONMENT"] == "1"
+    assert captured["environment"]["PYTHONIOENCODING"] == "utf-8"
     running.output.close()
 
 
