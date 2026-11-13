@@ -1,0 +1,5 @@
+date_kst,collected_at,tag,asset_name,kind,cumulative_downloads,daily_change
+2026-11-13,2026-11-13T08:44:00.424900Z,v1.0.0,BillCalculator-1.0.0-macOS-arm64.dmg,installer,1,
+2026-11-13,2026-11-13T08:44:00.424900Z,v1.0.0,BillCalculator-1.0.0-macOS-x64.dmg,installer,1,
+2026-11-13,2026-11-13T08:44:00.424900Z,v1.0.0,BillCalculator-Setup-1.0.0-Windows-x64.exe,installer,1,
+2026-11-13,2026-11-13T08:44:00.424900Z,v1.0.0,SHA256SUMS.txt,support,1,
