@@ -19,6 +19,17 @@ import sys
 import threading
 
 
+def _configure_standard_streams(streams=None):
+    """Windows 패키지에서도 한국어 로그를 UTF-8로 안전하게 기록한다."""
+    for stream in streams or (sys.stdout, sys.stderr):
+        if stream is None or not hasattr(stream, "reconfigure"):
+            continue
+        try:
+            stream.reconfigure(encoding="utf-8", errors="backslashreplace")
+        except (OSError, ValueError):
+            continue
+
+
 def resource_root() -> Path:
     """소스와 PyInstaller 번들에서 공통으로 리소스 루트를 반환한다."""
     return Path(__file__).resolve().parent
@@ -231,6 +242,7 @@ def build_parser():
 
 
 def main(argv=None):
+    _configure_standard_streams()
     parser = build_parser()
     arguments = parser.parse_args(argv)
     command = arguments.command or "serve"

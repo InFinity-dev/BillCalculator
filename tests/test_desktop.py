@@ -94,5 +94,20 @@ def test_desktop_parser_accepts_explicit_loopback_server():
     assert parsed.port == 53123
 
 
+def test_desktop_backend_configures_utf8_standard_streams():
+    configured = []
+
+    class FakeStream:
+        def reconfigure(self, **options):
+            configured.append(options)
+
+    desktop_backend._configure_standard_streams([FakeStream(), FakeStream()])
+
+    assert configured == [
+        {"encoding": "utf-8", "errors": "backslashreplace"},
+        {"encoding": "utf-8", "errors": "backslashreplace"},
+    ]
+
+
 def test_packaged_resource_paths_are_repository_relative():
     assert desktop_backend.resource_root() == Path(desktop_backend.__file__).resolve().parent
