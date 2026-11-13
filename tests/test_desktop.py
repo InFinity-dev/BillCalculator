@@ -39,6 +39,38 @@ def test_frozen_process_commands_reenter_packaged_backend(monkeypatch, tmp_path)
     assert seed[-1] == "--tutorial-ready"
 
 
+def test_frozen_tutorial_server_starts_as_independent_onefile_instance(
+    monkeypatch, tmp_path,
+):
+    captured = {}
+
+    class FakeProcess:
+        def poll(self):
+            return None
+
+    def fake_popen(command, **options):
+        captured["command"] = command
+        captured["environment"] = options["env"]
+        return FakeProcess()
+
+    monkeypatch.setattr(sys, "frozen", True, raising=False)
+    monkeypatch.setattr(tutorial_runtime.subprocess, "Popen", fake_popen)
+    monkeypatch.setattr(tutorial_runtime, "_available_port", lambda *_args: 53123)
+    monkeypatch.setattr(tutorial_runtime, "_wait_until_ready", lambda *_args: None)
+    monkeypatch.setattr(tutorial_runtime, "_PROCESSES", {})
+
+    running = tutorial_runtime.launch_tutorial_process(
+        "a" * 32,
+        tmp_path / "tutorial.db",
+        "http://127.0.0.1:5000",
+        "control-token",
+    )
+
+    assert running.process.poll() is None
+    assert captured["command"] == [sys.executable, "serve"]
+    assert captured["environment"]["PYINSTALLER_RESET_ENVIRONMENT"] == "1"
+
+
 def test_desktop_parser_accepts_explicit_loopback_server():
     parsed = desktop_backend.build_parser().parse_args(
         ["serve", "--host", "127.0.0.1", "--port", "53123"]

@@ -13,6 +13,7 @@ import tempfile
 import time
 from http.cookiejar import CookieJar
 from urllib.error import URLError
+from urllib.parse import urlsplit
 from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
 
 
@@ -87,8 +88,13 @@ def main():
             with opener.open(url + "/tutorial", timeout=150) as response:
                 tutorial_url = response.geturl()
                 tutorial_body = response.read().decode("utf-8")
-            if tutorial_url.startswith(url + "/"):
-                raise RuntimeError("튜토리얼 전용 서버로 이동하지 않았습니다.")
+            if urlsplit(tutorial_url).netloc == urlsplit(url).netloc:
+                summary = " ".join(tutorial_body.split())[-1000:]
+                raise RuntimeError(
+                    "튜토리얼 전용 서버로 이동하지 않았습니다: {}\n{}".format(
+                        tutorial_url, summary
+                    )
+                )
             required_assets = (
                 url + "/static/css/app.css?v=smoke-test",
                 url + "/static/css/tutorial_overlay.css?v=smoke-test",

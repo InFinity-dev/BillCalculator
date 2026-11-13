@@ -97,6 +97,12 @@ def launch_tutorial_process(
             "BILLCALC_TUTORIAL_RUN_ID": session_id,
             "BILLCALC_SECRET_KEY": secrets.token_hex(32),
         })
+        if getattr(sys, "frozen", False):
+            # PyInstaller 6.9+ onefile 실행 파일이 자기 자신을 장시간 실행되는
+            # 별도 앱으로 띄울 때는 새 압축 해제 환경을 명시해야 한다.
+            # 그렇지 않으면 특히 Windows에서 부모의 임시 번들을 재사용하다
+            # 튜토리얼 서버가 시작 직후 종료될 수 있다.
+            environment["PYINSTALLER_RESET_ENVIRONMENT"] = "1"
         process = subprocess.Popen(
             server_command(),
             cwd=str(REPO_ROOT),
