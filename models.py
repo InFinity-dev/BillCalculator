@@ -26,6 +26,7 @@ from extensions import db
 # 값 집합 (SQLite 는 ENUM 이 없으므로 CHECK 제약으로 강제한다)
 # ---------------------------------------------------------------------------
 TV_DISTRIBUTION_MODES = ("INDIVIDUAL", "EQUAL")
+DISCOUNT_TV_POLICIES = ("COMBINED_FLOOR_ZERO", "TV_PROTECTED")
 DISTRIBUTION_METHODS = ("BY_RESIDENTS", "BY_UNITS")
 INVOICE_ITEM_TYPES = ("ELECTRIC", "WATER", "COMMON")
 
@@ -184,6 +185,10 @@ class ElectricBill(BillingMonthMixin, TimestampMixin, db.Model):
             _in_check("tv_distribution_mode", TV_DISTRIBUTION_MODES),
             name="tv_distribution_mode_valid",
         ),
+        CheckConstraint(
+            _in_check("discount_tv_policy", DISCOUNT_TV_POLICIES),
+            name="discount_tv_policy_valid",
+        ),
         CheckConstraint("total_amount >= 0", name="total_amount_non_negative"),
         CheckConstraint("welfare_discount >= 0", name="welfare_discount_non_negative"),
         CheckConstraint("voucher_discount >= 0", name="voucher_discount_non_negative"),
@@ -205,6 +210,12 @@ class ElectricBill(BillingMonthMixin, TimestampMixin, db.Model):
     tv_fee_total = db.Column(Money, nullable=False, default=0, server_default=text("0"))
     tv_distribution_mode = db.Column(
         db.String(20), nullable=False, default="INDIVIDUAL", server_default="INDIVIDUAL"
+    )
+    discount_tv_policy = db.Column(
+        db.String(30),
+        nullable=False,
+        default="COMBINED_FLOOR_ZERO",
+        server_default="COMBINED_FLOOR_ZERO",
     )
     billing_months_count = db.Column(
         db.Integer, nullable=False, default=1, server_default=text("1")

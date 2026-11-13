@@ -2,6 +2,7 @@
 
 > 선행: [00-current-db-audit.md](00-current-db-audit.md)
 > 새로운 Single Source of Truth = **SQLAlchemy Models (`models.py`) + Alembic migration history**
+> 구현 현황: 2026-11-13 기준 revision `0004`, 등록 설정 11개, 자동 테스트 303개 통과. 이 문서는 설계 근거를 설명하며 최종 사실은 모델과 마이그레이션을 우선한다.
 
 ---
 
@@ -215,7 +216,7 @@ RESTRICT 위반은 원시 SQL 에러 문자열 대신 **사전 검사 + 명확�
 | `residents_count` | INTEGER | ✗ | `1` | **CHECK ≥ 0** (I-9) |
 | `is_vacant` | BOOLEAN | ✗ | `0` | |
 
-**UNIQUE**: `(floor_id, unit_name)` ★신규 (I-8) — Import upsert의 자연키이기도 함
+**UNIQUE**: `(floor_id, unit_name)` ★신규 (I-8) — 레거시 이전 시 중복 검증 기준
 **INDEX**: `(floor_id)`
 
 **변경점**: Boolean 컬럼이 `nullable=False`로 강화됨 (현재는 NULL 가능 → `bool(None)` 분기 위험)
@@ -230,6 +231,10 @@ RESTRICT 위반은 원시 SQL 에러 문자열 대신 **사전 검사 + 명확�
 **변경점**: 테이블 구조는 유지(§11 근거). `VARCHAR(255)` → `TEXT` (고정 메모/푸터가 255자를 넘을 수 있음 — 현재 잠재적 데이터 절단 버그)
 **Python 측**: `settings_registry.py`에 키·타입·기본값·검증을 **단일 정의**하고, 기존 5곳 중복(§11, M-4)을 제거
 
+현재 레지스트리는 11개 키를 관리한다. 계산 정책 키는 `discount_tv_policy`
+(`COMBINED_FLOOR_ZERO` 기본, `TV_PROTECTED`)와 `tv_distribution_default`
+(`EQUAL` 기본, `INDIVIDUAL`)이다. v1 백업에 두 키가 없으면 복원 검증 단계에서 기본값을 보강한다.
+
 ### 6.4 `electric_bills`
 
 | column | type | null | default | 제약 |
@@ -241,6 +246,7 @@ RESTRICT 위반은 원시 SQL 에러 문자열 대신 **사전 검사 + 명확�
 | `voucher_discount` | Money | ✗ | `0` | CHECK ≥ 0 |
 | `tv_fee_total` | Money | ✗ | `0` | CHECK ≥ 0 |
 | `tv_distribution_mode` | VARCHAR(20) | ✗ | `'INDIVIDUAL'` | **CHECK IN ('INDIVIDUAL','EQUAL')** |
+| `discount_tv_policy` | VARCHAR(30) | ✗ | `'COMBINED_FLOOR_ZERO'` | **CHECK IN ('COMBINED_FLOOR_ZERO','TV_PROTECTED')** |
 | `billing_months_count` | INTEGER | ✗ | `1` | CHECK ≥ 0 |
 
 **UNIQUE**: `(floor_id, billing_month)` ★신규 (I-4, D-11)
@@ -249,6 +255,7 @@ RESTRICT 위반은 원시 SQL 에러 문자열 대신 **사전 검사 + 명확�
 **변경점**:
 - `tv_units_count` **삭제** (D-2: 항상 0, 읽는 곳 없음)
 - `monthly_details` JSON **삭제** → `electric_bill_months` 테이블로 분리 (I-14)
+- `discount_tv_policy`는 revision `0004`에서 추가되어 계산 당시 할인 초과·TV 수신료 처리 방식을 불변 기록한다.
 - Numeric → Money
 
 ### 6.5 `electric_bill_months` ★신규 (`monthly_details` JSON 대체)
@@ -497,7 +504,7 @@ balance 계산의 billed              ⊅ 이월 금액 제외    (이중계상 
 | PRIMARY KEY | 15 | 전 테이블 |
 | FOREIGN KEY | 21 | CASCADE 10 / RESTRICT 11 |
 | UNIQUE | 12 | 신규 8 |
-| CHECK | 34 | 신규 34 (day=1 6, enum 3, 다형 1, 부호 24) |
+| CHECK | 35 | `0001`의 34개 + `0004`의 전기 할인·TV 정책 enum 1개 |
 | NOT NULL 강화 | 12 | Boolean/Money 컬럼 |
 | INDEX | 20 | 쿼리 패턴 기반 |
 
@@ -523,6 +530,7 @@ balance 계산의 billed              ⊅ 이월 금액 제외    (이중계상 
 | 14 | `db.create_all()` → **Alembic** | H-10, C-5 |
 | 15 | 자격증명 하드코딩 → `config.py` + 환경변수 | C-2 |
 | 16 | 설정 Import 전체 삭제 → **버전된 전체 백업 + 고정 묶음 완전 교체** | C-4, I-11 |
+| 17 | 전기 할인 초과·TV 수신료 처리 정책을 계산별 스냅샷으로 저장 | 정책 변경 뒤 과거 계산 재현 |
 
 ---
 

@@ -87,6 +87,7 @@ def launch_tutorial_process(
             "BILLCALC_TUTORIAL_MAIN_URL": main_url.rstrip("/"),
             "BILLCALC_TUTORIAL_CONTROL_TOKEN": control_token,
             "BILLCALC_TUTORIAL_HAD_USER_DATA": "1" if had_user_data else "0",
+            "BILLCALC_TUTORIAL_RUN_ID": session_id,
             "BILLCALC_SECRET_KEY": secrets.token_hex(32),
         })
         process = subprocess.Popen(

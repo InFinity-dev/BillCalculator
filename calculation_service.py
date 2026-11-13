@@ -101,6 +101,7 @@ def allocate_electric(
     configured_tv_fee,
     configured_welfare_discount,
     configured_voucher_discount,
+    discount_tv_policy="COMBINED_FLOOR_ZERO",
 ):
     if not units:
         raise AllocationError("전기요금을 배분할 재실 세대가 없습니다.")
@@ -148,13 +149,23 @@ def allocate_electric(
             for unit in units
         }
 
+    if discount_tv_policy not in ("COMBINED_FLOOR_ZERO", "TV_PROTECTED"):
+        raise AllocationError("할인 초과 시 TV 수신료 처리 방식이 올바르지 않습니다.")
+
     details = []
+    overflow_rows = []
     for unit in sorted(units, key=lambda row: row.id):
-        final_amount = base[unit.id] - welfare.get(unit.id, 0) - voucher.get(unit.id, 0) + tv[unit.id]
-        if final_amount < 0:
-            raise AllocationError(
-                "{}의 할인액이 배분 가능한 요금을 초과합니다.".format(unit.unit_name)
-            )
+        discount = welfare.get(unit.id, 0) + voucher.get(unit.id, 0)
+        if discount_tv_policy == "TV_PROTECTED":
+            electric_after_discount = base[unit.id] - discount
+            unused_discount = max(-electric_after_discount, Decimal(0))
+            final_amount = max(electric_after_discount, Decimal(0)) + tv[unit.id]
+        else:
+            combined_after_discount = base[unit.id] - discount + tv[unit.id]
+            unused_discount = max(-combined_after_discount, Decimal(0))
+            final_amount = max(combined_after_discount, Decimal(0))
+        if unused_discount > 0:
+            overflow_rows.append((unit.unit_name, unused_discount))
         details.append(
             {
                 "unit": unit,
@@ -163,6 +174,7 @@ def allocate_electric(
                 "welfare_discount": welfare.get(unit.id, Decimal(0)),
                 "voucher_discount": voucher.get(unit.id, Decimal(0)),
                 "tv_fee": tv[unit.id],
+                "unused_discount": unused_discount,
                 "final_amount": final_amount,
                 "charged_amount": round_up_to_10(final_amount),
             }
@@ -175,12 +187,23 @@ def allocate_electric(
         warnings.append("특정 바우처 대상이 없어 정산 대상 세대 전체에 균등 배분했습니다.")
     if zero_usage_fallback:
         warnings.append("전체 사용량이 0이므로 정산 대상 세대에 균등 배분했습니다.")
+    for unit_name, unused_discount in overflow_rows:
+        warnings.append(
+            "{}의 할인 중 {:,.2f}원은 해당 세대 요금을 0원으로 만든 뒤 "
+            "남아 다른 세대에 재배분하지 않았습니다.".format(
+                unit_name, unused_discount
+            )
+        )
     return _result(details, warnings, {
         "welfare_discount_total": welfare_total,
         "voucher_discount_total": voucher_total,
         "welfare_distribution": welfare_mode,
         "voucher_distribution": voucher_mode,
         "zero_usage_fallback": zero_usage_fallback,
+        "discount_tv_policy": discount_tv_policy,
+        "unused_discount_total": sum(
+            (amount for _, amount in overflow_rows), Decimal(0)
+        ),
     })
 
 
@@ -215,6 +238,7 @@ def allocate_water(
     included_ids = {unit.id for unit in included_units}
 
     details = []
+    overflow_rows = []
     for unit in sorted(all_units, key=lambda row: row.id):
         if unit.id not in included_ids:
             details.append({
@@ -226,15 +250,16 @@ def allocate_water(
                 "is_excluded": True,
             })
             continue
-        final_amount = base[unit.id] - welfare.get(unit.id, 0)
-        if final_amount < 0:
-            raise AllocationError(
-                "{}의 할인액이 배분 가능한 요금을 초과합니다.".format(unit.unit_name)
-            )
+        after_discount = base[unit.id] - welfare.get(unit.id, 0)
+        unused_discount = max(-after_discount, Decimal(0))
+        final_amount = max(after_discount, Decimal(0))
+        if unused_discount > 0:
+            overflow_rows.append((unit.unit_name, unused_discount))
         details.append({
             "unit": unit,
             "base_amount": base[unit.id],
             "welfare_discount": welfare.get(unit.id, Decimal(0)),
+            "unused_discount": unused_discount,
             "final_amount": final_amount,
             "charged_amount": round_up_to_10(final_amount),
             "is_excluded": False,
@@ -245,10 +270,20 @@ def allocate_water(
         warnings.append("특정 수도 복지할인 대상이 없어 정산 대상 세대 전체에 균등 배분했습니다.")
     if zero_residents_fallback:
         warnings.append("정산 대상의 거주 인원이 모두 0명이므로 세대 균등으로 배분했습니다.")
+    for unit_name, unused_discount in overflow_rows:
+        warnings.append(
+            "{}의 할인 중 {:,.2f}원은 해당 세대 요금을 0원으로 만든 뒤 "
+            "남아 다른 세대에 재배분하지 않았습니다.".format(
+                unit_name, unused_discount
+            )
+        )
     return _result(details, warnings, {
         "welfare_discount_total": welfare_total,
         "welfare_distribution": welfare_mode,
         "zero_residents_fallback": zero_residents_fallback,
+        "unused_discount_total": sum(
+            (amount for _, amount in overflow_rows), Decimal(0)
+        ),
     })
 
 

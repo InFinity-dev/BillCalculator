@@ -342,6 +342,9 @@
                 document.getElementById('emptyState').hidden = true;
                 document.getElementById('historySection').hidden = false;
                 if (window.matchMedia('(max-width: 768px)').matches) document.getElementById('historySection').scrollIntoView({behavior: 'smooth', block: 'start'});
+                window.dispatchEvent(new CustomEvent('tutorial:payment-history-ready', {
+                    detail: {unitId}
+                }));
 
             } catch (error) {
                 console.error('Error:', error);

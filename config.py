@@ -18,6 +18,7 @@ BILLCALC_TUTORIAL_MODE  '1'이면 격리된 실제 화면 튜토리얼 서버로
 BILLCALC_TUTORIAL_MAIN_URL  튜토리얼 완료 뒤 돌아갈 본 앱 주소.
 BILLCALC_TUTORIAL_CONTROL_TOKEN  본 앱의 튜토리얼 종료 요청용 서명 토큰.
 BILLCALC_TUTORIAL_HAD_USER_DATA  시작 전에 실제 사용자 데이터가 있었는지 여부.
+BILLCALC_TUTORIAL_RUN_ID  현재 일회성 연습 실행을 구분하는 무작위 식별자.
 """
 
 import os
@@ -101,6 +102,7 @@ class Config:
     TUTORIAL_MAIN_URL = os.environ.get("BILLCALC_TUTORIAL_MAIN_URL", "").rstrip("/")
     TUTORIAL_CONTROL_TOKEN = os.environ.get("BILLCALC_TUTORIAL_CONTROL_TOKEN", "")
     TUTORIAL_HAD_USER_DATA = _env_flag("BILLCALC_TUTORIAL_HAD_USER_DATA", False)
+    TUTORIAL_RUN_ID = os.environ.get("BILLCALC_TUTORIAL_RUN_ID", "")
     # 쿠키는 포트가 아니라 호스트 기준으로 공유된다. 본 앱 세션과 연습 앱
     # 세션이 서로 덮어쓰지 않도록 이름을 반드시 분리한다.
     SESSION_COOKIE_NAME = (

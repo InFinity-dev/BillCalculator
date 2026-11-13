@@ -1,7 +1,7 @@
 # 02. Migration 계획
 
 > 선행: [01-target-sqlite-schema.md](01-target-sqlite-schema.md)
-> 구현 상태: `0001` 초기 스키마, `0002` 정산 데이터 안전성, `0003` 계산 식별 스냅샷이 적용되었다. 실행 현황은 [CURRENT_STATE](../CURRENT_STATE.md)를 우선한다.
+> 구현 상태: `0001` 초기 스키마, `0002` 정산 데이터 안전성, `0003` 계산 식별 스냅샷, `0004` 전기 할인·TV 정책 스냅샷이 적용되었다. 실행 현황은 [CURRENT_STATE](../CURRENT_STATE.md)를 우선한다.
 
 **두 종류의 마이그레이션을 엄격히 분리한다.**
 
@@ -26,11 +26,14 @@ migrations/
 └── versions/
     ├── 0001_initial_sqlite_schema.py          ← baseline
     ├── 0002_data_safety.py                    ← 정산서 스냅샷/원본 고유성
-    └── 0003_calculation_identity_snapshots.py ← 세대·층 식별 스냅샷
+    ├── 0003_calculation_identity_snapshots.py ← 세대·층 식별 스냅샷
+    └── 0004_electric_discount_tv_policy.py    ← 할인 초과·TV 정책 스냅샷
 ```
 
-**`render_as_batch=True` 필수**: SQLite는 `ALTER TABLE ... DROP COLUMN` / 제약 변경을 지원하지 않는다.
-Alembic의 batch 모드가 "새 테이블 생성 → 복사 → 교체" 를 자동 수행한다. 향후 마이그레이션의 전제 조건이다.
+`render_as_batch=True`는 SQLite의 컬럼 삭제·복합 제약 변경에 사용하는 기본 전략이다. 다만 참조되는
+회계 테이블을 batch 모드로 재생성하면 `foreign_keys=ON`인 운영 DB에서 원본 테이블 삭제가 실패할 수 있다.
+따라서 단순 컬럼 추가처럼 SQLite가 직접 지원하는 변경은 실제 FK 참조 상태를 확인한 뒤 직접 `ALTER TABLE`
+경로를 사용한다.
 
 ### A-2. Baseline 정책
 
@@ -49,7 +52,14 @@ git clone
 ```
 
 `db.create_all()`은 **애플리케이션 코드에서 완전히 제거**한다.
-`SQLSchema.txt`는 **스키마 생성 수단이 아님**을 파일 상단에 명시하고 `docs/legacy/` 로 이동한다.
+`SQLSchema.txt`는 **스키마 생성 수단이 아님**을 파일 상단에 명시하고 MySQL 역사 자료로만 보존한다.
+
+### A-4. `0004` 운영 DB 안전 적용
+
+`electric_bills`는 정산 항목 등 여러 회계 테이블이 참조한다. `0004`는 테이블 재생성 없이
+`discount_tv_policy`를 `ADD COLUMN`으로 추가하고, 기존 행에는 `COMBINED_FLOOR_ZERO`를 적용한다.
+컬럼 자체에 허용값 CHECK를 함께 정의하며, 참조 행이 있는 `0003` DB에서도 upgrade가 성공하는 회귀
+테스트를 유지한다. downgrade는 SQLite의 `DROP COLUMN` 지원 경로를 사용한다.
 
 ---
 
@@ -240,6 +250,9 @@ is_carryover→ ★ 레거시 문자열 규칙으로 1회 판정:
 
 SQLite `0002` → `0003`은 기존 상세가 참조하던 현재 세대·층 식별자를 스냅샷에 박제한다.
 v1 JSON 백업도 복원 검증 시 동일한 4개 식별 키를 백업 내 마스터로 보강해 호환한다.
+
+SQLite `0003` → `0004`와 MySQL 이전은 기존 전기 계산의 `discount_tv_policy`를
+`COMBINED_FLOOR_ZERO`로 고정한다. 이는 정책 컬럼이 없던 시기의 계산식을 재현하는 호환 기본값이다.
 
 ### C-9. 삭제되는 컬럼
 

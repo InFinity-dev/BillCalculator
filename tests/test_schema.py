@@ -1,6 +1,7 @@
 """T-S. 스키마와 SQLite PRAGMA."""
 
 import os
+import sqlite3
 import subprocess
 import sys
 from pathlib import Path
@@ -142,6 +143,55 @@ def test_migration_upgrade_downgrade_upgrade(tmp_path):
     assert run("db", "downgrade", "base").returncode == 0
     result = run("db", "upgrade")
     assert result.returncode == 0, result.stderr
+
+
+def test_0004_defaults_existing_electric_bills_to_legacy_policy(tmp_path):
+    db_path = tmp_path / "existing-0003.db"
+    env = dict(os.environ)
+    env["BILLCALC_DB_PATH"] = str(db_path)
+    env["FLASK_APP"] = "app.py"
+
+    def run(*args):
+        return subprocess.run(
+            [sys.executable, "-m", "flask", *args],
+            cwd=str(REPO_ROOT),
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+
+    assert run("db", "upgrade", "0003").returncode == 0
+    with sqlite3.connect(str(db_path)) as connection:
+        connection.execute(
+            "INSERT INTO floors "
+            "(id, floor_number, name, created_at, updated_at) "
+            "VALUES (1, 1, '1층', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+        )
+        connection.execute(
+            "INSERT INTO electric_bills "
+            "(id, billing_month, floor_id, total_amount, welfare_discount, "
+            "voucher_discount, tv_fee_total, tv_distribution_mode, "
+            "billing_months_count, created_at, updated_at) "
+            "VALUES (1, '2025-03-01', 1, 1000, 0, 0, 0, 'INDIVIDUAL', 1, "
+            "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)"
+        )
+        connection.execute(
+            "INSERT INTO electric_bill_months "
+            "(id, electric_bill_id, billing_month, amount, welfare_discount, "
+            "voucher_discount, tv_fee, created_at) "
+            "VALUES (1, 1, '2025-03-01', 1000, 0, 0, 0, CURRENT_TIMESTAMP)"
+        )
+        connection.commit()
+
+    result = run("db", "upgrade")
+    assert result.returncode == 0, result.stderr
+    with sqlite3.connect(str(db_path)) as connection:
+        policy = connection.execute(
+            "SELECT discount_tv_policy FROM electric_bills WHERE id = 1"
+        ).fetchone()[0]
+        broken_foreign_keys = connection.execute("PRAGMA foreign_key_check").fetchall()
+    assert policy == "COMBINED_FLOOR_ZERO"
+    assert broken_foreign_keys == []
 
 
 def test_db_path_follows_config(tmp_path, monkeypatch):

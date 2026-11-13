@@ -333,6 +333,7 @@ def _serialize_allocation_preview(allocation):
             "welfare_discount": row.get("welfare_discount", 0),
             "voucher_discount": row.get("voucher_discount", 0),
             "tv_fee": row.get("tv_fee", 0),
+            "unused_discount": row.get("unused_discount", 0),
             "is_excluded": row.get("is_excluded", False),
             "final_amount": row["final_amount"],
             "charged_amount": row["charged_amount"],
@@ -386,6 +387,9 @@ def tutorial_screen_context():
         return {"live_tutorial": None}
     main_url = app.config.get("TUTORIAL_MAIN_URL", "").rstrip("/")
     token = app.config.get("TUTORIAL_CONTROL_TOKEN", "")
+    latest_invoice = InvoiceCombination.query.order_by(
+        InvoiceCombination.created_at.desc(), InvoiceCombination.id.desc()
+    ).first()
     return {
         "live_tutorial": {
             "endpoint": request.endpoint,
@@ -394,6 +398,15 @@ def tutorial_screen_context():
             "controlToken": token,
             "controlBase": main_url + "/tutorial/control",
             "hadUserData": bool(app.config.get("TUTORIAL_HAD_USER_DATA")),
+            "runId": app.config.get("TUTORIAL_RUN_ID", ""),
+            "latestInvoiceUrl": (
+                url_for("view_invoice", combination_id=latest_invoice.id)
+                if latest_invoice else None
+            ),
+            "latestInvoicePrintUrl": (
+                url_for("print_invoice", combination_id=latest_invoice.id)
+                if latest_invoice else None
+            ),
         }
     }
 
@@ -441,11 +454,22 @@ def offer_first_run_tutorial():
 def tutorial():
     if app.config.get("TUTORIAL_MODE"):
         return redirect(url_for("index"))
-    tutorial_id = session.get("tutorial_id")
-    if not tutorial_id:
-        tutorial_id = secrets.token_hex(16)
-        session["tutorial_id"] = tutorial_id
-        session["tutorial_had_user_data"] = _has_operational_data()
+
+    # 사용 안내를 여는 행위 자체가 새 연습의 시작이다. 이전 연습의 변경 내용과
+    # 진행 위치는 재사용하지 않고, 소유권이 확인된 전용 DB만 폐기한다.
+    previous_tutorial_id = session.get("tutorial_id")
+    if previous_tutorial_id:
+        try:
+            _stop_and_delete_tutorial(previous_tutorial_id)
+        except (OSError, RuntimeError, ValueError) as error:
+            session["onboarding_deferred"] = True
+            flash("이전 연습 데이터를 안전하게 정리하지 못해 새 연습을 시작하지 않았습니다: {}".format(error), "error")
+            return redirect(url_for("index")), 303
+        _clear_tutorial_session()
+
+    tutorial_id = secrets.token_hex(16)
+    session["tutorial_id"] = tutorial_id
+    session["tutorial_had_user_data"] = _has_operational_data()
     session.pop("onboarding_deferred", None)
     try:
         cleanup_stale_tutorial_databases(app.config["TUTORIAL_DATA_DIR"])
@@ -466,6 +490,11 @@ def tutorial():
     except (OSError, RuntimeError, ValueError) as error:
         # 빈 DB의 자동 안내가 시작 실패 → 자동 안내 재진입을 반복하지 않게 한다.
         # 사용자는 본 화면에서 오류를 확인한 뒤 메뉴로 다시 시도할 수 있다.
+        try:
+            _stop_and_delete_tutorial(tutorial_id)
+        except (OSError, RuntimeError, ValueError):
+            pass
+        _clear_tutorial_session()
         session["onboarding_deferred"] = True
         flash("사용 안내를 시작하지 못했습니다: {}".format(error), "error")
         return redirect(url_for("index")), 303
@@ -510,9 +539,31 @@ def _finish_tutorial(next_action=None):
     return redirect(url_for("settings", tab="floors-tab"))
 
 
+def _exit_tutorial(handoff=False):
+    """현재 일회성 연습을 완료 처리 없이 폐기하고 본 앱으로 돌아간다."""
+    tutorial_id = session.get("tutorial_id")
+    try:
+        if tutorial_id:
+            _stop_and_delete_tutorial(tutorial_id)
+    except (OSError, RuntimeError, ValueError) as error:
+        session["onboarding_deferred"] = True
+        flash("연습 데이터를 안전하게 삭제하지 못했습니다: {}".format(error), "error")
+        return redirect(url_for("index"))
+
+    _clear_tutorial_session()
+    session["onboarding_deferred"] = True
+    flash("연습을 종료했습니다. 연습 데이터와 진행 상태는 삭제되었습니다.", "info")
+    if handoff:
+        response = render_template(
+            "tutorial_exit_handoff.html", destination=url_for("index")
+        )
+        return response, 200, {"Cache-Control": "no-store"}
+    return redirect(url_for("index"))
+
+
 @app.route("/tutorial/control/<action>")
 def tutorial_control(action):
-    if action not in {"complete", "defer", "restart"}:
+    if action not in {"complete", "exit", "defer", "restart"}:
         abort(404)
     try:
         signed = URLSafeTimedSerializer(
@@ -528,11 +579,10 @@ def tutorial_control(action):
 
     if action == "complete":
         return _finish_tutorial(request.args.get("next_action"))
-    if action == "defer":
-        stop_tutorial_process(tutorial_id)
-        session["onboarding_deferred"] = True
-        flash("사용 안내를 멈췄습니다. 왼쪽 메뉴의 ‘사용 안내’에서 이어볼 수 있습니다.", "info")
-        return redirect(url_for("index"))
+    if action in {"exit", "defer"}:  # defer는 이전 화면에서 열린 요청과의 호환용이다.
+        # 연습 서버를 종료한 직후 포트가 바뀌는 흐름에서는 302 후속 이동이
+        # 일부 브라우저에서 멈출 수 있다. 본 앱이 직접 전환 화면을 내려준다.
+        return _exit_tutorial(handoff=True)
 
     try:
         _stop_and_delete_tutorial(tutorial_id)
@@ -560,15 +610,11 @@ def restart_tutorial():
     return redirect(url_for("tutorial"))
 
 
+@app.route("/tutorial/exit", methods=["POST"])
 @app.route("/tutorial/defer", methods=["POST"])
 @csrf_protect
-def defer_tutorial():
-    tutorial_id = session.get("tutorial_id")
-    if tutorial_id:
-        stop_tutorial_process(tutorial_id)
-    session["onboarding_deferred"] = True
-    flash("사용 안내는 왼쪽 메뉴의 ‘사용 안내’에서 언제든 이어볼 수 있습니다.", "info")
-    return redirect(url_for("index"))
+def exit_tutorial():
+    return _exit_tutorial()
 
 
 @app.route("/tutorial/complete", methods=["POST"])
@@ -618,11 +664,29 @@ def save_settings():
 @app.route("/settings/export")
 def export_settings():
     """설정과 회계 이력을 포함한 전체 JSON 백업을 내보낸다."""
+    restriction = _tutorial_data_transfer_restriction()
+    if restriction:
+        return restriction
     return jsonify(export_payload())
+
+
+_TUTORIAL_DATA_TRANSFER_MESSAGE = (
+    "자유 연습 중에는 백업 내보내기와 복원을 사용할 수 없습니다. "
+    "연습을 종료한 뒤 실제 데이터 화면에서 이용해주세요."
+)
+
+
+def _tutorial_data_transfer_restriction():
+    """연습 DB와 실제 백업 파일이 섞이지 않도록 데이터 이동을 차단한다."""
+    if app.config.get("TUTORIAL_MODE"):
+        return json_error(_TUTORIAL_DATA_TRANSFER_MESSAGE, status=403)
+    return None
 
 
 def _create_safety_backup(reason):
     """위험한 변경 직전 현재 SQLite DB의 검증된 복원 지점을 만든다."""
+    if app.config.get("TUTORIAL_MODE"):
+        return None
     from config import resolve_db_path
     from db_backup import backup_database
 
@@ -718,6 +782,9 @@ _BACKUP_REASON_LABELS = {
 @app.route("/settings/automatic-backups")
 def automatic_backups():
     """설정 화면에서 선택할 수 있는 최근 자동 복원 지점을 반환한다."""
+    restriction = _tutorial_data_transfer_restriction()
+    if restriction:
+        return restriction
     from db_backup import list_automatic_backups
 
     try:
@@ -742,6 +809,9 @@ def automatic_backups():
 @csrf_protect
 def preview_automatic_backup():
     """선택한 자동 백업을 적용하지 않고 검증한다."""
+    restriction = _tutorial_data_transfer_restriction()
+    if restriction:
+        return restriction
     from db_backup import resolve_automatic_backup
 
     try:
@@ -760,6 +830,9 @@ def preview_automatic_backup():
 @csrf_protect
 def restore_automatic_backup():
     """자동 백업의 선택 묶음으로 현재 상태를 교체한다."""
+    restriction = _tutorial_data_transfer_restriction()
+    if restriction:
+        return restriction
     from db_backup import resolve_automatic_backup
 
     data = request.get_json(silent=True) or {}
@@ -798,6 +871,9 @@ def restore_automatic_backup():
 @csrf_protect
 def preview_import_settings():
     """복원 목표를 실제 DB와 분리된 임시 DB에서 검증한다."""
+    restriction = _tutorial_data_transfer_restriction()
+    if restriction:
+        return restriction
     try:
         payload = request.get_json(silent=True)
         scope = payload.get("restore_scope", "full") if isinstance(payload, dict) else "full"
@@ -813,6 +889,9 @@ def preview_import_settings():
 @csrf_protect
 def import_settings():
     """현재 DB의 선택 묶음을 검증된 백업 내용으로 교체한다."""
+    restriction = _tutorial_data_transfer_restriction()
+    if restriction:
+        return restriction
     data = request.get_json(silent=True)
     if not isinstance(data, dict):
         return json_error("JSON 본문을 해석할 수 없습니다.")
@@ -1110,6 +1189,7 @@ def calculator():
         electric_bill_url=get_setting("electric_bill_url"),
         water_bill_url=get_setting("water_bill_url"),
         water_customer_number=get_setting("water_customer_number"),
+        tv_distribution_default=get_setting("tv_distribution_default"),
     )
 
 
@@ -1130,9 +1210,12 @@ def calculate_electric():
         floor_id = to_int(request.form.get("floor_id"), 0)
         if not floor_id:
             return json_error("층을 선택해주세요.")
-        tv_distribution_mode = request.form.get("tv_distribution_mode", "INDIVIDUAL")
+        tv_distribution_mode = request.form.get(
+            "tv_distribution_mode", get_setting("tv_distribution_default")
+        )
         if tv_distribution_mode not in ("INDIVIDUAL", "EQUAL"):
             return json_error("TV 수신료 분배 방식이 올바르지 않습니다.")
+        discount_tv_policy = get_setting("discount_tv_policy")
 
         monthly_details = []
         total_amount = dec(0)
@@ -1202,6 +1285,7 @@ def calculate_electric():
             configured_tv_fee=get_setting("tv_fee") or "2500",
             configured_welfare_discount=get_setting("electric_welfare_amount"),
             configured_voucher_discount=get_setting("electric_voucher_amount"),
+            discount_tv_policy=discount_tv_policy,
         )
         existing = ElectricBill.query.filter_by(
             billing_month=billing_month, floor_id=floor_id
@@ -1234,6 +1318,7 @@ def calculate_electric():
             welfare_discount=allocation["welfare_discount_total"],
             voucher_discount=allocation["voucher_discount_total"],
             tv_fee_total=tv_fee_total, tv_distribution_mode=tv_distribution_mode,
+            discount_tv_policy=discount_tv_policy,
             billing_months_count=len(monthly_details),
         )
         db.session.add(bill)
@@ -1650,9 +1735,15 @@ def invoice_combination():
     electric_bills = (
         ElectricBill.query.options(selectinload(ElectricBill.months))
         .filter(~ElectricBill.invoice_items.any())
-        .order_by(ElectricBill.billing_month.desc())
+        .order_by(ElectricBill.billing_month.desc(), ElectricBill.floor_id.asc())
         .all()
     )
+    electric_bill_groups = []
+    for bill in electric_bills:
+        if (not electric_bill_groups
+                or electric_bill_groups[-1]["billing_month"] != bill.billing_month):
+            electric_bill_groups.append({"billing_month": bill.billing_month, "bills": []})
+        electric_bill_groups[-1]["bills"].append(bill)
     water_bills = WaterBill.query.filter(~WaterBill.invoice_items.any()).order_by(
         WaterBill.billing_month.desc()
     ).all()
@@ -1685,6 +1776,7 @@ def invoice_combination():
     return render_template(
         "invoice.html",
         electric_bills=electric_bills,
+        electric_bill_groups=electric_bill_groups,
         water_bills=water_bills,
         common_bills=common_bills,
         combinations=combinations,

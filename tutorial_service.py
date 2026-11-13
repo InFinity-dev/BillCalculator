@@ -15,6 +15,7 @@ REPO_ROOT = Path(__file__).resolve().parent
 DEMO_SCRIPT = REPO_ROOT / "scripts" / "demo.py"
 SESSION_ID_PATTERN = re.compile(r"^[0-9a-f]{32}$")
 STALE_AFTER = timedelta(hours=24)
+TUTORIAL_SCENARIO_VERSION = 3
 
 
 def _root_path(directory, *, create=False):
@@ -44,15 +45,24 @@ def create_tutorial_database(directory, session_id):
     """기존 더미 생성기를 별도 프로세스로 실행해 전용 DB를 만든다."""
     target = tutorial_database_path(directory, session_id)
     if target.exists():
-        if existing_metadata(target) is None:
+        metadata = existing_metadata(target)
+        if metadata is None:
             raise RuntimeError("기존 튜토리얼 데이터를 확인할 수 없습니다.")
-        return target
+        if (metadata.get("tutorial_ready")
+                and metadata.get("tutorial_scenario_version") == TUTORIAL_SCENARIO_VERSION):
+            return target
+        # 이전 연습 데이터에는 모든 층의 9·10월 전기와 격월 수도를 함께 묶는 구성이 없다.
+        # 생성기 소유이고 사용 중이 아닌 경우에만 현재 시나리오로 교체한다.
+        delete_tutorial_database(directory, session_id)
     environment = dict(os.environ)
     environment.pop("BILLCALC_DATABASE_URI", None)
     environment["BILLCALC_ONBOARDING_ENABLED"] = "0"
     try:
         subprocess.run(
-            [sys.executable, str(DEMO_SCRIPT), "seed", "--db-path", str(target)],
+            [
+                sys.executable, str(DEMO_SCRIPT), "seed", "--db-path", str(target),
+                "--tutorial-ready",
+            ],
             cwd=str(REPO_ROOT), env=environment, check=True,
             capture_output=True, text=True, timeout=120,
         )

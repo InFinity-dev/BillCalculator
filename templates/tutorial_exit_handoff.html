@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="1;url={{ destination }}">
+    <meta name="robots" content="noindex">
+    <title>연습 종료 · BillCalculator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/tutorial_overlay.css') }}">
+</head>
+<body>
+<main class="tutorial-exit-handoff" aria-live="polite">
+    <section class="content-card tutorial-exit-handoff-card">
+        <h1>연습을 종료했습니다</h1>
+        <p>연습 데이터와 진행 상태를 정리했습니다. 첫 화면으로 돌아갑니다.</p>
+        <a class="btn btn-primary" href="{{ destination }}">첫 화면으로 돌아가기</a>
+    </section>
+</main>
+<script>
+    window.location.replace({{ destination|tojson }});
+</script>
+</body>
+</html>

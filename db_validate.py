@@ -217,6 +217,23 @@ def check_allocation_reconciliation():
                 "base_total": str(base_total), "expected_base": str(expected_base),
                 "welfare_total": str(welfare_total), "voucher_total": str(voucher_total),
             })
+        for row in bill.details:
+            discount = row.welfare_discount + row.voucher_discount
+            if bill.discount_tv_policy == "TV_PROTECTED":
+                expected_final = max(row.base_amount - discount, Decimal(0)) + row.tv_fee
+            else:
+                expected_final = max(
+                    row.base_amount - discount + row.tv_fee, Decimal(0)
+                )
+            if abs(row.final_amount - expected_final) > tolerance:
+                bad.append({
+                    "table": "electric_bill_details",
+                    "id": row.id,
+                    "bill_id": bill.id,
+                    "discount_tv_policy": bill.discount_tv_policy,
+                    "final_amount": str(row.final_amount),
+                    "expected_final": str(expected_final),
+                })
     for bill in WaterBillDetail.query.with_entities(WaterBillDetail.water_bill_id).distinct():
         identifier = bill[0]
         parent = db.session.get(WaterBill, identifier)
@@ -230,6 +247,18 @@ def check_allocation_reconciliation():
                 "base_total": str(base_total), "expected_base": str(expected_base),
                 "discount_total": str(discount_total),
             })
+        for row in WaterBillDetail.query.filter_by(water_bill_id=identifier).all():
+            expected_final = max(
+                row.base_amount - row.welfare_discount, Decimal(0)
+            )
+            if abs(row.final_amount - expected_final) > tolerance:
+                bad.append({
+                    "table": "water_bill_details",
+                    "id": row.id,
+                    "bill_id": identifier,
+                    "final_amount": str(row.final_amount),
+                    "expected_final": str(expected_final),
+                })
     for bill in CommonBill.query.all():
         amount_total = sum((row.amount for row in bill.details), Decimal(0))
         if abs(amount_total - Decimal(bill.total_amount)) > tolerance:

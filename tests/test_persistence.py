@@ -164,8 +164,8 @@ def test_electric_zero_usage_falls_back_to_equal_split(app, client, csrf, floor,
         assert detail.base_amount == Decimal("10000.00")
 
 
-def test_electric_discount_exceeding_allocated_charge_is_rejected(app, client, csrf, floor, units):
-    """할인을 조용히 버리지 않고 배분 가능한 요금 초과를 저장 전에 거절한다."""
+def test_electric_discount_exceeding_allocated_charge_stops_at_zero(app, client, csrf, floor, units):
+    """초과 할인은 해당 세대만 0원으로 만들고 다른 세대에 넘기지 않는다."""
     occupied = [u for u in units if not u.is_vacant]
     readings = {occupied[0].id: (0, 1), occupied[1].id: (0, 1000), occupied[2].id: (0, 1000)}
 
@@ -179,9 +179,37 @@ def test_electric_discount_exceeding_allocated_charge_is_rejected(app, client, c
             tv_distribution_mode="INDIVIDUAL",
         ),
     )
-    assert response.get_json()["success"] is False
-    assert "초과" in response.get_json()["message"]
-    assert ElectricBill.query.count() == 0
+    result = response.get_json()
+    assert result["success"] is True
+    assert any("재배분하지 않았습니다" in warning for warning in result["warnings"])
+    bill = ElectricBill.query.one()
+    details = _by_unit(bill.id)
+    assert details[occupied[0].id].final_amount == Decimal("0.00")
+    assert bill.discount_tv_policy == "COMBINED_FLOOR_ZERO"
+
+
+def test_tv_protected_policy_charges_tv_after_discount_floor(app, client, csrf, floor, units):
+    Setting.query.filter_by(setting_key="discount_tv_policy").one().setting_value = "TV_PROTECTED"
+    db.session.commit()
+    occupied = [u for u in units if not u.is_vacant]
+    readings = {occupied[0].id: (0, 1), occupied[1].id: (0, 1000), occupied[2].id: (0, 1000)}
+
+    result = client.post(
+        "/calculate/electric",
+        data=_electric_form(
+            csrf,
+            floor.id,
+            [{"month": "2025-03", "amount": 1000, "welfare": 50000}],
+            readings,
+            tv_distribution_mode="INDIVIDUAL",
+        ),
+    ).get_json()
+
+    assert result["success"] is True
+    bill = ElectricBill.query.one()
+    details = _by_unit(bill.id)
+    assert bill.discount_tv_policy == "TV_PROTECTED"
+    assert details[occupied[0].id].final_amount == Decimal("2500.00")
 
 
 def test_electric_tv_equal_mode(app, client, csrf, floor, units):

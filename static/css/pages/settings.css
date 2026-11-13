@@ -4,7 +4,20 @@
 .floor-actions .btn { min-height: 34px; padding: 7px 10px; font-size: 12px; }
 .units-settings-table td:last-child { white-space: nowrap; } .units-settings-table td .btn { min-height: 32px; font-size: 12px; }
 .units-settings-table td:last-child .cell-value { display: flex; gap: 8px; }
+.calculation-policy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; margin: 24px 0 10px; }
+.policy-fieldset { min-width: 0; margin: 0; padding: 18px; border: 1px solid var(--border); border-radius: 10px; }
+.policy-fieldset legend { padding: 0 6px; color: var(--text-primary); font-size: 15px; font-weight: 700; }
+.policy-intro { margin: 0 0 14px; color: var(--text-muted); font-size: 13px; line-height: 1.6; }
+.policy-option { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; align-items: start; padding: 13px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease; }
+.policy-option + .policy-option { margin-top: 10px; }
+.policy-option:hover { border-color: var(--primary-color); background: var(--surface-subtle); }
+.policy-option:has(input:checked) { border-color: var(--primary-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 18%, transparent); background: var(--info-light); }
+.policy-option input { margin-top: 3px; }
+.policy-option span { display: grid; gap: 5px; }
+.policy-option strong { color: var(--text-primary); font-size: 14px; line-height: 1.45; }
+.policy-option small { color: var(--text-muted); font-size: 12px; line-height: 1.55; }
 @media (max-width: 768px) {
+    .calculation-policy-grid { grid-template-columns: 1fr; }
     .floor-heading { align-items: flex-start; } .floor-actions { width: 100%; }
     .units-settings-table tbody tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; }
     .units-settings-table td { grid-template-columns: 1fr; gap: 4px; align-content: start; }

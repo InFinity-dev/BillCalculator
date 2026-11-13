@@ -197,7 +197,13 @@
         <p class="u-color-primary-dark">
              <strong>계산 방식 안내</strong><br>
             • 기본 배분액 = (세대 사용량 ÷ 총 사용량) × (고지액 + 복지할인 + 바우처할인)<br>
-            • 최종 금액 = 기본 배분액 - 세대별 복지할인 - 세대별 바우처할인 + TV수신료<br>
+            {% if bill.discount_tv_policy == 'TV_PROTECTED' %}
+                • 최종 금액 = max(기본 배분액 - 세대별 복지할인 - 세대별 바우처할인, 0원) + TV수신료<br>
+                • 할인 초과 시 TV 수신료는 할인에서 제외하여 별도로 전액 부과<br>
+            {% else %}
+                • 최종 금액 = max(기본 배분액 - 세대별 복지할인 - 세대별 바우처할인 + TV수신료, 0원)<br>
+                • 할인 초과분은 다른 세대에 재배분하지 않음<br>
+            {% endif %}
             • 청구 금액 = 최종 금액을 10원 단위로 올림 처리<br>
             {% if bill.tv_distribution_mode == 'EQUAL' %}
                 • TV 수신료: 총 TV수신료({{ "{:,.0f}".format(bill.tv_fee_total|default(0)) }}원)를 재실 세대({{ details|length }}세대)가

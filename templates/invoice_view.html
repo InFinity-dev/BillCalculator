@@ -10,9 +10,11 @@
     <div class="page-heading">
         <h1>{{ combination.invoice_name }}</h1>
         <div class="btn-group">
-            <a href="{{ url_for('payments', combination_id=combination.id) }}" class="btn btn-secondary">납부 내역</a>
-            <a href="{{ url_for('print_invoice', combination_id=combination.id) }}" target="_blank"
-               class="btn btn-primary"> 인쇄용 보기</a>
+            <a href="{{ url_for('payments', combination_id=combination.id) }}" class="btn btn-secondary"
+               data-tutorial-target="invoice-payments">납부 내역</a>
+            <a href="{{ url_for('print_invoice', combination_id=combination.id) }}"
+               {% if not live_tutorial %}target="_blank" rel="noopener"{% endif %}
+               data-tutorial-target="invoice-print" class="btn btn-primary"> 인쇄용 보기</a>
             <a href="{{ url_for('invoice_combination') }}" class="btn btn-secondary">목록으로</a>
         </div>
     </div>
@@ -31,7 +33,7 @@
     </div>
 
     <!-- 통계 요약 카드 (새 디자인) -->
-    <div class="stats-grid">
+    <div class="stats-grid" data-tutorial-target="created-invoice">
         <div class="stat-card">
             <div class="label">총 세대수</div>
             <div class="value primary">{{ invoices|length }}</div>

@@ -53,7 +53,7 @@ RESTORE_SCOPES = {
     },
     "settings": {
         "label": "앱 설정",
-        "description": "등록된 설정 9개의 값만 교체",
+        "description": "등록된 앱 설정 값만 교체",
         "tables": ("settings",),
     },
 }
@@ -211,6 +211,7 @@ def _validate_in_temporary_database(decoded):
 
 def validate_payload(payload):
     payload = _enrich_legacy_calculation_snapshots(payload)
+    payload = _enrich_legacy_registered_settings(payload)
     decoded = decode_payload(payload)
     registered = {
         row["setting_key"]: row.get("setting_value")
@@ -233,6 +234,11 @@ def validate_payload(payload):
                 raise BackupFormatError("설정 {} 값이 올바른 금액이 아닙니다.".format(key))
             if not amount.is_finite() or amount < 0 or amount != amount.to_integral_value():
                 raise BackupFormatError("설정 {} 값은 0 이상의 정수 금액이어야 합니다.".format(key))
+        elif definition.choices:
+            try:
+                definition.normalize(value)
+            except ValueError as exc:
+                raise BackupFormatError(str(exc))
     for table_name in (
         "electric_bill_details",
         "water_bill_details",
@@ -389,6 +395,48 @@ def _replace_registered_settings(current_rows, backup_rows):
     return result
 
 
+def _enrich_legacy_registered_settings(payload):
+    """새 설정 도입 전에 내려받은 v1 백업에 안전한 기본값을 보강한다.
+
+    ``restore_default_if_missing`` 으로 명시한 신규 설정에만 적용한다. 기존부터
+    필수였던 설정이 사라진 손상 백업은 ``validate_payload`` 가 계속 거절한다.
+    """
+    enriched = deepcopy(payload)
+    tables = enriched.get("tables", {}) if isinstance(enriched, dict) else {}
+    rows = tables.get("settings") if isinstance(tables, dict) else None
+    if not isinstance(rows, list):
+        return enriched
+
+    existing = {
+        row.get("setting_key")
+        for row in rows
+        if isinstance(row, dict)
+    }
+    identifiers = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        try:
+            identifiers.append(int(row.get("id")))
+        except (TypeError, ValueError):
+            continue
+    next_id = max(identifiers or [0]) + 1
+    now = datetime.now().isoformat(timespec="seconds")
+    for key in SETTING_KEYS:
+        definition = get_def(key)
+        if key in existing or not definition.restore_default_if_missing:
+            continue
+        rows.append({
+            "id": next_id,
+            "setting_key": key,
+            "setting_value": definition.default,
+            "created_at": now,
+            "updated_at": now,
+        })
+        next_id += 1
+    return enriched
+
+
 def _enrich_legacy_calculation_snapshots(payload):
     """
     0003 이전에 내려받은 v1 백업에 세대·층 식별 스냅샷을 보강한다.
@@ -444,10 +492,8 @@ def compose_restore_payload(backup_payload, scope, current_payload=None):
     하나의 완전한 목표 DB 페이로드를 만든다. 행 단위 병합은 하지 않는다.
     """
     definition = _scope(scope)
-    backup_payload = _enrich_legacy_calculation_snapshots(backup_payload)
-    validate_payload(backup_payload)
-    current_payload = _enrich_legacy_calculation_snapshots(current_payload or export_payload())
-    validate_payload(current_payload)
+    backup_payload = validate_payload(backup_payload)["payload"]
+    current_payload = validate_payload(current_payload or export_payload())["payload"]
 
     if scope == "master":
         unit_ids, floor_ids = _referenced_master_ids(current_payload)

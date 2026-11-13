@@ -47,6 +47,22 @@
 .charge-summary { padding: 8px 12px; background: var(--surface-subtle); border-radius: 5px; margin-bottom: 6px; font-size: 12px; }
 .charge-summary.is-carryover { background: var(--warning-light); border-left: 2px solid #b89151; }
 .charge-summary-amount { margin-left: 8px; font-weight: 600; }
+.invoice-selection-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.invoice-selection-heading h3 { margin: 0; }
+.invoice-selection-heading span { color: var(--text-muted); font-size: 12px; }
+.invoice-month-group { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.invoice-month-group-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: var(--surface-subtle); }
+.invoice-month-group-header > div { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.invoice-month-group-header strong { color: var(--text-primary); font-size: 13px; }
+.invoice-month-group-header span { color: var(--text-muted); font-size: 11px; }
+.invoice-month-group-header span.is-complete { color: var(--success-dark); font-weight: 600; }
+.invoice-month-group table { margin: 0; border: 0; }
+.invoice-month-group table th:first-child, .invoice-month-group table td:first-child { border-left: 0; }
+.invoice-month-group table th:last-child, .invoice-month-group table td:last-child { border-right: 0; }
+.invoice-selection-summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 16px; background: var(--primary-light); border: 1px solid #cbd9ed; border-radius: 6px; }
+.invoice-selection-summary span { color: var(--text-muted); font-size: 12px; }
+.invoice-selection-summary strong { color: var(--primary-dark); font-size: 13px; }
+.tutorial-water-period { min-width: 190px; color: var(--text-secondary); font-size: 12px; }
 @media (max-width: 768px) {
     .step-indicator { gap: 6px; } .step { padding: 10px 6px; flex-direction: column; gap: 6px; text-align: center; font-size: 11px; }
     .units-table { min-width: 0; } .units-table td { min-width: 0; }
@@ -57,4 +73,6 @@
     .charge-inline-row .charge-type { grid-column: 1; grid-row: 2; }
     .charge-inline-row .charge-amount { grid-column: 2; grid-row: 2; }
     .charge-inline-row button { grid-column: 3; grid-row: 2; } .unit-memo-badge { max-width: none; }
+    .invoice-selection-heading, .invoice-month-group-header, .invoice-selection-summary { align-items: stretch; flex-direction: column; }
+    .electric-month-select { width: 100%; }
 }

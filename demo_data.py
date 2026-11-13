@@ -10,6 +10,7 @@ from models import CommonBill, ElectricBill, FinalInvoice, Floor, InvoiceCombina
 
 DEMO_VERSION = 1
 METADATA_KEY = "__demo_dataset__"
+TUTORIAL_SCENARIO_VERSION = 3
 
 # (층, 세대명, 인원, TV, 전기 복지, 바우처, 수도 복지, 공실)
 UNIT_SPECS = (
@@ -106,7 +107,7 @@ def _additional(units, index):
     return result
 
 
-def build_demo(application, start, months):
+def build_demo(application, start, months, tutorial_ready=False):
     """빈 DB에만 생성한다. 앱 컨텍스트와 스키마 준비는 호출자가 담당한다."""
     if Floor.query.count() or InvoiceCombination.query.count():
         raise RuntimeError("더미 데이터는 빈 테스트 DB에만 생성할 수 있습니다.")
@@ -160,9 +161,17 @@ def build_demo(application, start, months):
                 })
                 common = CommonBill.query.filter_by(billing_month=current, description=label).one()
                 items.append({"type": "COMMON", "id": common.id, "month": month, "description": label})
+            invoice_items = items
+            if tutorial_ready and index == months - 1:
+                # 연습에서는 마지막 달 전기요금을 모든 층에서 미정산 상태로 남긴다.
+                # 다음 달 전기요금과 함께 선택하며 월별 전체 층 범위를 확인하게 한다.
+                invoice_items = [
+                    item for item in items
+                    if item["type"] != "ELECTRIC"
+                ]
             _post_invoice(client, csrf, {
                 "name": "[테스트] {} 월 정산".format(month), "memo": "월별 흐름 검증용 더미 데이터",
-                "items": items, "unit_additional_data": _additional(units, index),
+                "items": invoice_items, "unit_additional_data": _additional(units, index),
             })
             combination = InvoiceCombination.query.order_by(InvoiceCombination.id.desc()).first()
             payment_date = month_after(current, 1).replace(day=5).isoformat()
@@ -183,7 +192,34 @@ def build_demo(application, start, months):
                         "payment_method": "계좌이체", "memo": "[테스트] " + memo,
                         "acknowledge_warnings": True,
                     })
-    metadata = {"version": DEMO_VERSION, "start_month": start.strftime("%Y-%m"), "months": months}
+        if tutorial_ready:
+            next_current = month_after(start, months)
+            next_month = next_current.strftime("%Y-%m")
+            # 지하층은 사용자가 실제 계산 화면에서 직접 저장한다. 나머지 두 층은
+            # 정산서 단계에서 월별 전체 층을 선택할 수 있도록 미리 준비한다.
+            _electric(
+                client,
+                csrf,
+                next_month,
+                months,
+                {number: floors[number] for number in (1, 2)},
+                readings,
+            )
+            # 수도는 건물 전체에 격월로 고지된다는 도메인을 연습할 수 있도록
+            # 9~10월 사용분을 10월 고지 1건으로 준비하고 정산서에는 넣지 않는다.
+            _post(client, csrf, "/calculate/water", data={
+                "billing_month": next_month,
+                "total_amount": "348000",
+                "welfare_discount_total": "1500",
+                "excluded_units": "[]",
+            })
+    metadata = {
+        "version": DEMO_VERSION,
+        "start_month": start.strftime("%Y-%m"),
+        "months": months,
+        "tutorial_ready": bool(tutorial_ready),
+        "tutorial_scenario_version": TUTORIAL_SCENARIO_VERSION if tutorial_ready else None,
+    }
     db.session.add(Setting(setting_key=METADATA_KEY, setting_value=json.dumps(metadata)))
     db.session.commit()
     return metadata

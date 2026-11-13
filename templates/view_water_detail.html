@@ -55,7 +55,8 @@
             <h3>정산 방식</h3>
             <p class="u-color-text-secondary u-leading-1_7">
                 • 기본 배분액 = (세대 거주 인원 ÷ 정산 대상 인원) × (총액 + 복지 할인 총액)<br>
-                • 최종 금액 = 기본 배분액 - 세대별 수도 복지 할인<br>
+                • 최종 금액 = max(기본 배분액 - 세대별 수도 복지 할인, 0원)<br>
+                • 할인 초과분은 다른 세대에 재배분하지 않음<br>
                 • 청구 금액 = 최종 금액을 10원 단위로 올림 처리<br>
                 {% if excluded_details|length > 0 %}
                     <strong class="u-color-danger-dark">• 제외된 세대는 정산 대상에서 제외되어 0원으로 청구됩니다.</strong>

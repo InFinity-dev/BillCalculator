@@ -463,6 +463,9 @@ class Migrator:
                     "tv_fee_total": to_money(row.get("tv_fee_total"), self.report,
                                              "electric_bills", bill_id, "tv_fee_total"),
                     "tv_distribution_mode": mode,
+                    # MySQL 시절 최초 계산식은 할인과 TV 수신료를 합산한 뒤
+                    # 세대 청구액을 0원으로 제한하는 방식이었다.
+                    "discount_tv_policy": "COMBINED_FLOOR_ZERO",
                     "billing_months_count": int(row.get("billing_months_count") or len(seen_months) or 1),
                     "created_at": row.get("created_at") or datetime.utcnow(),
                     "updated_at": row.get("updated_at") or datetime.utcnow(),

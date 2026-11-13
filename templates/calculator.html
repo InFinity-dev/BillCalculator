@@ -48,8 +48,8 @@
                         <div class="form-group">
                             <label>TV 수신료 배분</label>
                             <select name="tv_distribution_mode" id="tv_mode">
-                                <option value="INDIVIDUAL">개별 부과 (TV 보유 세대만)</option>
-                                <option value="EQUAL" selected>균등 분배 (재실 세대 전체)</option>
+                                <option value="INDIVIDUAL"{% if tv_distribution_default == 'INDIVIDUAL' %} selected{% endif %}>개별 부과 (TV 보유 세대만)</option>
+                                <option value="EQUAL"{% if tv_distribution_default == 'EQUAL' %} selected{% endif %}>균등 분배 (재실 세대 전체)</option>
                             </select>
                         </div>
                     </div>
@@ -790,6 +790,7 @@
             document.getElementById('calculationPreviewStatus').textContent = '';
             pendingCalculation = {url, formData, existing: response.existing, hasDuplicates: (response.duplicates || []).length > 0};
             openModal('calculationPreviewModal');
+            window.dispatchEvent(new CustomEvent('tutorial:calculation-preview-ready'));
         }
 
         async function requestCalculationPreview(title, url, formData) {
@@ -812,8 +813,10 @@
                 const response = await fetch(pendingCalculation.url, {method: 'POST', body: pendingCalculation.formData});
                 const result = await response.json();
                 document.getElementById('calculationPreviewStatus').textContent = result.message || (result.success ? '저장되었습니다.' : '저장하지 못했습니다.');
-                if (result.success) window.setTimeout(() => window.location.reload(), 600);
-                else button.disabled = false;
+                if (result.success) {
+                    window.dispatchEvent(new CustomEvent('tutorial:calculation-saved'));
+                    window.setTimeout(() => window.location.reload(), 600);
+                } else button.disabled = false;
             } catch (error) {
                 document.getElementById('calculationPreviewStatus').textContent = `저장 중 오류가 발생했습니다: ${error.message}`;
                 button.disabled = false;

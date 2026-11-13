@@ -203,6 +203,20 @@ def test_invalid_tv_distribution_mode_rejected(app, floor):
     _expect_integrity_error(act)
 
 
+def test_invalid_discount_tv_policy_rejected(app, floor):
+    def act():
+        db.session.add(
+            ElectricBill(
+                billing_month=date(2025, 6, 1),
+                floor_id=floor.id,
+                total_amount=1000,
+                discount_tv_policy="WRONG",
+            )
+        )
+
+    _expect_integrity_error(act)
+
+
 def test_invalid_distribution_method_rejected(app):
     def act():
         db.session.add(

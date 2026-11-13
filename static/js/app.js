@@ -68,6 +68,10 @@ function selectTab(panelId) {
     });
 }
 document.addEventListener('click', event => {
+    const openTrigger = event.target.closest('[data-open-modal]');
+    if (openTrigger) openModal(openTrigger.getAttribute('data-open-modal'));
+    const closeTrigger = event.target.closest('[data-close-modal]');
+    if (closeTrigger) closeModal(closeTrigger.getAttribute('data-close-modal'));
     if (event.target.classList.contains('modal')) closeModal(event.target.id);
     if (event.target.closest('.tab')) requestAnimationFrame(enhancePage);
 });

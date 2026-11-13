@@ -189,11 +189,19 @@ body {
     line-height: 1.8;
 }
 
-/* 인쇄 버튼 */
-.print-button {
+/* 인쇄 화면 동작 */
+.print-actions {
     position: fixed;
     top: 20px;
     right: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 1000;
+}
+
+.print-button,
+.print-return-button {
     background: #2856a3;
     color: white;
     border: none;
@@ -202,11 +210,43 @@ body {
     cursor: pointer;
     font-size: 16px;
     font-weight: 500;
-    z-index: 1000;
+    text-decoration: none;
+}
+
+.print-return-button {
+    background: white;
+    color: #2856a3;
+    border: 1px solid #9eb6da;
 }
 
 .print-button:hover {
     background: #1d427f;
+}
+
+.print-return-button:hover {
+    background: #edf3fc;
+}
+
+.tutorial-print-mode {
+    padding-right: calc(var(--tutorial-guide-width) + 20px);
+}
+
+.tutorial-print-mode .print-actions {
+    right: calc(var(--tutorial-guide-width) + 20px);
+    z-index: 410;
+}
+
+.tutorial-print-mode.tutorial-practice-mode {
+    padding-right: 20px;
+}
+
+.tutorial-print-mode.tutorial-practice-mode .print-actions {
+    right: 20px;
+}
+
+.tutorial-print-mode.tutorial-practice-mode .tutorial-practice-dock {
+    top: auto;
+    bottom: 20px;
 }
 
 /* 인쇄 최적화 */
@@ -227,12 +267,19 @@ body {
         page-break-after: auto;
     }
 
-    .print-button {
+    .no-print {
         display: none;
     }
 
-    .no-print {
-        display: none;
+    .tutorial-guide,
+    .tutorial-practice-dock,
+    .tutorial-focus-ring,
+    .tutorial-cue {
+        display: none !important;
+    }
+
+    .tutorial-print-mode {
+        padding-right: 0;
     }
 
     .header {
@@ -266,10 +313,15 @@ body {
 
 @media screen and (max-width: 768px) {
     body { padding: 76px 16px 16px; }
+    body.tutorial-print-mode { padding: 76px 16px calc(var(--tutorial-guide-height) + 16px); }
+    body.tutorial-print-mode.tutorial-practice-mode { padding: 76px 16px 16px; }
+    .tutorial-print-mode.tutorial-practice-mode .tutorial-practice-dock { bottom: 12px; }
     .invoice { padding: 22px 18px; }
     .header h1 { font-size: 24px; }
     .header p { font-size: 13px; }
-    .print-button { top: 16px; right: 16px; padding: 10px 16px; font-size: 14px; border-radius: 6px; }
+    .print-actions { top: 16px; right: 16px; }
+    .tutorial-print-mode .print-actions { right: 16px; }
+    .print-button, .print-return-button { padding: 10px 16px; font-size: 14px; border-radius: 6px; }
     .bill-table th, .bill-table td { padding: 10px 8px; }
     .bill-table .amount { font-family: inherit; font-variant-numeric: tabular-nums; font-size: 14px; white-space: nowrap; }
 }

@@ -1,7 +1,15 @@
-:root { --tutorial-guide-width: 360px; }
+:root {
+    --tutorial-guide-width: 360px;
+    --tutorial-focus: #7c3aed;
+    --tutorial-focus-dark: #4c1d95;
+    --tutorial-focus-soft: #f5f0ff;
+}
 
 .tutorial-live-mode .app-shell { margin-right: var(--tutorial-guide-width); }
 .tutorial-live-mode .modal { right: var(--tutorial-guide-width); }
+.tutorial-live-mode .modal-content {
+    max-width: min(560px, calc(100vw - var(--tutorial-guide-width) - 48px));
+}
 .tutorial-live-mode .tutorial-entry {
     color: #173d77;
     background: #e7f0ff;
@@ -10,27 +18,47 @@
 .tutorial-live-mode .tutorial-entry .nav-revisit-badge { background: #2856a3; color: white; }
 .tutorial-data-banner { border-style: dashed; font-weight: 650; }
 
-.tutorial-mask {
+.tutorial-focus-ring {
     position: fixed;
-    z-index: 300;
-    background: rgb(15 24 38 / 64%);
-    pointer-events: auto;
-    transition: inset 180ms ease, width 180ms ease, height 180ms ease;
-}
-.tutorial-mask-top { inset: 0 0 auto 0; height: 0; }
-.tutorial-mask-right { top: 0; right: 0; width: 0; height: 0; }
-.tutorial-mask-bottom { right: 0; bottom: 0; left: 0; height: 0; }
-.tutorial-mask-left { top: 0; left: 0; width: 0; height: 0; }
-.tutorial-spotlight {
-    position: fixed;
-    z-index: 320;
-    border: 3px solid #79aaf3;
+    z-index: 420;
+    border: 3px solid var(--tutorial-focus);
     border-radius: 10px;
-    box-shadow: 0 0 0 4px rgb(121 170 243 / 30%), 0 12px 38px rgb(0 0 0 / 22%);
+    box-shadow: 0 0 0 5px rgb(124 58 237 / 17%), 0 10px 30px rgb(76 29 149 / 16%);
     pointer-events: none;
-    transition: inset 180ms ease, width 180ms ease, height 180ms ease;
+    transition: none;
 }
-.tutorial-live-mode .modal.active { z-index: 310; }
+.tutorial-focus-ring.is-pulsing { animation: tutorial-focus-pulse 1.35s ease-in-out 2; }
+.tutorial-focus-ring.is-reminded { animation: tutorial-focus-remind 180ms ease-in-out 3; }
+.tutorial-cue {
+    position: fixed;
+    z-index: 430;
+    max-width: min(270px, calc(100vw - 32px));
+    padding: 10px 13px;
+    color: var(--tutorial-focus-dark);
+    background: #fff;
+    border: 2px solid var(--tutorial-focus);
+    border-radius: 9px;
+    box-shadow: 0 10px 28px rgb(76 29 149 / 20%);
+    font-size: 13px;
+    font-weight: 750;
+    line-height: 1.45;
+    pointer-events: none;
+}
+.tutorial-cue::after {
+    content: '';
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: #fff;
+    border: solid var(--tutorial-focus);
+    transform: rotate(45deg);
+}
+.tutorial-cue.is-reminded { animation: tutorial-cue-remind 180ms ease-in-out 3; }
+.tutorial-cue[data-placement="top"]::after { left: calc(50% - 6px); bottom: -7px; border-width: 0 2px 2px 0; }
+.tutorial-cue[data-placement="bottom"]::after { left: calc(50% - 6px); top: -7px; border-width: 2px 0 0 2px; }
+.tutorial-cue[data-placement="left"]::after { right: -7px; top: calc(50% - 6px); border-width: 2px 2px 0 0; }
+.tutorial-cue[data-placement="right"]::after { left: -7px; top: calc(50% - 6px); border-width: 0 0 2px 2px; }
+.tutorial-live-mode.tutorial-dialog-open .modal.active { z-index: 310; }
 
 .tutorial-guide {
     position: fixed;
@@ -56,8 +84,52 @@
 .tutorial-target-hint { margin: 18px 0 12px; padding: 11px 13px; border-radius: 7px; background: #fff6df; color: #7a5216; font-size: 13px; font-weight: 700; }
 .tutorial-guide-actions { display: grid; gap: 10px; margin-top: 20px; }
 .tutorial-guide-actions .btn { width: 100%; }
+.tutorial-practice-entry-zone { display: grid; gap: 12px; margin-top: 28px; padding-top: 20px; border-top: 1px solid #e0e6ee; }
+.tutorial-practice-entry-copy { display: grid; gap: 4px; }
+.tutorial-practice-entry-copy strong { color: #1c293c; font-size: 13px; line-height: 1.45; }
+.tutorial-practice-entry-copy span { color: #66768a; font-size: 12px; line-height: 1.5; }
+.tutorial-practice-entry { width: 100%; margin: 0; }
 .tutorial-guide-links { display: flex; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #e0e6ee; }
 .link-button { border: 0; padding: 6px 0; background: transparent; color: #66768a; font-size: 12px; text-decoration: underline; }
+
+.tutorial-practice-dock {
+    position: fixed;
+    z-index: 500;
+    top: 18px;
+    right: 18px;
+    width: min(320px, calc(100vw - 36px));
+    padding: 16px;
+    color: #1c293c;
+    background: #fff;
+    border: 2px solid #2856a3;
+    border-radius: 12px;
+    box-shadow: 0 14px 38px rgb(22 42 69 / 22%);
+}
+.tutorial-practice-dock[hidden] { display: none; }
+.tutorial-practice-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tutorial-practice-head strong { font-size: 15px; }
+.tutorial-practice-head span { padding: 4px 7px; color: #166044; background: #e8f7f0; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.tutorial-practice-dock p { margin: 10px 0 0; color: #40536d; font-size: 13px; line-height: 1.6; }
+.tutorial-practice-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.tutorial-practice-actions .btn { min-width: 0; padding-inline: 10px; }
+
+.tutorial-live-mode.tutorial-practice-mode .app-shell { margin-right: 0; padding-bottom: 0; }
+.tutorial-live-mode.tutorial-practice-mode .modal { right: 0; bottom: 0; }
+.tutorial-live-mode.tutorial-practice-mode .modal-content {
+    max-width: 560px;
+    max-height: calc(100dvh - 48px);
+}
+
+@keyframes tutorial-focus-pulse {
+    50% { box-shadow: 0 0 0 12px rgb(124 58 237 / 9%), 0 12px 34px rgb(76 29 149 / 20%); }
+}
+@keyframes tutorial-focus-remind {
+    33% { transform: translateX(-4px); }
+    66% { transform: translateX(4px); }
+}
+@keyframes tutorial-cue-remind {
+    50% { transform: translateY(-3px); box-shadow: 0 14px 34px rgb(76 29 149 / 28%); }
+}
 
 @media (max-width: 1100px) {
     :root { --tutorial-guide-width: 320px; }
@@ -67,7 +139,10 @@
     :root { --tutorial-guide-height: min(42dvh, 350px); }
     .tutorial-live-mode .app-shell { margin-right: 0; padding-bottom: var(--tutorial-guide-height); }
     .tutorial-live-mode .modal { right: 0; bottom: var(--tutorial-guide-height); }
-    .tutorial-live-mode .modal-content { max-height: calc(100dvh - var(--tutorial-guide-height) - 24px); }
+    .tutorial-live-mode .modal-content {
+        max-width: 100%;
+        max-height: calc(100dvh - var(--tutorial-guide-height) - 24px);
+    }
     .tutorial-guide {
         inset: auto 0 0;
         width: 100%;
@@ -85,9 +160,20 @@
     .tutorial-concept { margin: 12px 0; padding: 10px 12px; }
     .tutorial-target-hint { margin: 12px 0 8px; }
     .tutorial-guide-actions { margin-top: 12px; }
+    .tutorial-practice-entry-zone { margin-top: 22px; padding-top: 18px; }
     .tutorial-guide-links { margin-top: 14px; padding-top: 12px; }
+    .tutorial-practice-dock { top: 70px; right: 12px; width: calc(100vw - 24px); padding: 14px; }
+    .tutorial-live-mode.tutorial-practice-mode .modal-content { max-height: calc(100dvh - 24px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .tutorial-mask, .tutorial-spotlight, .tutorial-progress span { transition: none; }
+    .tutorial-focus-ring.is-pulsing,
+    .tutorial-focus-ring.is-reminded,
+    .tutorial-cue.is-reminded { animation: none; }
+    .tutorial-progress span { transition: none; }
 }
+
+.tutorial-exit-handoff { display: grid; min-height: 100dvh; place-items: center; padding: 24px; background: #f4f6f9; }
+.tutorial-exit-handoff-card { width: min(440px, 100%); text-align: center; }
+.tutorial-exit-handoff-card h1 { margin-top: 0; }
+.tutorial-exit-handoff-card p { margin: 10px 0 22px; color: #55657b; }

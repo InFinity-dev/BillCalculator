@@ -102,7 +102,7 @@ def _configure_database(path):
     sys.path.insert(0, str(REPO_ROOT))
 
 
-def seed(start, months, reset=False, db_path=None):
+def seed(start, months, reset=False, db_path=None, tutorial_ready=False):
     target = _database_path(db_path)
     if reset:
         _check_sidecars(target)
@@ -131,7 +131,7 @@ def seed(start, months, reset=False, db_path=None):
             try:
                 upgrade(directory=str(REPO_ROOT / "migrations"))
                 app_module.seed_settings()
-                build_demo(app_module.app, start, months)
+                build_demo(app_module.app, start, months, tutorial_ready=tutorial_ready)
                 checks = run_all_checks()
                 failed = [check.name for check in checks if not check.ok]
                 if failed:
@@ -176,13 +176,14 @@ def main(argv=None):
     generate.add_argument("--months", type=parse_months, default=DEFAULT_MONTHS)
     generate.add_argument("--reset", action="store_true", help="생성기가 만든 더미 DB를 초기 상태로 다시 생성")
     generate.add_argument("--db-path", type=Path, default=None, help=argparse.SUPPRESS)
+    generate.add_argument("--tutorial-ready", action="store_true", help=argparse.SUPPRESS)
     server = commands.add_parser("run", help="테스트 서버 실행 (DB가 없으면 기본 데이터 생성)")
     server.add_argument("--port", type=int, choices=range(1, 65536), default=5001, metavar="PORT")
     server.add_argument("--db-path", type=Path, default=None, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     try:
         if args.command == "seed":
-            seed(args.start_month, args.months, args.reset, args.db_path)
+            seed(args.start_month, args.months, args.reset, args.db_path, args.tutorial_ready)
         else:
             run(args.port, args.db_path)
     except (RuntimeError, ValueError, OSError, subprocess.CalledProcessError) as error:

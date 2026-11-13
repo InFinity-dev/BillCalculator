@@ -68,6 +68,16 @@ def test_demo_banner_is_only_enabled_for_demo(app, client, monkeypatch):
     assert text in client.get("/").get_data(as_text=True)
 
 
+def test_normal_runtime_does_not_seed_demo_data(app):
+    """일반 app.py 실행은 설정 기본값만 가지며 더미 업무 데이터를 만들지 않는다."""
+    from models import Floor, Setting
+
+    assert app.config["DEMO_MODE"] is False
+    assert app.config["TUTORIAL_MODE"] is False
+    assert Setting.query.filter_by(setting_key="__demo_dataset__").first() is None
+    assert Floor.query.count() == 0
+
+
 def test_automatic_test_database_is_isolated(app):
     assert app.config["SQLALCHEMY_DATABASE_URI"] == "sqlite:///" + str(TEST_DB_PATH.resolve())
     assert not os.environ.get("BILLCALC_DATABASE_URI")

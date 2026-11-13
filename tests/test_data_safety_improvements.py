@@ -72,6 +72,24 @@ def test_targetless_water_discount_is_shared_across_included_units(app, client, 
     assert {row.welfare_discount for row in details} == {Decimal("1000.00")}
 
 
+def test_water_discount_overage_stops_at_zero_without_redistribution(
+    app, client, csrf, floor, units
+):
+    result = client.post("/calculate/water", data={
+        "_csrf_token": csrf,
+        "billing_month": "2025-03",
+        "total_amount": "1000",
+        "welfare_discount_total": "50000",
+        "excluded_units": "[]",
+    }).get_json()
+
+    assert result["success"] is True
+    assert any("재배분하지 않았습니다" in warning for warning in result["warnings"])
+    target = next(unit for unit in units if unit.water_welfare)
+    detail = WaterBillDetail.query.filter_by(unit_id=target.id).one()
+    assert detail.final_amount == Decimal("0.00")
+
+
 def test_calculation_preview_uses_same_engine_without_persisting(app, client, csrf, floor, units):
     occupied = [unit for unit in units if not unit.is_vacant]
     data = _electric_form(csrf, floor, occupied, amount="30000", preview=True)

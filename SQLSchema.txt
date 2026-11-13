@@ -2,7 +2,7 @@
 -- ⚠️  DEPRECATED — 이 파일은 더 이상 스키마의 Single Source of Truth 가 아닙니다.
 -- =====================================================================
 --
--- 현재 스키마 정의:  models.py  +  migrations/ (Alembic)
+-- 현재 스키마 정의:  models.py  +  migrations/ (Alembic, 최신 revision 0004)
 -- 현재 DB 엔진:      SQLite (data/bill_calculator.db)
 --
 -- 이 파일은 MySQL 시절의 **역사적 참고 자료**로만 보존합니다.

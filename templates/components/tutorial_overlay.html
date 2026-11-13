@@ -1,12 +1,9 @@
-<div class="tutorial-mask tutorial-mask-top" aria-hidden="true"></div>
-<div class="tutorial-mask tutorial-mask-right" aria-hidden="true"></div>
-<div class="tutorial-mask tutorial-mask-bottom" aria-hidden="true"></div>
-<div class="tutorial-mask tutorial-mask-left" aria-hidden="true"></div>
-<div class="tutorial-spotlight" aria-hidden="true"></div>
+<div class="tutorial-focus-ring" aria-hidden="true" hidden></div>
+<div class="tutorial-cue" id="tutorialCue" role="status" hidden></div>
 <aside class="tutorial-guide" id="tutorialGuide" aria-live="polite" aria-label="사용 안내">
     <div class="tutorial-guide-head">
         <span class="tutorial-guide-kicker">실제 화면 따라하기</span>
-        <button type="button" class="tutorial-guide-close" id="tutorialDefer" aria-label="사용 안내 잠시 닫기">×</button>
+        <button type="button" class="tutorial-guide-close" id="tutorialExitClose" aria-label="연습 종료">×</button>
     </div>
     <div class="tutorial-progress" aria-hidden="true"><span id="tutorialProgressBar"></span></div>
     <div class="tutorial-step-count" id="tutorialStepCount"></div>
@@ -15,8 +12,26 @@
     <div class="tutorial-concept" id="tutorialConcept" hidden></div>
     <div class="tutorial-target-hint" id="tutorialTargetHint" hidden>강조된 실제 화면을 눌러주세요</div>
     <div class="tutorial-guide-actions" id="tutorialActions"></div>
+    <div class="tutorial-practice-entry-zone" id="tutorialPracticeEntryZone">
+        <div class="tutorial-practice-entry-copy">
+            <strong>안내 없이 직접 사용해 볼까요?</strong>
+            <span>현재 단계 안내를 종료하고 자유 연습으로 전환합니다.</span>
+        </div>
+        <button type="button" class="btn btn-secondary tutorial-practice-entry" id="tutorialPracticeStart">자유 연습으로 전환</button>
+    </div>
     <div class="tutorial-guide-links">
         <button type="button" class="link-button" id="tutorialRestart">처음부터 다시</button>
-        <button type="button" class="link-button" id="tutorialPause">나중에 이어보기</button>
+        <button type="button" class="link-button" id="tutorialExit">연습 종료</button>
+    </div>
+</aside>
+<aside class="tutorial-practice-dock" id="tutorialPracticeDock" aria-live="polite" aria-label="자유 연습 안내" hidden>
+    <div class="tutorial-practice-head">
+        <strong>자유 연습 중</strong>
+        <span>실제 데이터 보호됨</span>
+    </div>
+    <p>메뉴와 버튼을 자유롭게 사용해 보세요. 변경 내용은 이번 연습에서만 유지되며 종료하면 모두 삭제됩니다.</p>
+    <div class="tutorial-practice-actions">
+        <button type="button" class="btn btn-secondary" id="tutorialPracticeRestart">안내 처음부터</button>
+        <button type="button" class="btn btn-primary" id="tutorialPracticeFinish">연습 종료</button>
     </div>
 </aside>

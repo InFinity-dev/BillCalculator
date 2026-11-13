@@ -168,6 +168,57 @@
                             <small class="u-color-text-muted">기본값: 0원</small>
                         </div>
                     </div>
+
+                    <div class="calculation-policy-grid">
+                        <fieldset class="policy-fieldset">
+                            <legend>할인 초과 시 TV 수신료 처리</legend>
+                            <p class="policy-intro">
+                                한 세대의 할인액이 그 세대에 배분된 요금보다 클 때 적용합니다.
+                                남은 할인은 어느 방식을 선택해도 다른 세대에 넘기지 않습니다.
+                            </p>
+                            <label class="policy-option">
+                                <input type="radio" name="discount_tv_policy"
+                                       value="COMBINED_FLOOR_ZERO"
+                                       {% if discount_tv_policy == 'COMBINED_FLOOR_ZERO' %}checked{% endif %}>
+                                <span>
+                                    <strong>기존 계산 방식 유지 · 기본값</strong>
+                                    <small>할인과 TV 수신료를 모두 반영한 뒤 세대 청구액을 최저 0원으로 제한합니다.</small>
+                                </span>
+                            </label>
+                            <label class="policy-option">
+                                <input type="radio" name="discount_tv_policy"
+                                       value="TV_PROTECTED"
+                                       {% if discount_tv_policy == 'TV_PROTECTED' %}checked{% endif %}>
+                                <span>
+                                    <strong>TV 수신료는 할인에서 제외</strong>
+                                    <small>전기 사용요금만 최저 0원으로 제한한 뒤 TV 수신료를 별도로 전액 부과합니다.</small>
+                                </span>
+                            </label>
+                        </fieldset>
+
+                        <fieldset class="policy-fieldset">
+                            <legend>TV 수신료 기본 분배 방식</legend>
+                            <p class="policy-intro">
+                                전기요금 계산 화면을 열었을 때 먼저 선택될 방식입니다. 계산할 때마다 바꿀 수 있습니다.
+                            </p>
+                            <label class="policy-option">
+                                <input type="radio" name="tv_distribution_default" value="EQUAL"
+                                       {% if tv_distribution_default == 'EQUAL' %}checked{% endif %}>
+                                <span>
+                                    <strong>재실 세대 전체에 균등 분배 · 기본값</strong>
+                                    <small>고지서의 TV 수신료 총액을 공실을 제외한 모든 세대가 나눕니다.</small>
+                                </span>
+                            </label>
+                            <label class="policy-option">
+                                <input type="radio" name="tv_distribution_default" value="INDIVIDUAL"
+                                       {% if tv_distribution_default == 'INDIVIDUAL' %}checked{% endif %}>
+                                <span>
+                                    <strong>TV 보유 세대에만 개별 부과</strong>
+                                    <small>세대 정보에서 TV 보유로 설정한 세대에 설정 단가를 부과합니다.</small>
+                                </span>
+                            </label>
+                        </fieldset>
+                    </div>
                     <button type="submit" class="btn btn-primary u-mt-10px">설정 저장</button>
                 </form>
             </div>
@@ -304,6 +355,14 @@
                 설정부터 계산·정산서·입금 내역까지 전체 데이터를 백업하거나 한 시점으로 복원합니다.
             </p>
 
+            {% if live_tutorial %}
+                <div class="alert alert-info" id="tutorialBackupRestriction" role="status">
+                    <strong>백업·복원은 실제 데이터에서 사용하세요.</strong><br>
+                    연습 백업과 실제 백업의 혼동을 막기 위해 자유 연습 중에는 데이터 내보내기와 복원을 사용할 수 없습니다.
+                    연습을 종료한 뒤 설정의 가져오기/내보내기에서 이용할 수 있습니다.
+                </div>
+            {% endif %}
+
             <div class="grid grid-2 u-gap-20px">
                 <!-- 내보내기 카드 -->
                 <div class="content-card u-mb-20px">
@@ -311,9 +370,11 @@
                     <p class="u-color-text-muted u-mb-20px u-leading-1_6">
                         현재 설정, 층·세대, 모든 계산 결과, 정산서와 입금 기록을 하나의 JSON 파일로 저장합니다.
                     </p>
-                    <button class="btn btn-primary" id="exportBtn">
-                        전체 백업 내려받기
+                    <button class="btn btn-primary" id="exportBtn"
+                            {% if live_tutorial %}disabled aria-describedby="tutorialBackupRestriction"{% endif %}>
+                        {% if live_tutorial %}자유 연습 중에는 내보낼 수 없음{% else %}전체 백업 내려받기{% endif %}
                     </button>
+                    {% if live_tutorial %}<small class="form-help">연습을 종료하면 다시 사용할 수 있습니다.</small>{% endif %}
                 </div>
 
                 <!-- 가져오기 카드 -->
@@ -324,7 +385,7 @@
                     </p>
                     <div class="form-group">
                         <label for="restoreScope">복원 범위</label>
-                        <select id="restoreScope">
+                        <select id="restoreScope" {% if live_tutorial %}disabled aria-describedby="tutorialBackupRestriction"{% endif %}>
                             <option value="full">전체 데이터</option>
                             <option value="property_history">주택 구성 + 전체 이력 (앱 설정 유지)</option>
                             <option value="master">층·세대 구성만</option>
@@ -333,9 +394,11 @@
                         </select>
                         <small class="form-help">이력과 세대의 식별 정보가 맞지 않으면 복원이 자동으로 차단됩니다.</small>
                     </div>
-                    <input class="u-mb-15px u-p-10px u-border-1px-dashed-border u-rounded-6px u-width-100" type="file" id="importFile" accept=".json">
-                    <button class="btn btn-success" id="importBtn">
-                        백업 파일 검사
+                    <input class="u-mb-15px u-p-10px u-border-1px-dashed-border u-rounded-6px u-width-100" type="file" id="importFile" accept=".json"
+                           {% if live_tutorial %}disabled aria-describedby="tutorialBackupRestriction"{% endif %}>
+                    <button class="btn btn-success" id="importBtn"
+                            {% if live_tutorial %}disabled aria-describedby="tutorialBackupRestriction"{% endif %}>
+                        {% if live_tutorial %}자유 연습 중에는 복원할 수 없음{% else %}백업 파일 검사{% endif %}
                     </button>
                 </div>
             </div>
@@ -369,13 +432,15 @@
                 <div class="form-group">
                     <label for="automaticBackupSelect">되돌릴 시점</label>
                     <select id="automaticBackupSelect" disabled>
-                        <option value="">자동 백업을 불러오는 중입니다…</option>
+                        <option value="">{% if live_tutorial %}자유 연습 중에는 불러오지 않음{% else %}자동 백업을 불러오는 중입니다…{% endif %}</option>
                     </select>
-                    <small id="automaticBackupStatus" class="form-help">최근 20개까지 표시합니다.</small>
+                    <small id="automaticBackupStatus" class="form-help">
+                        {% if live_tutorial %}연습을 종료하면 실제 데이터의 복원 지점을 확인할 수 있습니다.{% else %}최근 20개까지 표시합니다.{% endif %}
+                    </small>
                 </div>
                 <div class="form-group">
                     <label for="automaticRestoreScope">복원 범위</label>
-                    <select id="automaticRestoreScope">
+                    <select id="automaticRestoreScope" {% if live_tutorial %}disabled aria-describedby="tutorialBackupRestriction"{% endif %}>
                         <option value="full">전체 데이터</option>
                         <option value="property_history">주택 구성 + 전체 이력 (앱 설정 유지)</option>
                         <option value="master">층·세대 구성만</option>
@@ -569,16 +634,6 @@
 
         // Modal helpers
         document.addEventListener('click', (e) => {
-            const open = e.target.closest('[data-open-modal]');
-            if (open) {
-                openModal(open.getAttribute('data-open-modal'));
-            }
-
-            const close = e.target.closest('[data-close-modal]');
-            if (close) {
-                closeModal(close.getAttribute('data-close-modal'));
-            }
-
             const addUnitBtn = e.target.closest('[data-open-add-unit]');
             if (addUnitBtn) {
                 document.getElementById('unit_floor_id').value = addUnitBtn.getAttribute('data-floor-id');
@@ -712,8 +767,9 @@
         }
 
         // Export / Import
+        const tutorialDataTransferRestricted = {{ 'true' if live_tutorial else 'false' }};
         const exportBtn = document.getElementById('exportBtn');
-        if (exportBtn) {
+        if (exportBtn && !tutorialDataTransferRestricted) {
             exportBtn.addEventListener('click', async () => {
                 const res = await fetch('/settings/export');
                 const data = await res.json();
@@ -772,7 +828,7 @@
         restoreConfirm?.addEventListener('change', () => {
             restoreBtn.disabled = !restoreConfirm.checked || !validatedBackup;
         });
-        if (importBtn) {
+        if (importBtn && !tutorialDataTransferRestricted) {
             importBtn.addEventListener('click', async () => {
                 const f = document.getElementById('importFile').files[0];
                 if (!f) {
@@ -954,6 +1010,6 @@
             }
         });
 
-        if (automaticBackupSelect) loadAutomaticBackups();
+        if (automaticBackupSelect && !tutorialDataTransferRestricted) loadAutomaticBackups();
     </script>
 {% endblock %}

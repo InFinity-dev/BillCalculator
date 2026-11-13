@@ -7,13 +7,22 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/utilities.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/pages/invoice_print.css') }}">
+    {% if live_tutorial %}<link rel="stylesheet" href="{{ url_for('static', filename='css/tutorial_overlay.css') }}">{% endif %}
 </head>
-<body>
-<button class="print-button no-print" onclick="window.print()"> 인쇄하기</button>
+<body{% if live_tutorial %} class="tutorial-live-mode tutorial-print-mode"{% endif %}>
+<div class="print-actions no-print">
+    {% if live_tutorial %}
+        <a href="{{ url_for('view_invoice', combination_id=combination.id) }}"
+           class="print-return-button" data-tutorial-target="print-return">정산서로 돌아가기</a>
+    {% endif %}
+    <button class="print-button" data-tutorial-target="print-action"
+            onclick="window.dispatchEvent(new CustomEvent('tutorial:print-opened')); window.print()"> 인쇄하기</button>
+</div>
 
 <div class="invoice-container">
     {% for invoice in invoices %}
-        <div class="invoice {% if not loop.last %}page-break{% endif %}">
+        <div class="invoice {% if not loop.last %}page-break{% endif %}"
+             {% if loop.first %}data-tutorial-target="print-preview"{% endif %}>
             <div class="header">
                 <p>{{ combination.invoice_name }}</p>
                 <h1>공과금 청구서 · {{ invoice.unit_name_snapshot }}</h1>
@@ -164,5 +173,10 @@
         </div>
     {% endfor %}
 </div>
+{% if live_tutorial %}
+    {% include 'components/tutorial_overlay.html' %}
+    <script id="liveTutorialConfig" type="application/json">{{ live_tutorial|tojson }}</script>
+    <script src="{{ url_for('static', filename='js/tutorial_overlay.js') }}"></script>
+{% endif %}
 </body>
 </html>

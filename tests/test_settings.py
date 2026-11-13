@@ -8,14 +8,23 @@ import pytest
 
 import app as app_module
 from extensions import db
-from models import CommonBill, CommonBillDetail, Floor, InvoiceCombination, Payment, Setting, Unit
+from models import (
+    CommonBill,
+    CommonBillDetail,
+    ElectricBill,
+    Floor,
+    InvoiceCombination,
+    Payment,
+    Setting,
+    Unit,
+)
 from settings_registry import SETTING_KEYS, get_def
 
 
 def test_all_registered_settings_are_seeded(app):
     stored = {row.setting_key for row in Setting.query.all()}
     assert stored == set(SETTING_KEYS)
-    assert len(SETTING_KEYS) == 9
+    assert len(SETTING_KEYS) == 11
 
 
 def test_seed_settings_is_idempotent(app):
@@ -39,6 +48,13 @@ def test_money_setting_is_normalized(app):
     assert get_def("tv_fee").parse("3000") == 3000
 
 
+def test_calculation_policy_settings_reject_unknown_values(app):
+    with pytest.raises(ValueError):
+        app_module.set_setting("discount_tv_policy", "UNKNOWN")
+    with pytest.raises(ValueError):
+        app_module.set_setting("tv_distribution_default", "UNKNOWN")
+
+
 def test_long_text_setting_survives(app):
     long_memo = "가" * 1000
     app_module.set_setting("invoice_default_memo", long_memo)
@@ -54,6 +70,22 @@ def test_save_settings_route_only_touches_submitted_keys(app, client, csrf):
     db.session.expire_all()
     assert app_module.get_setting("tv_fee") == "4000"
     assert app_module.get_setting("water_customer_number") == "12345-67890"
+
+
+def test_tv_distribution_default_controls_calculator_initial_selection(
+    app, client, csrf
+):
+    app_module.set_setting("tv_distribution_default", "INDIVIDUAL")
+    db.session.commit()
+    html = client.get("/calculator").get_data(as_text=True)
+    assert 'value="INDIVIDUAL" selected' in html
+    assert 'value="EQUAL" selected' not in html
+
+
+def test_shared_modal_controls_are_available_on_every_page(app):
+    source = Path(app_module.app.static_folder, "js", "app.js").read_text()
+    assert "[data-open-modal]" in source
+    assert "[data-close-modal]" in source
 
 
 def _export(client):
@@ -103,6 +135,54 @@ def test_export_is_complete_versioned_backup(app, client, floor, units):
     assert len(payload["tables"]["floors"]) == 1
     assert len(payload["tables"]["units"]) == 4
     assert set(row["setting_key"] for row in payload["tables"]["settings"]) == set(SETTING_KEYS)
+
+
+def test_legacy_v1_backup_gets_new_policy_defaults(
+    app, client, csrf, floor, units, electric_bill
+):
+    payload = _export(client)
+    payload["tables"]["settings"] = [
+        row for row in payload["tables"]["settings"]
+        if row["setting_key"] not in {"discount_tv_policy", "tv_distribution_default"}
+    ]
+    for row in payload["tables"]["electric_bills"]:
+        row.pop("discount_tv_policy", None)
+
+    result = _restore(client, csrf, payload)
+    assert result["success"] is True, result
+    db.session.expire_all()
+    assert app_module.get_setting("discount_tv_policy") == "COMBINED_FLOOR_ZERO"
+    assert app_module.get_setting("tv_distribution_default") == "EQUAL"
+    assert ElectricBill.query.one().discount_tv_policy == "COMBINED_FLOOR_ZERO"
+
+
+def test_legacy_v1_backup_supports_settings_only_restore(app, client, csrf):
+    app_module.set_setting("discount_tv_policy", "TV_PROTECTED")
+    app_module.set_setting("tv_distribution_default", "INDIVIDUAL")
+    db.session.commit()
+    payload = _export(client)
+    payload["tables"]["settings"] = [
+        row for row in payload["tables"]["settings"]
+        if row["setting_key"] not in {"discount_tv_policy", "tv_distribution_default"}
+    ]
+
+    result = _restore(client, csrf, payload, "settings")
+    assert result["success"] is True, result
+    db.session.expire_all()
+    assert app_module.get_setting("discount_tv_policy") == "COMBINED_FLOOR_ZERO"
+    assert app_module.get_setting("tv_distribution_default") == "EQUAL"
+
+
+def test_backup_rejects_unknown_calculation_policy(app, client, csrf):
+    payload = _export(client)
+    next(
+        row for row in payload["tables"]["settings"]
+        if row["setting_key"] == "discount_tv_policy"
+    )["setting_value"] = "UNKNOWN"
+
+    result = _preview(client, csrf, payload)
+    assert result["success"] is False
+    assert "올바르지 않습니다" in result["message"]
 
 
 def test_preview_validates_without_changing_current_data(app, client, csrf, floor, units):

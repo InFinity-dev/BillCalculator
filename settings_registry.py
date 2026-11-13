@@ -16,19 +16,41 @@ from db_types import money_to_int
 class SettingDef:
     """설정 하나의 정의."""
 
-    __slots__ = ("key", "kind", "default", "label")
+    __slots__ = (
+        "key",
+        "kind",
+        "default",
+        "label",
+        "choices",
+        "restore_default_if_missing",
+    )
 
-    def __init__(self, key, kind, default, label):
+    def __init__(
+        self,
+        key,
+        kind,
+        default,
+        label,
+        *,
+        choices=(),
+        restore_default_if_missing=False,
+    ):
         self.key = key
         self.kind = kind          # 'money' | 'text'
         self.default = default    # 저장 형식(문자열)
         self.label = label
+        self.choices = tuple(choices)
+        # 이 설정이 도입되기 전에 만든 v1 백업에는 키가 없다. 이런 신규 키만
+        # 복원 검증 중 기본값으로 보강하고, 기존 필수 설정 누락은 계속 거절한다.
+        self.restore_default_if_missing = restore_default_if_missing
 
     def parse(self, raw):
         """저장된 문자열을 도메인 타입으로 변환한다."""
         if self.kind == "money":
             return money_to_int(raw if raw not in (None, "") else self.default, 0)
-        return raw if raw is not None else self.default
+        value = raw if raw is not None else self.default
+        self._validate_choice(value)
+        return value
 
     def as_decimal(self, raw):
         """계산 코드가 기대하는 Decimal 형태로 변환한다."""
@@ -40,7 +62,15 @@ class SettingDef:
             return self.default
         if self.kind == "money":
             return str(money_to_int(value, money_to_int(self.default, 0)))
-        return str(value)
+        normalized = str(value)
+        self._validate_choice(normalized)
+        return normalized
+
+    def _validate_choice(self, value):
+        if self.choices and value not in self.choices:
+            raise ValueError(
+                "{} 값이 올바르지 않습니다: {}".format(self.label, value)
+            )
 
 
 #: 알려진 전체 설정. 순서는 설정 화면 표시 순서와 무관하다.
@@ -49,6 +79,22 @@ SETTING_DEFS = (
     SettingDef("electric_welfare_amount", "money", "0", "전기 복지 할인 금액"),
     SettingDef("electric_voucher_amount", "money", "0", "전기 바우처 할인 금액"),
     SettingDef("water_welfare_amount", "money", "0", "수도 복지 할인 금액"),
+    SettingDef(
+        "discount_tv_policy",
+        "text",
+        "COMBINED_FLOOR_ZERO",
+        "할인 초과 시 TV 수신료 처리",
+        choices=("COMBINED_FLOOR_ZERO", "TV_PROTECTED"),
+        restore_default_if_missing=True,
+    ),
+    SettingDef(
+        "tv_distribution_default",
+        "text",
+        "EQUAL",
+        "TV 수신료 기본 분배 방식",
+        choices=("INDIVIDUAL", "EQUAL"),
+        restore_default_if_missing=True,
+    ),
     SettingDef("invoice_default_memo", "text", "", "정산서 고정 메모"),
     SettingDef(
         "invoice_footer",
