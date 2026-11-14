@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "repository": "InFinity-dev/BillCalculator",
+  "collected_at": "2026-11-14T06:28:39.019522Z",
+  "date_kst": "2026-11-14",
+  "totals": {
+    "installer_downloads": 12,
+    "installer_daily_change": 9,
+    "support_downloads": 3,
+    "support_daily_change": 2
+  },
+  "assets": [
+    {
+      "tag": "v1.0.2",
+      "release_name": "BillCalculator v1.0.2",
+      "published_at": "2026-11-13T16:46:16Z",
+      "name": "BillCalculator-1.0.2-macOS-arm64.dmg",
+      "kind": "installer",
+      "download_count": 1,
+      "size": 137289953,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.2/BillCalculator-1.0.2-macOS-arm64.dmg",
+      "previous_download_count": 0,
+      "daily_change": 1
+    },
+    {
+      "tag": "v1.0.2",
+      "release_name": "BillCalculator v1.0.2",
+      "published_at": "2026-11-13T16:46:16Z",
+      "name": "BillCalculator-1.0.2-macOS-x64.dmg",
+      "kind": "installer",
+      "download_count": 1,
+      "size": 141577895,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.2/BillCalculator-1.0.2-macOS-x64.dmg",
+      "previous_download_count": 0,
+      "daily_change": 1
+    },
+    {
+      "tag": "v1.0.2",
+      "release_name": "BillCalculator v1.0.2",
+      "published_at": "2026-11-13T16:46:16Z",
+      "name": "BillCalculator-Setup-1.0.2-Windows-x64.exe",
+      "kind": "installer",
+      "download_count": 2,
+      "size": 139036949,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.2/BillCalculator-Setup-1.0.2-Windows-x64.exe",
+      "previous_download_count": 0,
+      "daily_change": 2
+    },
+    {
+      "tag": "v1.0.2",
+      "release_name": "BillCalculator v1.0.2",
+      "published_at": "2026-11-13T16:46:16Z",
+      "name": "SHA256SUMS.txt",
+      "kind": "support",
+      "download_count": 1,
+      "size": 313,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.2/SHA256SUMS.txt",
+      "previous_download_count": 0,
+      "daily_change": 1
+    },
+    {
+      "tag": "v1.0.1",
+      "release_name": "BillCalculator v1.0.1",
+      "published_at": "2026-11-13T15:58:09Z",
+      "name": "BillCalculator-1.0.1-macOS-arm64.dmg",
+      "kind": "installer",
+      "download_count": 1,
+      "size": 137276407,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.1/BillCalculator-1.0.1-macOS-arm64.dmg",
+      "previous_download_count": 0,
+      "daily_change": 1
+    },
+    {
+      "tag": "v1.0.1",
+      "release_name": "BillCalculator v1.0.1",
+      "published_at": "2026-11-13T15:58:09Z",
+      "name": "BillCalculator-1.0.1-macOS-x64.dmg",
+      "kind": "installer",
+      "download_count": 1,
+      "size": 141577797,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.1/BillCalculator-1.0.1-macOS-x64.dmg",
+      "previous_download_count": 0,
+      "daily_change": 1
+    },
+    {
+      "tag": "v1.0.1",
+      "release_name": "BillCalculator v1.0.1",
+      "published_at": "2026-11-13T15:58:09Z",
+      "name": "BillCalculator-Setup-1.0.1-Windows-x64.exe",
+      "kind": "installer",
+      "download_count": 2,
+      "size": 139034084,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.1/BillCalculator-Setup-1.0.1-Windows-x64.exe",
+      "previous_download_count": 0,
+      "daily_change": 2
+    },
+    {
+      "tag": "v1.0.1",
+      "release_name": "BillCalculator v1.0.1",
+      "published_at": "2026-11-13T15:58:09Z",
+      "name": "SHA256SUMS.txt",
+      "kind": "support",
+      "download_count": 1,
+      "size": 313,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.1/SHA256SUMS.txt",
+      "previous_download_count": 0,
+      "daily_change": 1
+    },
+    {
+      "tag": "v1.0.0",
+      "release_name": "BillCalculator v1.0.0",
+      "published_at": "2026-11-13T06:34:31Z",
+      "name": "BillCalculator-1.0.0-macOS-arm64.dmg",
+      "kind": "installer",
+      "download_count": 1,
+      "size": 137282622,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.0/BillCalculator-1.0.0-macOS-arm64.dmg",
+      "previous_download_count": 1,
+      "daily_change": 0
+    },
+    {
+      "tag": "v1.0.0",
+      "release_name": "BillCalculator v1.0.0",
+      "published_at": "2026-11-13T06:34:31Z",
+      "name": "BillCalculator-1.0.0-macOS-x64.dmg",
+      "kind": "installer",
+      "download_count": 1,
+      "size": 141576882,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.0/BillCalculator-1.0.0-macOS-x64.dmg",
+      "previous_download_count": 1,
+      "daily_change": 0
+    },
+    {
+      "tag": "v1.0.0",
+      "release_name": "BillCalculator v1.0.0",
+      "published_at": "2026-11-13T06:34:31Z",
+      "name": "BillCalculator-Setup-1.0.0-Windows-x64.exe",
+      "kind": "installer",
+      "download_count": 2,
+      "size": 139030253,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.0/BillCalculator-Setup-1.0.0-Windows-x64.exe",
+      "previous_download_count": 1,
+      "daily_change": 1
+    },
+    {
+      "tag": "v1.0.0",
+      "release_name": "BillCalculator v1.0.0",
+      "published_at": "2026-11-13T06:34:31Z",
+      "name": "SHA256SUMS.txt",
+      "kind": "support",
+      "download_count": 1,
+      "size": 313,
+      "browser_download_url": "https://github.com/InFinity-dev/BillCalculator/releases/download/v1.0.0/SHA256SUMS.txt",
+      "previous_download_count": 1,
+      "daily_change": 0
+    }
+  ],
+  "traffic": {
+    "available": false,
+    "reason": "저장소 트래픽 API를 사용할 수 없습니다. HTTP 403"
+  }
+}

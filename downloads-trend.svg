@@ -8,22 +8,32 @@
     <text x="40" y="76" font-size="14" fill="#64748b">매일 오전 9시 17분(한국시간) 사이의 누적값 차이</text>
     <text x="40" y="104" font-size="14" font-weight="600" fill="#334155">일간 신규 다운로드</text>
     <line x1="76" y1="112.0" x2="924" y2="112.0" stroke="#e8edf5" stroke-width="1"/>
-    <text x="64" y="117.0" text-anchor="end" font-size="12" fill="#64748b">1</text>
+    <text x="64" y="117.0" text-anchor="end" font-size="12" fill="#64748b">9</text>
+    <line x1="76" y1="154.0" x2="924" y2="154.0" stroke="#e8edf5" stroke-width="1"/>
+    <text x="64" y="159.0" text-anchor="end" font-size="12" fill="#64748b">7</text>
+    <line x1="76" y1="196.0" x2="924" y2="196.0" stroke="#e8edf5" stroke-width="1"/>
+    <text x="64" y="201.0" text-anchor="end" font-size="12" fill="#64748b">4</text>
+    <line x1="76" y1="238.0" x2="924" y2="238.0" stroke="#e8edf5" stroke-width="1"/>
+    <text x="64" y="243.0" text-anchor="end" font-size="12" fill="#64748b">2</text>
     <line x1="76" y1="280.0" x2="924" y2="280.0" stroke="#e8edf5" stroke-width="1"/>
     <text x="64" y="285.0" text-anchor="end" font-size="12" fill="#64748b">0</text>
-    <circle cx="500.0" cy="280" r="3" fill="#315fba"/>
-    <text x="500.0" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-13</text>
+    <circle cx="288.0" cy="280" r="3" fill="#315fba"/>
+    <text x="288.0" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-13</text>
+    <rect x="695.0" y="112.0" width="34.0" height="168.0" rx="4" fill="#315fba"/>
+    <text x="712.0" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-14</text>
     <text x="40" y="374" font-size="14" font-weight="600" fill="#334155">누적 설치 파일 다운로드</text>
-    <text x="924" y="374" text-anchor="end" font-size="22" font-weight="700" fill="#315fba">3회</text>
+    <text x="924" y="374" text-anchor="end" font-size="22" font-weight="700" fill="#315fba">12회</text>
     <line x1="76" y1="398.0" x2="924" y2="398.0" stroke="#e8edf5" stroke-width="1"/>
-    <text x="64" y="403.0" text-anchor="end" font-size="12" fill="#64748b">3</text>
+    <text x="64" y="403.0" text-anchor="end" font-size="12" fill="#64748b">12</text>
     <line x1="76" y1="448.0" x2="924" y2="448.0" stroke="#e8edf5" stroke-width="1"/>
-    <text x="64" y="453.0" text-anchor="end" font-size="12" fill="#64748b">2</text>
+    <text x="64" y="453.0" text-anchor="end" font-size="12" fill="#64748b">8</text>
     <line x1="76" y1="498.0" x2="924" y2="498.0" stroke="#e8edf5" stroke-width="1"/>
-    <text x="64" y="503.0" text-anchor="end" font-size="12" fill="#64748b">1</text>
+    <text x="64" y="503.0" text-anchor="end" font-size="12" fill="#64748b">4</text>
     <line x1="76" y1="548.0" x2="924" y2="548.0" stroke="#e8edf5" stroke-width="1"/>
     <text x="64" y="553.0" text-anchor="end" font-size="12" fill="#64748b">0</text>
-    <circle cx="500.0" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <polyline points="288.0,510.5 712.0,398.0" fill="none" stroke="#16a085" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="288.0" cy="510.5" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="712.0" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
     <text x="40" y="590" font-size="12" fill="#64748b">첫 수집일은 과거 일간 값을 알 수 없어 기준선으로 표시합니다.</text>
   </g>
 </svg>

@@ -5,19 +5,19 @@
   <rect x="0.5" y="0.5" width="959" height="343" rx="15.5" fill="none" stroke="#dbe3ef"/>
   <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" fill="#172033">
     <text x="40" y="48" font-size="24" font-weight="700">운영체제별 누적 다운로드</text>
-    <text x="40" y="76" font-size="14" fill="#64748b">전체 버전 설치 파일 합계 · 총 3회</text>
+    <text x="40" y="76" font-size="14" fill="#64748b">전체 버전 설치 파일 합계 · 총 12회</text>
     <text x="40" y="135" font-size="14" font-weight="600">Windows x64</text>
     <rect x="210" y="118" width="560" height="24" rx="7" fill="#edf2f8"/>
     <rect x="210" y="118" width="560.0" height="24" rx="7" fill="#315fba"/>
-    <text x="900" y="135" text-anchor="end" font-size="14" font-weight="700">1회 · 33.3%</text>
+    <text x="900" y="135" text-anchor="end" font-size="14" font-weight="700">6회 · 50.0%</text>
     <text x="40" y="193" font-size="14" font-weight="600">Apple Silicon Mac</text>
     <rect x="210" y="176" width="560" height="24" rx="7" fill="#edf2f8"/>
-    <rect x="210" y="176" width="560.0" height="24" rx="7" fill="#16a085"/>
-    <text x="900" y="193" text-anchor="end" font-size="14" font-weight="700">1회 · 33.3%</text>
+    <rect x="210" y="176" width="280.0" height="24" rx="7" fill="#16a085"/>
+    <text x="900" y="193" text-anchor="end" font-size="14" font-weight="700">3회 · 25.0%</text>
     <text x="40" y="251" font-size="14" font-weight="600">Intel Mac</text>
     <rect x="210" y="234" width="560" height="24" rx="7" fill="#edf2f8"/>
-    <rect x="210" y="234" width="560.0" height="24" rx="7" fill="#8b5cf6"/>
-    <text x="900" y="251" text-anchor="end" font-size="14" font-weight="700">1회 · 33.3%</text>
+    <rect x="210" y="234" width="280.0" height="24" rx="7" fill="#8b5cf6"/>
+    <text x="900" y="251" text-anchor="end" font-size="14" font-weight="700">3회 · 25.0%</text>
     <text x="40" y="316" font-size="12" fill="#64748b">같은 사용자의 재다운로드도 각각 포함될 수 있습니다.</text>
   </g>
 </svg>
