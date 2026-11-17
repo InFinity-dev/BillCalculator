@@ -39,3 +39,15 @@ date_kst,collected_at,tag,asset_name,kind,cumulative_downloads,daily_change
 2026-11-16,2026-11-16T06:34:45.546339Z,v1.0.0,BillCalculator-1.0.0-macOS-x64.dmg,installer,1,0
 2026-11-16,2026-11-16T06:34:45.546339Z,v1.0.0,BillCalculator-Setup-1.0.0-Windows-x64.exe,installer,2,0
 2026-11-16,2026-11-16T06:34:45.546339Z,v1.0.0,SHA256SUMS.txt,support,1,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.2,BillCalculator-1.0.2-macOS-arm64.dmg,installer,1,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.2,BillCalculator-1.0.2-macOS-x64.dmg,installer,1,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.2,BillCalculator-Setup-1.0.2-Windows-x64.exe,installer,2,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.2,SHA256SUMS.txt,support,2,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.1,BillCalculator-1.0.1-macOS-arm64.dmg,installer,1,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.1,BillCalculator-1.0.1-macOS-x64.dmg,installer,1,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.1,BillCalculator-Setup-1.0.1-Windows-x64.exe,installer,2,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.1,SHA256SUMS.txt,support,1,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.0,BillCalculator-1.0.0-macOS-arm64.dmg,installer,1,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.0,BillCalculator-1.0.0-macOS-x64.dmg,installer,1,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.0,BillCalculator-Setup-1.0.0-Windows-x64.exe,installer,2,0
+2026-11-17,2026-11-17T07:57:52.980579Z,v1.0.0,SHA256SUMS.txt,support,1,0
