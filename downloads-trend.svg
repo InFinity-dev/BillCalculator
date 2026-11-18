@@ -17,16 +17,18 @@
     <text x="64" y="243.0" text-anchor="end" font-size="12" fill="#64748b">2</text>
     <line x1="76" y1="280.0" x2="924" y2="280.0" stroke="#e8edf5" stroke-width="1"/>
     <text x="64" y="285.0" text-anchor="end" font-size="12" fill="#64748b">0</text>
-    <circle cx="160.8" cy="280" r="3" fill="#315fba"/>
-    <text x="160.8" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-13</text>
-    <rect x="313.4" y="112.0" width="34.0" height="168.0" rx="4" fill="#315fba"/>
-    <text x="330.4" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-14</text>
-    <circle cx="500.0" cy="280" r="3" fill="#315fba"/>
-    <text x="500.0" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-15</text>
-    <circle cx="669.6" cy="280" r="3" fill="#315fba"/>
-    <text x="669.6" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-16</text>
-    <circle cx="839.2" cy="280" r="3" fill="#315fba"/>
-    <text x="839.2" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-17</text>
+    <circle cx="146.7" cy="280" r="3" fill="#315fba"/>
+    <text x="146.7" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-13</text>
+    <rect x="271.0" y="112.0" width="34.0" height="168.0" rx="4" fill="#315fba"/>
+    <text x="288.0" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-14</text>
+    <circle cx="429.3" cy="280" r="3" fill="#315fba"/>
+    <text x="429.3" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-15</text>
+    <circle cx="570.7" cy="280" r="3" fill="#315fba"/>
+    <text x="570.7" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-16</text>
+    <circle cx="712.0" cy="280" r="3" fill="#315fba"/>
+    <text x="712.0" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-17</text>
+    <circle cx="853.3" cy="280" r="3" fill="#315fba"/>
+    <text x="853.3" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-18</text>
     <text x="40" y="374" font-size="14" font-weight="600" fill="#334155">누적 설치 파일 다운로드</text>
     <text x="924" y="374" text-anchor="end" font-size="22" font-weight="700" fill="#315fba">12회</text>
     <line x1="76" y1="398.0" x2="924" y2="398.0" stroke="#e8edf5" stroke-width="1"/>
@@ -37,12 +39,13 @@
     <text x="64" y="503.0" text-anchor="end" font-size="12" fill="#64748b">4</text>
     <line x1="76" y1="548.0" x2="924" y2="548.0" stroke="#e8edf5" stroke-width="1"/>
     <text x="64" y="553.0" text-anchor="end" font-size="12" fill="#64748b">0</text>
-    <polyline points="160.8,510.5 330.4,398.0 500.0,398.0 669.6,398.0 839.2,398.0" fill="none" stroke="#16a085" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="160.8" cy="510.5" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="330.4" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="500.0" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="669.6" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="839.2" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <polyline points="146.7,510.5 288.0,398.0 429.3,398.0 570.7,398.0 712.0,398.0 853.3,398.0" fill="none" stroke="#16a085" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="146.7" cy="510.5" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="288.0" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="429.3" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="570.7" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="712.0" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="853.3" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
     <text x="40" y="590" font-size="12" fill="#64748b">첫 수집일은 과거 일간 값을 알 수 없어 기준선으로 표시합니다.</text>
   </g>
 </svg>
