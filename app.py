@@ -2342,10 +2342,12 @@ def _payment_warnings(invoice, payment_date, payment_amount, exclude_payment_id=
     warnings = []
     if payment_date > date.today():
         warnings.append("입금일이 오늘보다 미래입니다.")
+    projected_balance = remaining - payment_amount
     if payment_amount > max(remaining, 0):
         warnings.append(
-            "입금액이 현재 미납액 {:,}원보다 {:,}원 많습니다.".format(
-                max(remaining, 0), int(payment_amount - max(remaining, 0))
+            "입금 후 초과납부 잔액이 {:,}원입니다. 초과분은 세대 누적 잔액에 반영되어 "
+            "이후 정산에서 차감할 수 있습니다.".format(
+                abs(int(projected_balance))
             )
         )
     return warnings, remaining

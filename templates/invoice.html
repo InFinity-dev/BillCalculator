@@ -561,7 +561,7 @@
                                 <div class="balance-info-container">
                                     <span class="balance-badge unpaid">미납 ${balanceAmount.toLocaleString()}원</span>
                                     <button type="button" class="btn btn-primary balance-apply-btn"
-                                            onclick="applyBalance(${unit.id}, ${balance.balance})"
+                                            onclick="applyBalance(${unit.id}, ${balance.balance}, this)"
                                             data-balance-value="${balance.balance}">
                                         미납금 정산서에 포함
                                     </button>
@@ -572,7 +572,7 @@
                                 <div class="balance-info-container">
                                     <span class="balance-badge overpaid">초과 ${balanceAmount.toLocaleString()}원</span>
                                     <button type="button" class="btn btn-success balance-apply-btn"
-                                            onclick="applyBalance(${unit.id}, ${balance.balance})"
+                                            onclick="applyBalance(${unit.id}, ${balance.balance}, this)"
                                             data-balance-value="${balance.balance}">
                                         환급금 정산서에 포함
                                     </button>
@@ -682,7 +682,9 @@
         }
 
         // 잔액 자동 적용 함수
-        function applyBalance(unitId, balance) {
+        function applyBalance(unitId, balance, button) {
+            // 호출한 버튼을 명시적으로 받아 브라우저별 전역 event 동작에 의존하지 않는다.
+            if (!button) return;
             const container = document.getElementById(`charges-${unitId}`);
 
             // 이미 이월 항목이 있는지 data 속성으로 확인
@@ -718,8 +720,6 @@
 
             container.appendChild(row);
 
-            // 버튼 비활성화 및 속성 저장
-            const button = event.target;
             button.disabled = true;
             button.textContent = '포함됨';
             button.classList.remove('btn-primary', 'btn-success');

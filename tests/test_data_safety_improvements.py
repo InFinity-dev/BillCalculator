@@ -199,7 +199,10 @@ def test_future_overpayment_requires_second_confirmation(app, client, csrf, unit
     assert first["success"] is False
     assert first["requires_confirmation"] is True
     assert len(first["warnings"]) == 2
+    assert any("초과납부 잔액" in warning and "이후 정산에서 차감" in warning
+               for warning in first["warnings"])
     assert Payment.query.count() == 0
     payload["acknowledge_warnings"] = True
     assert client.post("/payments/add", json=payload).get_json()["success"] is True
     assert Payment.query.count() == 1
+    assert client.get("/payments/balance/{}".format(unit.id)).get_json()["balance"] < 0

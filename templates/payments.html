@@ -145,7 +145,7 @@
                     <div class="payment-context-title" id="paymentContextTitle">대상 정산서</div>
                     <div><span>고지액</span><strong id="paymentContextBilled">0원</strong></div>
                     <div><span>기입금액</span><strong id="paymentContextPaid">0원</strong></div>
-                    <div><span>현재 미납액</span><strong id="paymentContextBalance">0원</strong></div>
+                    <div><span>현재 잔액</span><strong id="paymentContextBalance">0원</strong></div>
                 </div>
 
                 <div class="u-mb-20px">
@@ -156,9 +156,11 @@
                 <div class="u-mb-20px">
                     <label for="paymentAmount" class="u-display-block u-mb-8px u-weight-600">입금액 (원)</label>
                     <div class="payment-amount-row">
-                        <input class="u-width-100 u-p-10px u-border-1px-solid-border u-rounded-6px u-text-14px" type="number" id="paymentAmount" required min="0">
+                        <input class="u-width-100 u-p-10px u-border-1px-solid-border u-rounded-6px u-text-14px" type="number" id="paymentAmount" required min="0" step="1" inputmode="numeric" aria-describedby="paymentAmountHelp paymentAmountPreview">
                         <button class="btn btn-secondary" type="button" id="fillOutstanding">미납액 전액 입력</button>
                     </div>
+                    <p class="form-help" id="paymentAmountHelp">미납액보다 많이 입금한 금액도 등록할 수 있습니다. 초과분은 세대의 누적 잔액에 반영되어 이후 정산에서 차감할 수 있습니다.</p>
+                    <p class="payment-amount-preview" id="paymentAmountPreview" hidden aria-live="polite"></p>
                 </div>
 
                 <div class="u-mb-20px">
@@ -438,12 +440,42 @@
             document.getElementById('paymentContextTitle').textContent = `${currentFloorName} ${currentUnitName} · ${history.invoice_name}`;
             document.getElementById('paymentContextBilled').textContent = `${Number(history.billed_amount || 0).toLocaleString()}원`;
             document.getElementById('paymentContextPaid').textContent = `${otherPaid.toLocaleString()}원`;
-            document.getElementById('paymentContextBalance').textContent = `${modalOutstanding.toLocaleString()}원`;
+            document.getElementById('paymentContextBalance').textContent = modalOutstanding > 0
+                ? `미납 ${modalOutstanding.toLocaleString()}원`
+                : modalOutstanding < 0
+                    ? `초과납부 ${Math.abs(modalOutstanding).toLocaleString()}원`
+                    : '완납';
             document.getElementById('fillOutstanding').disabled = modalOutstanding <= 0;
             document.getElementById('paymentWarning').hidden = true;
             document.getElementById('paymentWarning').textContent = '';
             document.getElementById('paymentSubmit').textContent = '저장';
             paymentWarningsAcknowledged = false;
+            updatePaymentAmountPreview();
+        }
+
+        function updatePaymentAmountPreview() {
+            const input = document.getElementById('paymentAmount');
+            const preview = document.getElementById('paymentAmountPreview');
+            const amount = Number(input.value);
+            if (input.value === '' || !Number.isFinite(amount) || amount < 0) {
+                preview.hidden = true;
+                preview.textContent = '';
+                preview.className = 'payment-amount-preview';
+                return;
+            }
+
+            const projectedBalance = modalOutstanding - amount;
+            preview.hidden = false;
+            if (projectedBalance > 0) {
+                preview.textContent = `저장 후 이 정산서의 미납액은 ${projectedBalance.toLocaleString()}원입니다.`;
+                preview.className = 'payment-amount-preview is-unpaid';
+            } else if (projectedBalance < 0) {
+                preview.textContent = `저장 후 ${Math.abs(projectedBalance).toLocaleString()}원이 초과납부로 반영됩니다. 이후 정산에서 차감할 수 있습니다.`;
+                preview.className = 'payment-amount-preview is-credit';
+            } else {
+                preview.textContent = '저장 후 이 정산서는 완납 상태가 됩니다.';
+                preview.className = 'payment-amount-preview is-paid';
+            }
         }
 
         function showAddPaymentModal(combinationId) {
@@ -481,12 +513,14 @@
             document.getElementById('paymentAmount').value = Math.max(0, modalOutstanding);
             paymentWarningsAcknowledged = false;
             document.getElementById('paymentWarning').hidden = true;
+            updatePaymentAmountPreview();
         });
         ['paymentDate', 'paymentAmount'].forEach(identifier => {
             document.getElementById(identifier).addEventListener('input', () => {
                 paymentWarningsAcknowledged = false;
                 document.getElementById('paymentSubmit').textContent = '저장';
                 document.getElementById('paymentWarning').hidden = true;
+                if (identifier === 'paymentAmount') updatePaymentAmountPreview();
             });
         });
 
@@ -553,7 +587,10 @@
                     warning.innerHTML = `<strong>다시 확인해주세요.</strong><br>${(result.warnings || []).map(escapeHtml).join('<br>')}`;
                     warning.hidden = false;
                     paymentWarningsAcknowledged = true;
-                    document.getElementById('paymentSubmit').textContent = '경고 확인 후 저장';
+                    const hasOverpayment = (result.warnings || []).some(item => item.includes('초과납부'));
+                    document.getElementById('paymentSubmit').textContent = hasOverpayment
+                        ? '초과 입금 확인 후 저장'
+                        : '경고 확인 후 저장';
                     return;
                 }
                 if (result.success) {

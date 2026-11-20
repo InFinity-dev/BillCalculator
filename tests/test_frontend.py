@@ -56,3 +56,15 @@ def test_populated_pages_and_invoice_variants(app, client, csrf):
         routes.extend(['/invoice/view/{}'.format(invoice.id), '/invoice/print/{}'.format(invoice.id)])
     for route in routes:
         assert_page(client, route)
+
+
+def test_invoice_balance_action_uses_explicit_button_and_payment_allows_credit(client):
+    invoice_html = client.get('/invoice').get_data(as_text=True)
+    assert 'onclick="applyBalance(${unit.id}, ${balance.balance}, this)"' in invoice_html
+    assert 'function applyBalance(unitId, balance, button)' in invoice_html
+    assert 'const button = event.target' not in invoice_html
+
+    payment_html = client.get('/payments').get_data(as_text=True)
+    assert 'id="paymentAmount"' in payment_html
+    assert '미납액보다 많이 입금한 금액도 등록할 수 있습니다.' in payment_html
+    assert '이후 정산에서 차감할 수 있습니다.' in payment_html

@@ -24,6 +24,10 @@
 .payment-context span { color: var(--text-muted); font-size: 13px; }
 .payment-context strong { font-size: 17px; }
 .payment-amount-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.payment-amount-preview { margin: 8px 0 0; padding: 10px 12px; border-radius: 6px; font-size: 13px; line-height: 1.5; }
+.payment-amount-preview.is-unpaid { background: var(--warning-light); color: var(--warning-dark); }
+.payment-amount-preview.is-credit { background: var(--info-light); color: var(--primary-dark); }
+.payment-amount-preview.is-paid { background: var(--success-light); color: var(--success-dark); }
 @media (max-width: 1100px) { .payments-layout { grid-template-columns: minmax(240px, .9fr) minmax(0, 1.4fr); } }
 @media (max-width: 768px) {
     .combination-payment-heading { flex-direction: column; }
