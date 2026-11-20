@@ -2331,14 +2331,11 @@ def payment_balance(unit_id):
 
 
 def _payment_warnings(invoice, payment_date, payment_amount, exclude_payment_id=None):
-    paid_query = db.session.query(db.func.coalesce(db.func.sum(Payment.payment_amount), 0)).filter(
-        Payment.combination_id == invoice.combination_id,
-        Payment.unit_id == invoice.unit_id,
+    # 한 번의 입금으로 이전 정산서의 미납까지 납부할 수 있으므로 선택 정산서가
+    # 아니라 세대 전체 누적 잔액을 기준으로 초과 입금 여부를 판정한다.
+    remaining = balance_service.unit_outstanding_before_payment(
+        invoice.unit_id, exclude_payment_id=exclude_payment_id
     )
-    if exclude_payment_id is not None:
-        paid_query = paid_query.filter(Payment.id != exclude_payment_id)
-    already_paid = int(paid_query.scalar() or 0)
-    remaining = balance_service.invoice_billed_amount(invoice) - already_paid
     warnings = []
     if payment_date > date.today():
         warnings.append("입금일이 오늘보다 미래입니다.")

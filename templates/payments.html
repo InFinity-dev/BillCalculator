@@ -143,9 +143,9 @@
 
                 <div class="payment-context" aria-label="입금 대상 확인">
                     <div class="payment-context-title" id="paymentContextTitle">대상 정산서</div>
-                    <div><span>고지액</span><strong id="paymentContextBilled">0원</strong></div>
-                    <div><span>기입금액</span><strong id="paymentContextPaid">0원</strong></div>
-                    <div><span>현재 잔액</span><strong id="paymentContextBalance">0원</strong></div>
+                    <div><span>정산서 납부 안내액</span><strong id="paymentContextBilled">0원</strong></div>
+                    <div><span>이 정산서 기입금액</span><strong id="paymentContextPaid">0원</strong></div>
+                    <div><span>세대 누적 잔액</span><strong id="paymentContextBalance">0원</strong></div>
                 </div>
 
                 <div class="u-mb-20px">
@@ -157,9 +157,9 @@
                     <label for="paymentAmount" class="u-display-block u-mb-8px u-weight-600">입금액 (원)</label>
                     <div class="payment-amount-row">
                         <input class="u-width-100 u-p-10px u-border-1px-solid-border u-rounded-6px u-text-14px" type="number" id="paymentAmount" required min="0" step="1" inputmode="numeric" aria-describedby="paymentAmountHelp paymentAmountPreview">
-                        <button class="btn btn-secondary" type="button" id="fillOutstanding">미납액 전액 입력</button>
+                        <button class="btn btn-secondary" type="button" id="fillOutstanding">세대 미납액 전액 입력</button>
                     </div>
-                    <p class="form-help" id="paymentAmountHelp">미납액보다 많이 입금한 금액도 등록할 수 있습니다. 초과분은 세대의 누적 잔액에 반영되어 이후 정산에서 차감할 수 있습니다.</p>
+                    <p class="form-help" id="paymentAmountHelp">선택한 정산서뿐 아니라 이전 정산서의 미납까지 한 번에 입금할 수 있습니다. 세대 누적 미납액을 초과한 금액은 이후 정산에서 차감할 수 있습니다.</p>
                     <p class="payment-amount-preview" id="paymentAmountPreview" hidden aria-live="polite"></p>
                 </div>
 
@@ -224,6 +224,7 @@
         let currentUnitName = '';
         let currentFloorName = '';
         let currentHistory = [];
+        let currentUnitBalance = 0;
         let modalOutstanding = 0;
         let paymentWarningsAcknowledged = false;
         const selectedCombinationId = {{ selected_combination.id if selected_combination else 'null' }};
@@ -322,6 +323,7 @@
                 }
 
                 currentHistory = data.history;
+                currentUnitBalance = Number(data.summary.balance || 0);
 
                 // 제목 업데이트
                 document.getElementById('historyTitle').textContent = `${floorName} ${unitName} 정산 이력`;
@@ -436,9 +438,11 @@
         // 입금 등록 모달 열기
         function setPaymentContext(history, editingAmount = 0) {
             const otherPaid = Math.max(0, Number(history.paid_amount || 0) - Number(editingAmount || 0));
-            modalOutstanding = Number(history.billed_amount || 0) - otherPaid;
+            // 입금 한 번으로 이전 정산서의 미납도 함께 처리할 수 있도록 세대
+            // 누적 잔액을 사용한다. 수정 시에는 교체할 기존 입금액을 되돌린다.
+            modalOutstanding = currentUnitBalance + Number(editingAmount || 0);
             document.getElementById('paymentContextTitle').textContent = `${currentFloorName} ${currentUnitName} · ${history.invoice_name}`;
-            document.getElementById('paymentContextBilled').textContent = `${Number(history.billed_amount || 0).toLocaleString()}원`;
+            document.getElementById('paymentContextBilled').textContent = `${Number(history.payable_amount ?? history.billed_amount ?? 0).toLocaleString()}원`;
             document.getElementById('paymentContextPaid').textContent = `${otherPaid.toLocaleString()}원`;
             document.getElementById('paymentContextBalance').textContent = modalOutstanding > 0
                 ? `미납 ${modalOutstanding.toLocaleString()}원`
@@ -467,7 +471,7 @@
             const projectedBalance = modalOutstanding - amount;
             preview.hidden = false;
             if (projectedBalance > 0) {
-                preview.textContent = `저장 후 이 정산서의 미납액은 ${projectedBalance.toLocaleString()}원입니다.`;
+                preview.textContent = `저장 후 세대 누적 미납액은 ${projectedBalance.toLocaleString()}원입니다.`;
                 preview.className = 'payment-amount-preview is-unpaid';
             } else if (projectedBalance < 0) {
                 preview.textContent = `저장 후 ${Math.abs(projectedBalance).toLocaleString()}원이 초과납부로 반영됩니다. 이후 정산에서 차감할 수 있습니다.`;

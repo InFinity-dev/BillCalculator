@@ -66,5 +66,7 @@ def test_invoice_balance_action_uses_explicit_button_and_payment_allows_credit(c
 
     payment_html = client.get('/payments').get_data(as_text=True)
     assert 'id="paymentAmount"' in payment_html
-    assert '미납액보다 많이 입금한 금액도 등록할 수 있습니다.' in payment_html
-    assert '이후 정산에서 차감할 수 있습니다.' in payment_html
+    assert '세대 미납액 전액 입력' in payment_html
+    assert '이전 정산서의 미납까지 한 번에 입금할 수 있습니다.' in payment_html
+    assert 'modalOutstanding = currentUnitBalance + Number(editingAmount || 0)' in payment_html
+    assert '세대 누적 미납액을 초과한 금액은 이후 정산에서 차감할 수 있습니다.' in payment_html

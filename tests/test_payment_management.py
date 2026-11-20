@@ -7,7 +7,7 @@ import pytest
 
 import balance
 from extensions import db
-from models import FinalInvoice, InvoiceCombination, Payment
+from models import FinalInvoice, FinalInvoiceCharge, InvoiceCombination, Payment
 
 
 class DeleteButtonParser(HTMLParser):
@@ -124,3 +124,57 @@ def test_payment_delete_requires_csrf_and_post(app, client, units, combination):
     assert client.get('/payments/delete/{}'.format(identifier)).status_code == 405
     assert client.post('/payments/delete/{}'.format(identifier), json={}).get_json()['success'] is False
     assert db.session.get(Payment, identifier) is not None
+
+
+def test_full_unit_outstanding_can_be_paid_from_latest_invoice(
+    app, client, csrf, units, combination
+):
+    """이월 포함 정산서 금액은 선택 정산서 신규 요금보다 커도 초과 입금이 아니다."""
+    unit = units[0]
+    latest = InvoiceCombination(invoice_name="2025년 4월 정산", memo="이월 포함")
+    db.session.add(latest)
+    db.session.flush()
+    invoice = FinalInvoice(
+        combination_id=latest.id,
+        unit_id=unit.id,
+        electric_amount=8000,
+        water_amount=0,
+        common_amount=0,
+        total_amount=25000,
+        unit_name_snapshot=unit.unit_name,
+        floor_number_snapshot=unit.floor.floor_number,
+        floor_name_snapshot=unit.floor.name or "",
+        unit_profile_memo_snapshot=unit.memo or "",
+        snapshot_source="test_fixture",
+    )
+    db.session.add(invoice)
+    db.session.flush()
+    db.session.add(FinalInvoiceCharge(
+        final_invoice_id=invoice.id,
+        description="[이월] 전월 미납금",
+        amount=17000,
+        is_carryover=True,
+    ))
+    db.session.commit()
+
+    history = client.get('/payments/unit_history/{}'.format(unit.id)).get_json()
+    latest_history = next(
+        item for item in history['history'] if item['combination_id'] == latest.id
+    )
+    assert latest_history['billed_amount'] == 8000
+    assert latest_history['payable_amount'] == 25000
+    assert history['summary']['balance'] == 25000
+
+    result = client.post('/payments/add', json={
+        '_csrf_token': csrf,
+        'combination_id': latest.id,
+        'unit_id': unit.id,
+        'payment_date': date.today().isoformat(),
+        'payment_amount': 25000,
+        'payment_method': '계좌이체',
+        'memo': '누적 미납 일괄 납부',
+    }).get_json()
+
+    assert result['success'] is True
+    assert result.get('requires_confirmation') is not True
+    assert balance.unit_balance(unit.id)['balance'] == 0

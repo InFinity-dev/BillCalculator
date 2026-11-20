@@ -114,6 +114,23 @@ def unit_balance(unit_id):
     }
 
 
+def unit_outstanding_before_payment(unit_id, exclude_payment_id=None):
+    """입금 신규 등록·수정 직전의 세대 누적 잔액을 반환한다.
+
+    입금 수정 시에는 기존 금액이 이미 누적 입금액에 포함되어 있으므로, 교체할
+    입금 한 건만 다시 더해 새 입력액과 비교할 기준 잔액을 복원한다.
+    """
+    outstanding = unit_balance(unit_id)["balance"]
+    if exclude_payment_id is None:
+        return outstanding
+    excluded_amount = (
+        db.session.query(Payment.payment_amount)
+        .filter(Payment.id == exclude_payment_id, Payment.unit_id == unit_id)
+        .scalar()
+    )
+    return outstanding + int(excluded_amount or 0)
+
+
 def all_unit_balances(units=None):
     """여러 세대의 잔액을 한 번에 계산한다.
 
@@ -185,6 +202,9 @@ def unit_history(unit_id):
                 "combination_id": combination.id,
                 "invoice_name": combination.invoice_name,
                 "created_at": combination.created_at.strftime("%Y-%m-%d"),
+                # 사용자가 받은 정산서의 납부 안내액. 이월 부과·환급을 포함한다.
+                "payable_amount": int(invoice.total_amount) if invoice else 0,
+                # 누적 잔액 계산용 신규 청구액. 이월은 중복계상을 막기 위해 제외한다.
                 "billed_amount": billed,
                 "paid_amount": int(total_paid),
                 "balance": billed - int(total_paid),
