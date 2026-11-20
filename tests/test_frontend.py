@@ -66,7 +66,11 @@ def test_invoice_balance_action_uses_explicit_button_and_payment_allows_credit(c
 
     payment_html = client.get('/payments').get_data(as_text=True)
     assert 'id="paymentAmount"' in payment_html
-    assert '세대 미납액 전액 입력' in payment_html
-    assert '이전 정산서의 미납까지 한 번에 입금할 수 있습니다.' in payment_html
-    assert 'modalOutstanding = currentUnitBalance + Number(editingAmount || 0)' in payment_html
-    assert '세대 누적 미납액을 초과한 금액은 이후 정산에서 차감할 수 있습니다.' in payment_html
+    assert '이번 정산서 잔액 입력' in payment_html
+    assert '정산서 금액' in payment_html
+    assert '이월 제외 신규 요금' in payment_html
+    assert '전액 입력은 이번 정산서의 남은 금액만 채웁니다.' in payment_html
+    assert 'modalOutstanding = payableAmount - otherPaid' in payment_html
+    assert 'modalUnitOutstanding = currentUnitBalance + Number(editingAmount || 0)' in payment_html
+    assert '이번 정산서 완납' in payment_html
+    assert '세대 누적 완납' in payment_html

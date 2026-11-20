@@ -131,6 +131,18 @@ def unit_outstanding_before_payment(unit_id, exclude_payment_id=None):
     return outstanding + int(excluded_amount or 0)
 
 
+def invoice_outstanding_before_payment(invoice, exclude_payment_id=None):
+    """선택한 정산서의 이월 포함 납부 잔액을 반환한다."""
+    paid_query = db.session.query(func.coalesce(func.sum(Payment.payment_amount), 0)).filter(
+        Payment.combination_id == invoice.combination_id,
+        Payment.unit_id == invoice.unit_id,
+    )
+    if exclude_payment_id is not None:
+        paid_query = paid_query.filter(Payment.id != exclude_payment_id)
+    already_paid = int(paid_query.scalar() or 0)
+    return int(invoice.total_amount) - already_paid
+
+
 def all_unit_balances(units=None):
     """여러 세대의 잔액을 한 번에 계산한다.
 
@@ -170,7 +182,10 @@ def all_unit_balances(units=None):
 
 
 def unit_history(unit_id):
-    """세대의 정산별 고지/납부 이력.
+    """세대의 정산별 납부 안내액·입금·잔액 이력.
+
+    세대 누적 잔액은 이월을 제외하지만, 개별 정산서 잔액은 사용자가 실제로 받은
+    이월 포함 ``total_amount`` 에서 해당 정산서 입금액을 뺀 값이다.
 
     Returns
     -------
@@ -196,6 +211,7 @@ def unit_history(unit_id):
         payments = payments_by_combination.get(combination.id, [])
         total_paid = sum(p.payment_amount for p in payments)
         billed = int(_billed_for_invoice(invoice)) if invoice else 0
+        payable = int(invoice.total_amount) if invoice else 0
 
         history.append(
             {
@@ -203,13 +219,13 @@ def unit_history(unit_id):
                 "invoice_name": combination.invoice_name,
                 "created_at": combination.created_at.strftime("%Y-%m-%d"),
                 # 사용자가 받은 정산서의 납부 안내액. 이월 부과·환급을 포함한다.
-                "payable_amount": int(invoice.total_amount) if invoice else 0,
+                "payable_amount": payable,
                 # 누적 잔액 계산용 신규 청구액. 이월은 중복계상을 막기 위해 제외한다.
                 "billed_amount": billed,
                 "paid_amount": int(total_paid),
-                "balance": billed - int(total_paid),
+                "balance": payable - int(total_paid),
                 "has_invoice": invoice is not None,
-                "status": payment_status(billed, total_paid, has_invoice=invoice is not None),
+                "status": payment_status(payable, total_paid, has_invoice=invoice is not None),
                 "payments": [
                     {
                         "id": p.id,

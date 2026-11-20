@@ -2288,7 +2288,7 @@ def payments():
 
 @app.route("/payments/unit_history/<int:unit_id>")
 def payment_unit_history(unit_id):
-    """세대의 전체 정산 및 납부 이력 (이월 항목 제외 계산)."""
+    """세대 누적 잔액과 이월 포함 정산서별 납부 이력을 반환한다."""
     try:
         unit = db.session.get(Unit, unit_id)
         if unit is None:
@@ -2331,20 +2331,30 @@ def payment_balance(unit_id):
 
 
 def _payment_warnings(invoice, payment_date, payment_amount, exclude_payment_id=None):
-    # 한 번의 입금으로 이전 정산서의 미납까지 납부할 수 있으므로 선택 정산서가
-    # 아니라 세대 전체 누적 잔액을 기준으로 초과 입금 여부를 판정한다.
-    remaining = balance_service.unit_outstanding_before_payment(
+    # 이번 정산서 완납과 세대 전체 누적 잔액을 구분한다. 정산서 잔액은 이월을
+    # 포함한 실제 납부 안내액을 사용하고, 실제 초과납부 여부는 세대 누적 잔액으로 본다.
+    remaining = balance_service.invoice_outstanding_before_payment(
+        invoice, exclude_payment_id=exclude_payment_id
+    )
+    unit_remaining = balance_service.unit_outstanding_before_payment(
         invoice.unit_id, exclude_payment_id=exclude_payment_id
     )
     warnings = []
     if payment_date > date.today():
         warnings.append("입금일이 오늘보다 미래입니다.")
-    projected_balance = remaining - payment_amount
-    if payment_amount > max(remaining, 0):
+    projected_unit_balance = unit_remaining - payment_amount
+    if payment_amount > max(unit_remaining, 0):
         warnings.append(
-            "입금 후 초과납부 잔액이 {:,}원입니다. 초과분은 세대 누적 잔액에 반영되어 "
-            "이후 정산에서 차감할 수 있습니다.".format(
-                abs(int(projected_balance))
+            "입금 후 세대 초과납부 잔액이 {:,}원입니다. 초과분은 이후 정산에서 "
+            "차감할 수 있습니다.".format(
+                abs(int(projected_unit_balance))
+            )
+        )
+    elif payment_amount > max(remaining, 0):
+        warnings.append(
+            "입금액이 이번 정산서 잔액보다 {:,}원 많습니다. 추가 금액은 이 세대의 "
+            "다른 정산서 미납에도 반영됩니다.".format(
+                int(payment_amount - max(remaining, 0))
             )
         )
     return warnings, remaining

@@ -178,3 +178,61 @@ def test_full_unit_outstanding_can_be_paid_from_latest_invoice(
     assert result['success'] is True
     assert result.get('requires_confirmation') is not True
     assert balance.unit_balance(unit.id)['balance'] == 0
+    history = client.get('/payments/unit_history/{}'.format(unit.id)).get_json()
+    latest_history = next(
+        item for item in history['history'] if item['combination_id'] == latest.id
+    )
+    assert latest_history['balance'] == 0
+    assert latest_history['status'] == 'paid'
+
+
+def test_current_invoice_full_payment_does_not_include_older_outstanding(
+    app, client, csrf, units, combination
+):
+    """이번 정산서 완납 입력은 이월되지 않은 과거 미납까지 자동 합산하지 않는다."""
+    unit = units[0]
+    current = InvoiceCombination(invoice_name="2025년 4월 정산", memo="신규 요금만")
+    db.session.add(current)
+    db.session.flush()
+    db.session.add(FinalInvoice(
+        combination_id=current.id,
+        unit_id=unit.id,
+        electric_amount=8000,
+        water_amount=0,
+        common_amount=0,
+        total_amount=8000,
+        unit_name_snapshot=unit.unit_name,
+        floor_number_snapshot=unit.floor.floor_number,
+        floor_name_snapshot=unit.floor.name or "",
+        unit_profile_memo_snapshot=unit.memo or "",
+        snapshot_source="test_fixture",
+    ))
+    db.session.commit()
+
+    before = client.get('/payments/unit_history/{}'.format(unit.id)).get_json()
+    current_before = next(
+        item for item in before['history'] if item['combination_id'] == current.id
+    )
+    assert current_before['payable_amount'] == 8000
+    assert before['summary']['balance'] == 25000
+
+    result = client.post('/payments/add', json={
+        '_csrf_token': csrf,
+        'combination_id': current.id,
+        'unit_id': unit.id,
+        'payment_date': date.today().isoformat(),
+        'payment_amount': 8000,
+        'payment_method': '계좌이체',
+        'memo': '이번 달 고지액 완납',
+    }).get_json()
+
+    assert result['success'] is True
+    assert result.get('requires_confirmation') is not True
+    after = client.get('/payments/unit_history/{}'.format(unit.id)).get_json()
+    current_after = next(
+        item for item in after['history'] if item['combination_id'] == current.id
+    )
+    assert current_after['paid_amount'] == 8000
+    assert current_after['balance'] == 0
+    assert current_after['status'] == 'paid'
+    assert after['summary']['balance'] == 17000
