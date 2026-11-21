@@ -2,10 +2,10 @@
 
 > GitHub Actions가 매일 자동 생성하는 공개 집계 데이터입니다. 개인을 식별하는 정보는 수집하지 않습니다.
 
-- 마지막 수집: `2026-11-20T07:20:29.712075Z`
-- 한국 기준일: `2026-11-20`
-- 설치 파일 누적 다운로드: **12회**
-- 전일 대비: **+0회**
+- 마지막 수집: `2026-11-21T07:13:49.090345Z`
+- 한국 기준일: `2026-11-21`
+- 설치 파일 누적 다운로드: **25회**
+- 전일 대비: **+13회**
 
 ## 다운로드 추이
 
@@ -17,6 +17,15 @@
 
 | 버전 | 파일 | 누적 | 전일 대비 |
 |---|---|---:|---:|
+| `v1.0.5` | `BillCalculator-1.0.5-macOS-arm64.dmg` | 1 | +1 |
+| `v1.0.5` | `BillCalculator-1.0.5-macOS-x64.dmg` | 1 | +1 |
+| `v1.0.5` | `BillCalculator-Setup-1.0.5-Windows-x64.exe` | 2 | +2 |
+| `v1.0.4` | `BillCalculator-1.0.4-macOS-arm64.dmg` | 1 | +1 |
+| `v1.0.4` | `BillCalculator-1.0.4-macOS-x64.dmg` | 1 | +1 |
+| `v1.0.4` | `BillCalculator-Setup-1.0.4-Windows-x64.exe` | 2 | +2 |
+| `v1.0.3` | `BillCalculator-1.0.3-macOS-arm64.dmg` | 1 | +1 |
+| `v1.0.3` | `BillCalculator-1.0.3-macOS-x64.dmg` | 1 | +1 |
+| `v1.0.3` | `BillCalculator-Setup-1.0.3-Windows-x64.exe` | 3 | +3 |
 | `v1.0.2` | `BillCalculator-1.0.2-macOS-arm64.dmg` | 1 | +0 |
 | `v1.0.2` | `BillCalculator-1.0.2-macOS-x64.dmg` | 1 | +0 |
 | `v1.0.2` | `BillCalculator-Setup-1.0.2-Windows-x64.exe` | 2 | +0 |
