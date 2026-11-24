@@ -17,23 +17,25 @@
     <text x="64" y="243.0" text-anchor="end" font-size="12" fill="#64748b">3</text>
     <line x1="76" y1="280.0" x2="924" y2="280.0" stroke="#e8edf5" stroke-width="1"/>
     <text x="64" y="285.0" text-anchor="end" font-size="12" fill="#64748b">0</text>
-    <circle cx="114.5" cy="280" r="3" fill="#315fba"/>
-    <text x="114.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-13</text>
-    <rect x="174.6" y="163.7" width="34.0" height="116.3" rx="4" fill="#315fba"/>
-    <circle cx="268.7" cy="280" r="3" fill="#315fba"/>
-    <text x="268.7" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-15</text>
-    <circle cx="345.8" cy="280" r="3" fill="#315fba"/>
-    <circle cx="422.9" cy="280" r="3" fill="#315fba"/>
-    <text x="422.9" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-17</text>
-    <circle cx="500.0" cy="280" r="3" fill="#315fba"/>
-    <circle cx="577.1" cy="280" r="3" fill="#315fba"/>
-    <text x="577.1" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-19</text>
-    <circle cx="654.2" cy="280" r="3" fill="#315fba"/>
-    <rect x="714.3" y="112.0" width="34.0" height="168.0" rx="4" fill="#315fba"/>
-    <text x="731.3" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-21</text>
-    <circle cx="808.4" cy="280" r="3" fill="#315fba"/>
-    <circle cx="885.5" cy="280" r="3" fill="#315fba"/>
-    <text x="885.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-23</text>
+    <circle cx="111.3" cy="280" r="3" fill="#315fba"/>
+    <text x="111.3" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-13</text>
+    <rect x="165.0" y="163.7" width="34.0" height="116.3" rx="4" fill="#315fba"/>
+    <circle cx="252.7" cy="280" r="3" fill="#315fba"/>
+    <text x="252.7" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-15</text>
+    <circle cx="323.3" cy="280" r="3" fill="#315fba"/>
+    <circle cx="394.0" cy="280" r="3" fill="#315fba"/>
+    <text x="394.0" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-17</text>
+    <circle cx="464.7" cy="280" r="3" fill="#315fba"/>
+    <circle cx="535.3" cy="280" r="3" fill="#315fba"/>
+    <text x="535.3" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-19</text>
+    <circle cx="606.0" cy="280" r="3" fill="#315fba"/>
+    <rect x="659.7" y="112.0" width="34.0" height="168.0" rx="4" fill="#315fba"/>
+    <text x="676.7" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-21</text>
+    <circle cx="747.3" cy="280" r="3" fill="#315fba"/>
+    <circle cx="818.0" cy="280" r="3" fill="#315fba"/>
+    <text x="818.0" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-23</text>
+    <circle cx="888.7" cy="280" r="3" fill="#315fba"/>
+    <text x="888.7" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-24</text>
     <text x="40" y="374" font-size="14" font-weight="600" fill="#334155">누적 설치 파일 다운로드</text>
     <text x="924" y="374" text-anchor="end" font-size="22" font-weight="700" fill="#315fba">25회</text>
     <line x1="76" y1="398.0" x2="924" y2="398.0" stroke="#e8edf5" stroke-width="1"/>
@@ -44,18 +46,19 @@
     <text x="64" y="503.0" text-anchor="end" font-size="12" fill="#64748b">8</text>
     <line x1="76" y1="548.0" x2="924" y2="548.0" stroke="#e8edf5" stroke-width="1"/>
     <text x="64" y="553.0" text-anchor="end" font-size="12" fill="#64748b">0</text>
-    <polyline points="114.5,530.0 191.6,476.0 268.7,476.0 345.8,476.0 422.9,476.0 500.0,476.0 577.1,476.0 654.2,476.0 731.3,398.0 808.4,398.0 885.5,398.0" fill="none" stroke="#16a085" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="114.5" cy="530.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="191.6" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="268.7" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="345.8" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="422.9" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="500.0" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="577.1" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="654.2" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="731.3" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="808.4" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="885.5" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <polyline points="111.3,530.0 182.0,476.0 252.7,476.0 323.3,476.0 394.0,476.0 464.7,476.0 535.3,476.0 606.0,476.0 676.7,398.0 747.3,398.0 818.0,398.0 888.7,398.0" fill="none" stroke="#16a085" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="111.3" cy="530.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="182.0" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="252.7" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="323.3" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="394.0" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="464.7" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="535.3" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="606.0" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="676.7" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="747.3" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="818.0" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="888.7" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
     <text x="40" y="590" font-size="12" fill="#64748b">첫 수집일은 과거 일간 값을 알 수 없어 기준선으로 표시합니다.</text>
   </g>
 </svg>
