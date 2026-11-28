@@ -17,29 +17,31 @@
     <text x="64" y="243.0" text-anchor="end" font-size="12" fill="#64748b">3</text>
     <line x1="76" y1="280.0" x2="924" y2="280.0" stroke="#e8edf5" stroke-width="1"/>
     <text x="64" y="285.0" text-anchor="end" font-size="12" fill="#64748b">0</text>
-    <circle cx="104.3" cy="280" r="3" fill="#315fba"/>
-    <text x="104.3" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-13</text>
-    <rect x="144.4" y="163.7" width="32.8" height="116.3" rx="4" fill="#315fba"/>
-    <circle cx="217.3" cy="280" r="3" fill="#315fba"/>
-    <text x="217.3" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-15</text>
-    <circle cx="273.9" cy="280" r="3" fill="#315fba"/>
-    <circle cx="330.4" cy="280" r="3" fill="#315fba"/>
-    <text x="330.4" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-17</text>
-    <circle cx="386.9" cy="280" r="3" fill="#315fba"/>
-    <circle cx="443.5" cy="280" r="3" fill="#315fba"/>
-    <text x="443.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-19</text>
-    <circle cx="500.0" cy="280" r="3" fill="#315fba"/>
-    <rect x="540.1" y="112.0" width="32.8" height="168.0" rx="4" fill="#315fba"/>
-    <text x="556.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-21</text>
-    <circle cx="613.1" cy="280" r="3" fill="#315fba"/>
-    <circle cx="669.6" cy="280" r="3" fill="#315fba"/>
-    <text x="669.6" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-23</text>
-    <circle cx="726.1" cy="280" r="3" fill="#315fba"/>
-    <circle cx="782.7" cy="280" r="3" fill="#315fba"/>
-    <text x="782.7" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-25</text>
-    <circle cx="839.2" cy="280" r="3" fill="#315fba"/>
-    <circle cx="895.7" cy="280" r="3" fill="#315fba"/>
-    <text x="895.7" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-27</text>
+    <circle cx="102.5" cy="280" r="3" fill="#315fba"/>
+    <text x="102.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-13</text>
+    <rect x="140.1" y="163.7" width="30.7" height="116.3" rx="4" fill="#315fba"/>
+    <circle cx="208.5" cy="280" r="3" fill="#315fba"/>
+    <text x="208.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-15</text>
+    <circle cx="261.5" cy="280" r="3" fill="#315fba"/>
+    <circle cx="314.5" cy="280" r="3" fill="#315fba"/>
+    <text x="314.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-17</text>
+    <circle cx="367.5" cy="280" r="3" fill="#315fba"/>
+    <circle cx="420.5" cy="280" r="3" fill="#315fba"/>
+    <text x="420.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-19</text>
+    <circle cx="473.5" cy="280" r="3" fill="#315fba"/>
+    <rect x="511.1" y="112.0" width="30.7" height="168.0" rx="4" fill="#315fba"/>
+    <text x="526.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-21</text>
+    <circle cx="579.5" cy="280" r="3" fill="#315fba"/>
+    <circle cx="632.5" cy="280" r="3" fill="#315fba"/>
+    <text x="632.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-23</text>
+    <circle cx="685.5" cy="280" r="3" fill="#315fba"/>
+    <circle cx="738.5" cy="280" r="3" fill="#315fba"/>
+    <text x="738.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-25</text>
+    <circle cx="791.5" cy="280" r="3" fill="#315fba"/>
+    <circle cx="844.5" cy="280" r="3" fill="#315fba"/>
+    <text x="844.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-27</text>
+    <circle cx="897.5" cy="280" r="3" fill="#315fba"/>
+    <text x="897.5" y="304" text-anchor="middle" font-size="12" fill="#64748b">11-28</text>
     <text x="40" y="374" font-size="14" font-weight="600" fill="#334155">누적 설치 파일 다운로드</text>
     <text x="924" y="374" text-anchor="end" font-size="22" font-weight="700" fill="#315fba">25회</text>
     <line x1="76" y1="398.0" x2="924" y2="398.0" stroke="#e8edf5" stroke-width="1"/>
@@ -50,22 +52,23 @@
     <text x="64" y="503.0" text-anchor="end" font-size="12" fill="#64748b">8</text>
     <line x1="76" y1="548.0" x2="924" y2="548.0" stroke="#e8edf5" stroke-width="1"/>
     <text x="64" y="553.0" text-anchor="end" font-size="12" fill="#64748b">0</text>
-    <polyline points="104.3,530.0 160.8,476.0 217.3,476.0 273.9,476.0 330.4,476.0 386.9,476.0 443.5,476.0 500.0,476.0 556.5,398.0 613.1,398.0 669.6,398.0 726.1,398.0 782.7,398.0 839.2,398.0 895.7,398.0" fill="none" stroke="#16a085" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-    <circle cx="104.3" cy="530.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="160.8" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="217.3" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="273.9" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="330.4" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="386.9" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="443.5" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="500.0" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="556.5" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="613.1" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="669.6" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="726.1" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="782.7" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="839.2" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
-    <circle cx="895.7" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <polyline points="102.5,530.0 155.5,476.0 208.5,476.0 261.5,476.0 314.5,476.0 367.5,476.0 420.5,476.0 473.5,476.0 526.5,398.0 579.5,398.0 632.5,398.0 685.5,398.0 738.5,398.0 791.5,398.0 844.5,398.0 897.5,398.0" fill="none" stroke="#16a085" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="102.5" cy="530.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="155.5" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="208.5" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="261.5" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="314.5" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="367.5" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="420.5" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="473.5" cy="476.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="526.5" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="579.5" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="632.5" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="685.5" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="738.5" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="791.5" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="844.5" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
+    <circle cx="897.5" cy="398.0" r="5" fill="#ffffff" stroke="#16a085" stroke-width="3"/>
     <text x="40" y="590" font-size="12" fill="#64748b">첫 수집일은 과거 일간 값을 알 수 없어 기준선으로 표시합니다.</text>
   </g>
 </svg>
